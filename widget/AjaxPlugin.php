@@ -9,9 +9,7 @@
 namespace  beacon\widget;
 
 
-use beacon\Console;
 use beacon\Field;
-use beacon\Form;
 use beacon\Utils;
 
 class AjaxPlugin implements BoxInterface

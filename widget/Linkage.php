@@ -6,10 +6,9 @@
  * Time: 17:22
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
-use beacon\Console;
 use beacon\Field;
 use beacon\Request;
 use beacon\Utils;
@@ -132,7 +131,6 @@ class Linkage implements BoxInterface
                 }
                 $temps[] = $this->convertType(isset($values[$name]) ? $values[$name] : '', $type);
             }
-            Console::log($temps);
             return $field->value = $temps;
         }
         $temps = isset($values[$field->name]) ? '' : $values[$field->name];

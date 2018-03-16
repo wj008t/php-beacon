@@ -167,7 +167,7 @@ class Mysql
         $time = microtime(true);
         $this->_lastSql = Mysql::format($sql, $args);
         if (defined('DEV_DEBUG') && DEV_DEBUG) {
-            Console::log($this->_lastSql);
+            Console::info($this->_lastSql);
         }
         try {
             $sth = $this->pdo->prepare($sql);

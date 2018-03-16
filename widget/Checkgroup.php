@@ -8,7 +8,6 @@
 
 namespace  beacon\widget;
 
-use beacon\Console;
 use beacon\Field;
 use beacon\Request;
 use beacon\Utils;

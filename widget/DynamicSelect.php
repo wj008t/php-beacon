@@ -9,7 +9,6 @@
 namespace  beacon\widget;
 
 
-use beacon\Console;
 use beacon\Field;
 
 class DynamicSelect extends Hidden

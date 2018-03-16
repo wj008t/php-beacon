@@ -9,9 +9,7 @@
 namespace  beacon\widget;
 
 
-use beacon\Console;
 use beacon\Field;
-use beacon\Utils;
 
 class Radiogroup extends Hidden
 {
