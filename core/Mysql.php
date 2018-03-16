@@ -145,10 +145,6 @@ class Mysql
             return $ret;
         } catch (\Exception $exception) {
             throw new MysqlException($exception->getMessage(), $sql, $exception->getCode(), $exception);
-        } finally {
-            if (defined('DEV_DEBUG') && DEV_DEBUG) {
-                Console::addSql($sql, microtime(true) - $time);
-            }
         }
     }
 
@@ -170,7 +166,9 @@ class Mysql
         }
         $time = microtime(true);
         $this->_lastSql = Mysql::format($sql, $args);
-        Console::log($this->_lastSql);
+        if (defined('DEV_DEBUG') && DEV_DEBUG) {
+            Console::log($this->_lastSql);
+        }
         try {
             $sth = $this->pdo->prepare($sql);
             if ($sth->execute($args) === FALSE) {
@@ -184,10 +182,6 @@ class Mysql
             return $sth;
         } catch (\Exception $exception) {
             throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
-        } finally {
-            if (defined('DEV_DEBUG') && DEV_DEBUG) {
-                Console::addSql($this->_lastSql, microtime(true) - $time);
-            }
         }
     }
 
