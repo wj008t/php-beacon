@@ -1,6 +1,6 @@
 {
   "name": "wj008/beacon",
-  "description": "beacon  framework of PHP",
+  "description": "beacon  framework kernel of PHP",
   "type": "library",
   "license": "Apache-2.0",
   "authors": [
