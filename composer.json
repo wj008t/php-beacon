@@ -1,0 +1,22 @@
+{
+  "name": "wj008/beacon",
+  "description": "beacon  framework of PHP",
+  "type": "library",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "wj008",
+      "email": "26029682@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.0",
+    "wj008/sdopx": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "beacon\\": "/code",
+      "beacon\\widget\\": "/widget"
+    }
+  }
+}
