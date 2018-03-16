@@ -15,7 +15,7 @@
   },
   "autoload": {
     "psr-4": {
-      "beacon\\": "/code",
+      "beacon\\": "/core",
       "beacon\\widget\\": "/widget"
     }
   }
