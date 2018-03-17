@@ -96,12 +96,8 @@ class Plugin extends Hidden
         return $sdopx;
     }
 
-    /**
-     * @param Field $field
-     * @return Form
-     * @throws \Exception
-     */
-    public static function getFormInstance(Field $field)
+
+    public static function getFormInstance(Field $field, string $type = null)
     {
         if (empty($field->plugName)) {
             throw new \Exception('插件模块名称没有填写');
@@ -113,6 +109,9 @@ class Plugin extends Hidden
         }
         if (!class_exists($class)) {
             throw new \Exception('没有找出插件的类 ' . $class);
+        }
+        if ($type) {
+            return new $class($type);
         }
         return new $class($field->getForm()->getType());
     }
@@ -140,7 +139,7 @@ class Plugin extends Hidden
             }
             return $viewer->fetch($field->viewtplName);
         } else {
-            $form = self::getFormInstance($field);
+            $form = self::getFormInstance($field, 'add');
             $viewer = self::getTemplate();
             if (isset($form->viewtplName) && !empty($form->viewtplName)) {
                 $viewer->fetch($form->viewtplName);
