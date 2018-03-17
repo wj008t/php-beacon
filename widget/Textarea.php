@@ -23,7 +23,7 @@ class Textarea extends Hidden
         $args['value'] = '';
         $field->explodeAttr($attr, $args);
         $field->explodeData($attr, $args);
-        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</textarea>';
+        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->_value) . '</textarea>';
     }
 
     public function assign(Field $field, array $data)
