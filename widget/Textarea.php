@@ -6,7 +6,7 @@
  * Time: 18:02
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -17,6 +17,7 @@ class Textarea extends Hidden
     public function code(Field $field, $args)
     {
         $args['type'] = '';
+
         if (isset($args['value'])) {
             $field->value = $args['value'];
         }
