@@ -316,6 +316,9 @@ class Validate
             }
             unset($rules['required']);
         }
+        if (is_array($value)) {
+            return true;
+        }
         if (strlen($value) > 0 || (isset($rules['force']) && $rules['force'])) {
             unset($rules['force']);
             foreach ($rules as $type => $args) {
