@@ -316,7 +316,7 @@ class Validate
             }
             unset($rules['required']);
         }
-        
+
         if (is_array($value)) {
             return true;
         }
