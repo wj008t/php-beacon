@@ -6,7 +6,7 @@
  * Time: 21:34
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 use beacon\Field;
 use beacon\Request;
@@ -67,7 +67,7 @@ class Checkgroup implements BoxInterface
                     $val = $text;
                 }
                 $selected = in_array(strval($val), $values) === true ? ' checked="checked"' : '';
-                $out[] = '<li><label>';
+                $out[] = '<li class="li-item' . $key . '"><label>';
                 if ($endKey === $key) {
                     $selected .= ' ' . join(' ', $attr);
                 }

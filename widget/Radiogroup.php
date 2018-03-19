@@ -6,7 +6,7 @@
  * Time: 14:06
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -56,7 +56,7 @@ class Radiogroup extends Hidden
                     $val = $text;
                 }
                 $selected = strval($val) == strval($value) ? ' checked="checked"' : '';
-                $out[] = '<li><label>';
+                $out[] = '<li class="li-item' . $key . '"><label>';
                 if ($endKey === $key) {
                     $selected .= ' ' . join(' ', $attr);
                 }
