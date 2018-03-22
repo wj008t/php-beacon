@@ -9,7 +9,7 @@ namespace beacon;
  */
 
 
-class Request
+class RequestRequest
 {
     private static $instance = null;
     private $header = null;
@@ -70,7 +70,7 @@ class Request
         return isset($_COOKIE["name"]) ? $_COOKIE["name"] : $def;
     }
 
-    public function setCookie(string $name, $value, $options)
+    public function setCookie(string $name, $value, $options = null)
     {
         if ($options == null) {
             return setcookie($name, $value);
