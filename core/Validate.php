@@ -278,11 +278,11 @@ class Validate
         if (!empty($field->error)) {
             return false;
         }
-        if (!empty($field->childError)) {
-            return false;
-        }
         if ($field->dataValOff) {
             return true;
+        }
+        if (!empty($field->childError)) {
+            return false;
         }
         $rules = $field->dataVal;
         if ($rules == null) {
@@ -316,9 +316,11 @@ class Validate
             }
             unset($rules['required']);
         }
+
         if (is_array($value)) {
             return true;
         }
+
         if (strlen($value) > 0 || (isset($rules['force']) && $rules['force'])) {
             unset($rules['force']);
             foreach ($rules as $type => $args) {
@@ -349,6 +351,7 @@ class Validate
                     $field->error = Validate::format($out['error'], $xargs);
                     return false;
                 }
+
             }
         }
         return true;

@@ -30,7 +30,6 @@ class Plugin extends Hidden
             if ($field->plugMode == 'simple') {
                 $child->boxId = $field->boxId . '_' . $child->boxId;
                 $child->boxName = $field->boxName . '[' . $child->boxName . ']';
-
                 if ($child->dynamic && (!isset($child->dataDynamic) || empty($child->dataDynamic))) {
                     $form->createDynamic($child);
                     $dataDynamic = $child->dataDynamic;
@@ -118,6 +117,7 @@ class Plugin extends Hidden
 
     public function code(Field $field, $args)
     {
+
         $field->plugType = isset($field->plugType) ? $field->plugType : 0;
         $field->plugMode = isset($field->plugMode) && $field->plugMode == 'composite' ? 'composite' : 'simple';
         if (empty($field->viewtplName)) {
@@ -183,13 +183,15 @@ class Plugin extends Hidden
         if ($field->plugMode == 'simple') {
             $form = self::getFormInstance($field);
             $form->fillComplete($itemData);
-            if (!$form->validation($errors)) {
-                $childError = [];
-                foreach ($errors as $key => $err) {
-                    $boxName = $field->boxName . '[' . $key . ']';
-                    $childError[$boxName] = $err;
+            if ($field->dataValOff !== true) {
+                if (!$form->validation($errors)) {
+                    $childError = [];
+                    foreach ($errors as $key => $err) {
+                        $boxName = $field->boxName . '[' . $key . ']';
+                        $childError[$boxName] = $err;
+                    }
+                    $field->childError = $childError;
                 }
-                $field->childError = $childError;
             }
             $vdata = $form->getValues();
             $field->value = $vdata;
@@ -202,19 +204,19 @@ class Plugin extends Hidden
         foreach ($itemData as $idx => $item) {
             $form = self::getFormInstance($field);
             $vdata = $form->fillComplete($item);
-            if (!$form->validation($errors)) {
-                foreach ($errors as $key => $err) {
-                    $cboxName = $field->boxName . '[' . $idx . '][' . $key . ']';
-                    $childError[$cboxName] = $err;
+            if ($field->dataValOff !== true) {
+                if (!$form->validation($errors)) {
+                    foreach ($errors as $key => $err) {
+                        $cboxName = $field->boxName . '[' . $idx . '][' . $key . ']';
+                        $childError[$cboxName] = $err;
+                    }
                 }
             }
             if ($field->autoSave && !empty($field->referenceField) && isset($item['id'])) {
                 $vdata['id'] = $item['id'];
             }
-
             $temp[] = $vdata;
         }
-
         $field->childError = $childError;
         $field->value = $temp;
         return $field->value;

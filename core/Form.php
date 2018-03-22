@@ -226,9 +226,11 @@ class Form
             if (!empty($field->error)) {
                 $errors[$name] = $field->error;
             }
-            if (!empty($field->childError) && is_array($field->childError)) {
-                foreach ($field->childError as $key => $err) {
-                    $errors[$key] = $err;
+            if ($field->dataValOff == false) {
+                if (!empty($field->childError) && is_array($field->childError)) {
+                    foreach ($field->childError as $key => $err) {
+                        $errors[$key] = $err;
+                    }
                 }
             }
         }

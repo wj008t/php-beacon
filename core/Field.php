@@ -81,7 +81,7 @@ class Field
     public $viewClose = false;
     public $viewMerge = 0;
     //数据属性
-    public $dataValOff = null;
+    public $dataValOff = false;
     public $dataVal = null;
     public $dataValMsg = null;
 
