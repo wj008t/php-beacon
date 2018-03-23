@@ -76,7 +76,11 @@ class SqlCondition
             return $this;
         } elseif (is_array($sql) && $args === null) {
             foreach ($sql as $key => $value) {
-                $this->where($key, $value);
+                if (strpos($key, '?') === false) {
+                    $this->where($key . '=?', $value);
+                } else {
+                    $this->where($key, $value);
+                }
             }
             return $this;
         }
