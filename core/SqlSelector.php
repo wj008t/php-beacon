@@ -150,6 +150,20 @@ class SqlSelector
         return $this;
     }
 
+    public function pageLimit(int $page = 1, int $size = 20)
+    {
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $size;
+        if ($offset < 0) {
+            $offset = 0;
+        }
+        $this->limit($offset, $size);
+        return $this;
+    }
+
+
     public function createSql($type = 0)
     {
         $sqlItems = [];
