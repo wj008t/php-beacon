@@ -22,7 +22,7 @@ class SqlItem
 
     public function add(string $sql, $args = null)
     {
-        $this->sql .= $sql;
+        $this->sql .= ' ' . $sql;
         if ($args === null || (is_array($args) && count($args) == 0)) {
             return $this;
         }
