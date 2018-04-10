@@ -257,15 +257,15 @@ class SqlSelector
                     $argItems = array_merge($argItems, $groupArgs);
                 }
             }
-            //处理 havingItem
-            if ($this->havingItem != null) {
-                $havingSql = $this->havingItem->sql;
-                $havingArgs = $this->havingItem->args;
-                if (!empty($havingSql)) {
-                    $sqlItems[] = 'having ' . $havingSql;
-                    if ($havingArgs !== null && is_array($havingArgs)) {
-                        $argItems = array_merge($argItems, $havingArgs);
-                    }
+        }
+        //处理 havingItem
+        if ($this->havingItem != null) {
+            $havingSql = $this->havingItem->sql;
+            $havingArgs = $this->havingItem->args;
+            if (!empty($havingSql)) {
+                $sqlItems[] = 'having ' . $havingSql;
+                if ($havingArgs !== null && is_array($havingArgs)) {
+                    $argItems = array_merge($argItems, $havingArgs);
                 }
             }
         }
