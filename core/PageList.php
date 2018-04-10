@@ -156,7 +156,7 @@ class PageList
         }
         if ($this->selector) {
             $this->selector->limit($start, $this->pageSize);
-            return $this->selector->getList();
+            return $this->selector->getListByPageList();
         }
         $sql = $this->sql . ' limit ' . $start . ' , ' . $this->pageSize;
         return DB::getList($sql, $this->args, $fetch_style, $fetch_argument, $ctor_args);

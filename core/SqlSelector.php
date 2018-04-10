@@ -333,7 +333,7 @@ class SqlSelector
         if (!$this->optimize) {
             $temp = $this->createSql(0);
         } else {
-            if ($this->joinItem) {
+            if ($this->joinItem || $this->groupItem) {
                 $temp = $this->createSql(0);
             } else {
                 $temp = $this->createSql(1);
@@ -364,10 +364,16 @@ class SqlSelector
      */
     public function getList()
     {
+        $temp = $this->createSql(0);
+        return DB::getList($temp['sql'], $temp['args']);
+    }
+
+    public function getListByPageList()
+    {
         if (!$this->optimize) {
             $temp = $this->createSql(0);
         } else {
-            if (!$this->joinItem && $this->limit) {
+            if ($this->joinItem || $this->groupItem) {
                 $temp = $this->createSql(1);
             } else {
                 $temp = $this->createSql(0);
