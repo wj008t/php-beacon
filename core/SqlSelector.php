@@ -137,7 +137,12 @@ class SqlSelector
 
     public function having($sql = null, $args = null)
     {
-        $this->havingItem = new SqlItem($sql, $args);
+        if (!empty($sql)) {
+            if ($this->havingItem == null) {
+                $this->havingItem = new SqlCondition();
+            }
+            $this->havingItem->where($sql, $args);
+        }
         return $this;
     }
 
@@ -244,9 +249,9 @@ class SqlSelector
             } else {
                 $sqlItems[] = 'where ' . $frame['sql'];
             }
-        }
-        if ($frame['args'] !== null && is_array($frame['args'])) {
-            $argItems = array_merge($argItems, $frame['args']);
+            if ($frame['args'] !== null && is_array($frame['args'])) {
+                $argItems = array_merge($argItems, $frame['args']);
+            }
         }
         if ($this->groupItem != null) {
             $groupSql = $this->groupItem->sql;
@@ -260,12 +265,15 @@ class SqlSelector
         }
         //处理 havingItem
         if ($this->havingItem != null) {
-            $havingSql = $this->havingItem->sql;
-            $havingArgs = $this->havingItem->args;
-            if (!empty($havingSql)) {
-                $sqlItems[] = 'having ' . $havingSql;
-                if ($havingArgs !== null && is_array($havingArgs)) {
-                    $argItems = array_merge($argItems, $havingArgs);
+            $frame = $this->havingItem->getFrame();
+            if (!empty($frame['sql'])) {
+                if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
+                    $sqlItems[] = 'having ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+                } else {
+                    $sqlItems[] = 'having ' . $frame['sql'];
+                }
+                if ($frame['args'] !== null && is_array($frame['args'])) {
+                    $argItems = array_merge($argItems, $frame['args']);
                 }
             }
         }
