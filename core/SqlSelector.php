@@ -186,10 +186,13 @@ class SqlSelector
         if ($type == 2) {
             if ($this->groupItem != null) {
                 $order = $this->orderItem;
+                $limit = $this->limit;
                 $this->orderItem = null;
+                $this->limit = null;
                 $temp = $this->createSql(0);
                 $temp['sql'] = 'select count(1) from (' . $temp['sql'] . ') countTempTable';
                 $this->orderItem = $order;
+                $this->limit = $limit;
                 return $temp;
             } else {
                 $sqlItems[] = 'select count(1) from ' . $this->table;
