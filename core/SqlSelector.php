@@ -39,7 +39,6 @@ class SqlSelector
      */
     private $condition = null;
 
-
     /**
      * 优化查询
      * @var bool
@@ -121,6 +120,7 @@ class SqlSelector
         return $this;
     }
 
+
     public function group(string $group, $args = null)
     {
         $group = trim($group);
@@ -149,11 +149,61 @@ class SqlSelector
     public function join(string $sql, $args = null)
     {
         $sql = trim($sql);
+        if (!preg_match('@^(left|right|full|outer|inner|join)\s+@', $sql)) {
+            $sql = 'join ' . $sql;
+        }
         if ($this->joinItem === null) {
             $this->joinItem = new SqlItem($sql, $args);
         } else {
             $this->joinItem->add($sql, $args);
         }
+        return $this;
+    }
+
+    public function leftJoin(string $sql, $args = null)
+    {
+        $sql = trim($sql);
+        $sql = 'left join ' . $sql;
+        if ($this->joinItem === null) {
+            $this->joinItem = new SqlItem($sql, $args);
+        } else {
+            $this->joinItem->add($sql, $args);
+        }
+        return $this;
+    }
+
+    public function rightJoin(string $sql, $args = null)
+    {
+        $sql = trim($sql);
+        $sql = 'right join ' . $sql;
+        if ($this->joinItem === null) {
+            $this->joinItem = new SqlItem($sql, $args);
+        } else {
+            $this->joinItem->add($sql, $args);
+        }
+        return $this;
+    }
+
+    public function fullJoin(string $sql, $args = null)
+    {
+        $sql = trim($sql);
+        $sql = 'full join ' . $sql;
+        if ($this->joinItem === null) {
+            $this->joinItem = new SqlItem($sql, $args);
+        } else {
+            $this->joinItem->add($sql, $args);
+        }
+        return $this;
+    }
+
+    public function joinOn(string $sql, $args = null)
+    {
+        $sql = trim($sql);
+        if ($this->joinItem == null) {
+            return $this;
+        }
+        $sql = 'on ' . $sql;
+        $this->joinItem->add($sql, $args);
         return $this;
     }
 
@@ -182,7 +232,6 @@ class SqlSelector
         $this->limit($offset, $size);
         return $this;
     }
-
 
     public function createSql($type = 0)
     {
