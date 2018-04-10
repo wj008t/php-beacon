@@ -374,9 +374,9 @@ class SqlSelector
             $temp = $this->createSql(0);
         } else {
             if ($this->joinItem || $this->groupItem) {
-                $temp = $this->createSql(1);
-            } else {
                 $temp = $this->createSql(0);
+            } else {
+                $temp = $this->createSql(1);
             }
         }
         return DB::getList($temp['sql'], $temp['args']);
