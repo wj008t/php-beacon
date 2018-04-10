@@ -32,10 +32,19 @@ class SqlSelector
     private $limit = '';
 
     private $joinItem = null;
+
+    private $havingItem = null;
     /**
      * @var SqlCondition
      */
     private $condition = null;
+
+
+    /**
+     * 优化查询
+     * @var bool
+     */
+    private $optimize = true;
 
     /**
      * 获取类实例
@@ -126,6 +135,12 @@ class SqlSelector
         return $this;
     }
 
+    public function having($sql = null, $args = null)
+    {
+        $this->havingItem = new SqlItem($sql, $args);
+        return $this;
+    }
+
     public function join(string $sql, $args = null)
     {
         $sql = trim($sql);
@@ -169,9 +184,18 @@ class SqlSelector
         $sqlItems = [];
         $argItems = [];
         if ($type == 2) {
-            $sqlItems[] = 'select count(*) from ' . $this->table;
-            if (!empty($this->alias)) {
-                $sqlItems[] = ' ' . $this->alias;
+            if ($this->groupItem != null) {
+                $order = $this->orderItem;
+                $this->orderItem = null;
+                $temp = $this->createSql(0);
+                $temp['sql'] = 'select count(1) from (' . $temp['sql'] . ') countTempTable';
+                $this->orderItem = $order;
+                return $temp;
+            } else {
+                $sqlItems[] = 'select count(1) from ' . $this->table;
+                if (!empty($this->alias)) {
+                    $sqlItems[] = ' ' . $this->alias;
+                }
             }
         } elseif ($type == 1) {
             $alias = 'Zt';
@@ -186,7 +210,6 @@ class SqlSelector
             if (!empty($this->alias)) {
                 $sqlItems[] = ' ' . $this->alias;
             }
-
         } else {
             $findSql = '*';
             if ($this->findItem !== null) {
@@ -211,7 +234,6 @@ class SqlSelector
                 $sqlItems[] = ' ' . $joinSql;
             }
         }
-
         $frame = $this->condition->getFrame();
         if (!empty($frame['sql'])) {
             if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
@@ -228,12 +250,22 @@ class SqlSelector
             $groupArgs = $this->groupItem->args;
             if (!empty($groupSql)) {
                 $sqlItems[] = 'group ' . $groupSql;
+                if ($groupArgs !== null && is_array($groupArgs)) {
+                    $argItems = array_merge($argItems, $groupArgs);
+                }
             }
-            if ($groupArgs !== null && is_array($groupArgs)) {
-                $argItems = array_merge($argItems, $groupArgs);
+            //处理 havingItem
+            if ($this->havingItem != null) {
+                $havingSql = $this->havingItem->sql;
+                $havingArgs = $this->havingItem->args;
+                if (!empty($havingSql)) {
+                    $sqlItems[] = 'having ' . $havingSql;
+                    if ($havingArgs !== null && is_array($havingArgs)) {
+                        $argItems = array_merge($argItems, $havingArgs);
+                    }
+                }
             }
         }
-
         if ($type != 2 && $this->orderItem != null) {
             $orderSql = $this->orderItem->sql;
             $ordeArgs = $this->orderItem->args;
@@ -287,10 +319,14 @@ class SqlSelector
         if ($this->count == -1) {
             $this->count = $this->getCount();
         }
-        if ($this->joinItem) {
+        if (!$this->optimize) {
             $temp = $this->createSql(0);
         } else {
-            $temp = $this->createSql(1);
+            if ($this->joinItem) {
+                $temp = $this->createSql(0);
+            } else {
+                $temp = $this->createSql(1);
+            }
         }
         $pageList = new PageList($temp['sql'], $temp['args'], $size, $pagekey);
         $pageList->setSelector($this);
@@ -301,23 +337,37 @@ class SqlSelector
     }
 
     /**
+     * 关闭自动优化
+     * @param bool $value
+     */
+    public function closeOptimize()
+    {
+        $this->optimize = false;
+    }
+
+    /**
      * 获取多条数据
-     * @return mixed
+     * @param bool $optimize 是否使用优化，默认开启
+     * @return array
+     * @throws \Exception
      */
     public function getList()
     {
-        if (!$this->joinItem && $this->limit) {
-            $temp = $this->createSql(1);
-        } else {
+        if (!$this->optimize) {
             $temp = $this->createSql(0);
+        } else {
+            if (!$this->joinItem && $this->limit) {
+                $temp = $this->createSql(1);
+            } else {
+                $temp = $this->createSql(0);
+            }
         }
         return DB::getList($temp['sql'], $temp['args']);
     }
 
-
     /**
-     * 获取单条数据
-     * @return mixed
+     * @return mixed|null
+     * @throws \Exception
      */
     public function getRow()
     {
