@@ -17,7 +17,14 @@ class SqlItem
     public function __construct(string $sql, $args = null)
     {
         $this->sql = trim($sql);
-        $this->args = $args;
+        if ($args === null || (is_array($args) && count($args) == 0)) {
+            return;
+        }
+        if (!is_array($args)) {
+            $this->args = [$args];
+        } else {
+            $this->args = $args;
+        }
     }
 
     public function add(string $sql, $args = null)
@@ -29,11 +36,7 @@ class SqlItem
         if (!is_array($args)) {
             $args = [$args];
         }
-        if ($this->args === null) {
-            $this->args = $args;
-        } else {
-            $this->args = array_merge($this->args, $args);
-        }
+        $this->args = array_merge($this->args, $args);
         return $this;
     }
 
