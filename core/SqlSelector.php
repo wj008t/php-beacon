@@ -29,10 +29,15 @@ class SqlSelector
      * @var SqlItem;
      */
     private $findItem = null;
+
     private $limit = '';
-
+    /**
+     * @var SqlItem;
+     */
     private $joinItem = null;
-
+    /**
+     * @var SqlCondition;
+     */
     private $havingItem = null;
     /**
      * @var SqlCondition

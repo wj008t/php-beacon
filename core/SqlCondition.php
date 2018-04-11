@@ -36,7 +36,11 @@ class SqlItem
         if (!is_array($args)) {
             $args = [$args];
         }
-        $this->args = array_merge($this->args, $args);
+        if ($this->args == null) {
+            $this->args = $args;
+        } else {
+            $this->args = array_merge($this->args, $args);
+        }
         return $this;
     }
 
