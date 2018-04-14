@@ -324,33 +324,37 @@ class Route
         foreach ($query as $key => $val) {
             array_push($temp, $key . '={' . $key . '}');
         }
-        $hash = $app . ':' . $pathname . '?' . join('&', $temp);
+        $hash = $pathname . '?' . join('&', $temp);
         $hash = isset($hash[80]) ? md5($hash) : $hash;
         if (empty(self::$cachePath)) {
             self::$cachePath = Utils::path(ROOT_DIR, 'runtime');
         }
-        $filepath = Utils::path(self::$cachePath, 'route.cache.php');
+        $filepath = Utils::path(self::$cachePath, 'route.' . $app . '.cache.php');
         if (self::$cache_uris == null) {
+            self::$cache_uris = [];
+        }
+        if (!isset(self::$cache_uris[$app])) {
             if (file_exists($filepath)) {
-                self::$cache_uris = require $filepath;
+                self::$cache_uris[$app] = require $filepath;
             } else {
-                self::$cache_uris = [];
+                self::$cache_uris[$app] = [];
             }
         }
         //使用了缓存
-        if (isset(self::$cache_uris[$hash])) {
-            //  echo '缓存';
-            $temp_url = self::$cache_uris[$hash];
+        if (isset(self::$cache_uris[$app][$hash])) {
+            $temp_url = self::$cache_uris[$app][$hash];
             $temp_url = preg_replace_callback('@\{(\w+)\}@', function ($m) use ($query) {
                 $key = $m[1];
                 return isset($query[$key]) ? urlencode($query[$key]) : '';
             }, $temp_url);
             return $temp_url;
         }
+
         $idata = isset(self::$routeMap[$app]) ? self::$routeMap[$app] : null;
         if ($idata == null) {
             return '';
         }
+
         $ctl = '';
         $act = '';
         if (!empty($pathname)) {
@@ -361,10 +365,12 @@ class Route
                 }
             }
         }
+
         $args = [];
         foreach ($query as $key => $val) {
             $args[$key] = '{' . $key . '}';
         }
+
         $base = rtrim(empty($idata['base']) ? '' : $idata['base'], '/');
         if (!isset($idata['resolve']) && !is_callable($idata['resolve'])) {
             return '';
@@ -413,14 +419,13 @@ class Route
         if (count($queryStr) > 0) {
             $temp_url .= '?' . join('&', $queryStr);
         }
-        self::$cache_uris[$hash] = $temp_url;
-        @file_put_contents($filepath, '<?php return ' . var_export(self::$cache_uris, true) . ';');
+        self::$cache_uris[$app][$hash] = $temp_url;
+        @file_put_contents($filepath, '<?php return ' . var_export(self::$cache_uris[$app], true) . ';');
         // echo '创建缓存';
         $temp_url = preg_replace_callback('@\{(\w+)\}@', function ($m) use ($query) {
             $key = $m[1];
             return isset($query[$key]) ? urlencode($query[$key]) : '';
         }, $temp_url);
-
         return $temp_url;
     }
 
