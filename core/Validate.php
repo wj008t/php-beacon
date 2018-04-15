@@ -72,7 +72,7 @@ class Validate
                 return $out;
             }
         }
-        throw new Exception('Error Method!');
+        throw new \Exception('Error Method!');
     }
 
     /**
@@ -228,7 +228,7 @@ class Validate
 
     public static function test_range($val, $min, $max, $noeq = false)
     {
-        return self::rule_range($val, $min, $noeq) && self::test_min($val, $max, $noeq);
+        return self::test_range($val, $min, $noeq) && self::test_min($val, $max, $noeq);
     }
 
     public static function test_minlength($val, $len)
