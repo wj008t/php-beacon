@@ -284,18 +284,20 @@ class SqlSelector
             if (!empty($this->alias)) {
                 $sqlItems[] = ' ' . $this->alias;
             }
-            //加入JOIN
-            $joinSql = '';
+        }
+
+        if ($type == 2 || $type == 0) {
             if ($this->joinItem !== null) {
                 $joinSql = $this->joinItem->sql;
                 if ($this->joinItem->args !== null) {
                     $argItems = array_merge($argItems, $this->joinItem->args);
                 }
-            }
-            if (!empty($joinSql)) {
-                $sqlItems[] = ' ' . $joinSql;
+                if (!empty($joinSql)) {
+                    $sqlItems[] = ' ' . $joinSql;
+                }
             }
         }
+
         $frame = $this->condition->getFrame();
         if (!empty($frame['sql'])) {
             if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
