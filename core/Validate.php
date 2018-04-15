@@ -228,7 +228,7 @@ class Validate
 
     public static function test_range($val, $min, $max, $noeq = false)
     {
-        return self::test_max($val, $min, $noeq) && self::test_min($val, $max, $noeq);
+        return self::test_min($val, $min, $noeq) && self::test_max($val, $max, $noeq);
     }
 
     public static function test_minlength($val, $len)
