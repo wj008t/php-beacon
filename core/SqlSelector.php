@@ -8,6 +8,20 @@ namespace beacon;
  * Date: 2018/1/5
  * Time: 1:37
  */
+class SqlUnionItem
+{
+    public $all = false;
+    /**
+     * @var SqlSelector
+     */
+    public $selector = null;
+
+    public function __construct(SqlSelector $selector, bool $all = false)
+    {
+        $this->all = $all;
+        $this->selector = $selector;
+    }
+}
 
 class SqlSelector
 {
@@ -43,6 +57,11 @@ class SqlSelector
      * @var SqlCondition
      */
     private $condition = null;
+
+    /**
+     * @var SqlUnionItem[]
+     */
+    private $unionItem = null;
 
     /**
      * 优化查询
@@ -96,6 +115,17 @@ class SqlSelector
 
     public function search(string $sql, $value, $type = SqlCondition::WITHOUT_EMPTY, $format = null)
     {
+        if (substr_count($sql, '??') == 1 && is_array($value)) {
+            if (!empty($value)) {
+                $temp = [];
+                foreach ($value as $item) {
+                    $temp[] = '?';
+                }
+                $sql = str_replace('??', join(',', $temp), $sql);
+                $this->condition->where($sql, $value);
+            }
+            return $this;
+        }
         $this->condition->search($sql, $value, $type, $format);
         return $this;
     }
@@ -124,7 +154,6 @@ class SqlSelector
         }
         return $this;
     }
-
 
     public function group(string $group, $args = null)
     {
@@ -212,6 +241,31 @@ class SqlSelector
         return $this;
     }
 
+    public function union(SqlSelector $selector)
+    {
+        if ($selector == null) {
+            return $this;
+        }
+        if ($this->unionItem == null) {
+            $this->unionItem = [];
+        }
+        $this->unionItem[] = new SqlUnionItem($selector, false);
+        return $this;
+    }
+
+    public function unionAll(SqlSelector $selector)
+    {
+        if ($selector == null) {
+            return $this;
+        }
+        if ($this->unionItem == null) {
+            $this->unionItem = [];
+        }
+        $this->unionItem[] = new SqlUnionItem($selector, true);
+        return $this;
+    }
+
+
     public function limit(int $offset = 0, int $size = 0)
     {
         if ($offset === 0 && $size == 0) {
@@ -224,6 +278,7 @@ class SqlSelector
         }
         return $this;
     }
+
 
     public function pageLimit(int $page = 1, int $size = 20)
     {
@@ -242,8 +297,9 @@ class SqlSelector
     {
         $sqlItems = [];
         $argItems = [];
+
         if ($type == 2) {
-            if ($this->groupItem != null) {
+            if ($this->groupItem != null || $this->unionItem != null) {
                 $order = $this->orderItem;
                 $limit = $this->limit;
                 $this->orderItem = null;
@@ -285,7 +341,7 @@ class SqlSelector
                 $sqlItems[] = ' ' . $this->alias;
             }
         }
-
+        //JSON
         if ($type == 2 || $type == 0) {
             if ($this->joinItem !== null) {
                 $joinSql = $this->joinItem->sql;
@@ -297,7 +353,7 @@ class SqlSelector
                 }
             }
         }
-
+        //WHERE
         $frame = $this->condition->getFrame();
         if (!empty($frame['sql'])) {
             if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
@@ -309,6 +365,7 @@ class SqlSelector
                 $argItems = array_merge($argItems, $frame['args']);
             }
         }
+        //GROUP BY
         if ($this->groupItem != null) {
             $groupSql = $this->groupItem->sql;
             $groupArgs = $this->groupItem->args;
@@ -333,6 +390,26 @@ class SqlSelector
                 }
             }
         }
+
+        //UNION
+        if ($type == 2 || $type == 0) {
+            if ($this->unionItem) {
+                array_unshift($sqlItems, '(');
+                $sqlItems[] = ')';
+                foreach ($this->unionItem as $item) {
+                    $temp = $item->selector->createSql(0);
+                    if ($item->all) {
+                        $sqlItems[] = 'union all ( ' . $temp['sql'] . ' )';
+                    } else {
+                        $sqlItems[] = 'union ( ' . $temp['sql'] . ' )';
+                    }
+                    if (!empty($temp['args'])) {
+                        $argItems = array_merge($argItems, $temp['args']);
+                    }
+                }
+            }
+        }
+        //ORDER BY
         if ($type != 2 && $this->orderItem != null) {
             $orderSql = $this->orderItem->sql;
             $ordeArgs = $this->orderItem->args;
@@ -343,9 +420,11 @@ class SqlSelector
                 $argItems = array_merge($argItems, $ordeArgs);
             }
         }
+        //LIMIT
         if ($type != 2 && !empty($this->limit)) {
             $sqlItems[] = $this->limit;
         }
+
         if ($type == 1) {
             $alias = 'Zt';
             $sqlItems[] = ') Y where ' . $alias . '.id=Y.id';
@@ -381,6 +460,7 @@ class SqlSelector
         $this->count = $count;
     }
 
+
     public function getPageList($size = 20, $pagekey = 'page')
     {
         if ($this->count == -1) {
@@ -389,7 +469,7 @@ class SqlSelector
         if (!$this->optimize) {
             $temp = $this->createSql(0);
         } else {
-            if ($this->joinItem || $this->groupItem) {
+            if ($this->joinItem || $this->groupItem || $this->unionItem) {
                 $temp = $this->createSql(0);
             } else {
                 $temp = $this->createSql(1);
@@ -429,7 +509,7 @@ class SqlSelector
         if (!$this->optimize) {
             $temp = $this->createSql(0);
         } else {
-            if ($this->joinItem || $this->groupItem) {
+            if ($this->joinItem || $this->groupItem || $this->unionItem) {
                 $temp = $this->createSql(0);
             } else {
                 $temp = $this->createSql(1);
