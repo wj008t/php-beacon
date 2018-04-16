@@ -136,6 +136,7 @@ class Request
                 }
                 return intval($data[$name]);
             case 'a':
+
                 if (!isset($data[$name])) {
                     if (is_array($def)) {
                         return $def;
@@ -150,6 +151,17 @@ class Request
                 }
                 if (is_string($data[$name]) && Utils::isJsonString($data[$name])) {
                     return json_decode($data[$name], true);
+                }
+                //拆分，取值
+                if (is_string($data[$name]) && preg_match('@^\d+(,\d+)*$@', $data[$name])) {
+                    $retemp = [];
+                    $temp = explode(',', $data[$name]);
+                    foreach ($temp as $item) {
+                        if (is_numeric($item)) {
+                            $retemp[] = intval($item);
+                        }
+                    }
+                    return $retemp;
                 }
                 if ($data[$name] === null || $data[$name] === '') {
                     return [];
