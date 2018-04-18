@@ -46,8 +46,8 @@ class Console
 
     public static function addSql($sql, $time = 0)
     {
-        if (Config::get('debug.show_sql')) {
-            self::_send('log', [$sql, $time]);
+        if (Config::get('debug.show_sql', true)) {
+            self::_send('sql', [$sql, intval($time * 100000) / 100 . 'ms']);
         }
     }
 

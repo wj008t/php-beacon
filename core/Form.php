@@ -30,6 +30,7 @@ class Form
     public $tbname = '';
     private $type = '';
     public $useAjax = false;
+    public $viewNotBack = false;
 
     //视图属性
     public $viewUseTab = false;
@@ -415,9 +416,13 @@ class Form
     {
         $fields = $this->getTabFields();
         $request = Request::instance();
+        $valueFuncFields = [];
         foreach ($fields as $name => $field) {
             if ($field->close || ($field->offEdit && $this->type == 'edit')) {
                 continue;
+            }
+            if (!empty($field->valueFunc) && is_callable($field->valueFunc)) {
+                $valueFuncFields[] = $field;
             }
             if ($field->viewClose) {
                 $field->value = $field->default;
@@ -457,6 +462,9 @@ class Form
                         break;
                 }
             }
+        }
+        foreach ($valueFuncFields as $field) {
+            $field->value = call_user_func($field->valueFunc, $this);
         }
         return $this->getValues();
     }

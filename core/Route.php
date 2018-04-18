@@ -485,7 +485,7 @@ class Route
                 $t1 = microtime(true);
                 register_shutdown_function(function () use ($t1) {
                     $t2 = microtime(true);
-                    Console::info('-----------URL:', $_SERVER['REQUEST_URI'], '耗时' . round($t2 - $t1, 3) . '秒');
+                    Console::info('URL:', $_SERVER['REQUEST_URI'], '耗时' . round($t2 - $t1, 3) . '秒');
                 });
             }
         }
@@ -656,6 +656,7 @@ class Route
                 $code[] = "----------------------------------------------------------------------------------------------------------";
                 $code[] = $exception->getStack();
             }
+            Console::error(join("\n", $code));
             if ($request->isAjax()) {
                 $request->setContentType('json');
                 $out = [];

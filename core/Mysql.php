@@ -165,9 +165,9 @@ class Mysql
             $args = [$args];
         }
         $time = microtime(true);
-        $this->_lastSql = Mysql::format($sql, $args);
         if (defined('DEV_DEBUG') && DEV_DEBUG) {
-            Console::info($this->_lastSql);
+            $this->_lastSql = Mysql::format($sql, $args);
+            $time = microtime(true);
         }
         try {
             $sth = $this->pdo->prepare($sql);
@@ -179,8 +179,14 @@ class Mysql
                     throw new MysqlException('执行语句错误', $this->_lastSql);
                 }
             }
+            if (defined('DEV_DEBUG') && DEV_DEBUG) {
+                Console::addSql($this->_lastSql, microtime(true) - $time);
+            }
             return $sth;
         } catch (\Exception $exception) {
+            if (defined('DEV_DEBUG') && DEV_DEBUG) {
+                Console::addSql($this->_lastSql, microtime(true) - $time);
+            }
             throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
         }
     }

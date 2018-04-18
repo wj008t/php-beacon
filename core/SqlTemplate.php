@@ -10,7 +10,7 @@ use sdopx\Sdopx;
  * Date: 2018/1/5
  * Time: 1:37
  */
-class SqlTemplate
+class SqlTemplate implements SqlSelectInterface
 {
 
 
