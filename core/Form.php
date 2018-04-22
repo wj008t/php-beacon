@@ -2,9 +2,7 @@
 
 namespace beacon;
 
-use app\tool\plugin\CustomPlugin;
 use beacon\widget\BoxInterface;
-use widget\Plugin;
 
 /**
  * Created by PhpStorm.
@@ -714,7 +712,7 @@ class Form
             //隐藏字段
             if ($field->type == 'hide') {
                 $field->viewClose = true;
-                $this->addHideBox($field->boxName, $field->value);
+                $this->addHideBox($field->boxName, $field->_value);
             }
         }
         $keys = array_keys($fields);

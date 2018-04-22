@@ -9,7 +9,6 @@ namespace beacon;
  * Time: 14:05
  */
 
-use widget\Plugin;
 
 /**
  * Class Field
