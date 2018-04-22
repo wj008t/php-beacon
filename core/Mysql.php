@@ -10,9 +10,9 @@ namespace beacon;
  */
 
 
-use PDO as PDO;
-use PDOException as PDOException;
-use Throwable;
+use \PDO as PDO;
+use \PDOException as PDOException;
+use \Throwable as Throwable;
 
 class SqlSection
 {

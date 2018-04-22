@@ -2,7 +2,7 @@
 
 namespace beacon;
 
-use PDO as PDO;
+use \PDO as PDO;
 
 /**
  * 数据分页类 of Pagelist
