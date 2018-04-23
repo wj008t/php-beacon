@@ -34,7 +34,7 @@ class SqlTemplate implements SqlSelectInterface
         $this->condition = new SqlCondition();
     }
 
-    public function where(string $sql, $args = null)
+    public function where($sql = null, $args = null)
     {
         $this->condition->where($sql, $args);
         return $this;

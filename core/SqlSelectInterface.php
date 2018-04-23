@@ -11,13 +11,11 @@ namespace beacon;
 
 interface SqlSelectInterface
 {
-    public function where(string $sql, $args = null);
+    public function where($sql = null, $args = null);
 
     public function search(string $sql, $value, $type = SqlCondition::WITHOUT_EMPTY, $format = null);
 
     public function limit(int $offset = 0, int $size = 0);
-
-    public function createSql();
 
     public function getPageList($size = 20, $pagekey = 'page');
 
