@@ -320,11 +320,15 @@ class Route
         if (empty($app)) {
             return '';
         }
-        $temp = [];
-        foreach ($query as $key => $val) {
-            array_push($temp, $key . '={' . $key . '}');
+        if (!empty($query)) {
+            $temp = [];
+            foreach ($query as $key => $val) {
+                array_push($temp, $key . '={' . $key . '}');
+            }
+            $hash = $pathname . '?' . join('&', $temp);
+        } else {
+            $hash = $pathname;
         }
-        $hash = $pathname . '?' . join('&', $temp);
         $hash = isset($hash[80]) ? md5($hash) : $hash;
         if (empty(self::$cachePath)) {
             self::$cachePath = Utils::path(ROOT_DIR, 'runtime');
@@ -354,7 +358,6 @@ class Route
         if ($idata == null) {
             return '';
         }
-
         $ctl = '';
         $act = '';
         if (!empty($pathname)) {
@@ -365,12 +368,10 @@ class Route
                 }
             }
         }
-
         $args = [];
         foreach ($query as $key => $val) {
             $args[$key] = '{' . $key . '}';
         }
-
         $base = rtrim(empty($idata['base']) ? '' : $idata['base'], '/');
         if (!isset($idata['resolve']) && !is_callable($idata['resolve'])) {
             return '';
@@ -452,7 +453,6 @@ class Route
             parse_str($str_query, $temp);
             $query = array_merge($temp, $query);
         }
-
         if (!(isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/')) {
             $str_query = http_build_query($query);
             if (!empty($str_query)) {
