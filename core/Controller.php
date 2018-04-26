@@ -201,6 +201,13 @@ abstract class Controller
         return Request::instance()->config($name, $def);
     }
 
+    /**
+     * 修正列表数据，这个函数是为了解决工具生成问题，创建的补丁函数，现在不需要了
+     * @deprecated 准备废弃的函数，不要在使用了，这个函数不应该出现
+     * @param $tplname
+     * @param array $items
+     * @return array
+     */
     protected function hackData($tplname, array $items)
     {
         return View::instance()->hackData($this, $tplname, $items);

@@ -9,29 +9,6 @@ namespace beacon;
  * Time: 15:50
  */
 
-class ViewEngine
-{
-    public function get($key, $def = null)
-    {
-        return Request::instance()->get($key, $def);
-    }
-
-    public function post($key, $def = null)
-    {
-        return Request::instance()->post($key, $def);
-    }
-
-    public function param($key, $def = null)
-    {
-        return Request::instance()->param($key, $def);
-    }
-
-    public function route($name)
-    {
-        return Route::get($name);
-    }
-}
-
 class View
 {
 
@@ -147,6 +124,14 @@ class View
         return $this->engine->fetch($tplname);
     }
 
+    /**
+     * 这个函数是为了解决工具生成问题，创建的补丁函数，现在不需要了
+     * @deprecated 准备废弃的函数，不要在使用了，这个函数不应该出现
+     * @param Controller $ctl
+     * @param $tplname
+     * @param array $items
+     * @return array
+     */
     public function hackData(Controller $ctl, $tplname, array $items)
     {
         if (!isset($items[0])) {
