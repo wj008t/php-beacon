@@ -124,36 +124,5 @@ class View
         return $this->engine->fetch($tplname);
     }
 
-    /**
-     * 这个函数是为了解决工具生成问题，创建的补丁函数，现在不需要了
-     * @deprecated 准备废弃的函数，不要在使用了，这个函数不应该出现
-     * @param Controller $ctl
-     * @param $tplname
-     * @param array $items
-     * @return array
-     */
-    public function hackData(Controller $ctl, $tplname, array $items)
-    {
-        if (!isset($items[0])) {
-            return $items;
-        }
-        $this->initialize();
-        $engine = $this->engine;
-        $engine->fetch($tplname);
-        $temp = [];
-        $hackFuncs = $engine->getHack();
-        $engine->_book = array_replace([], $this->_book);
-        $engine->_book['this'] = $ctl;
-        $engine->_config = Config::get();
-        foreach ($items as $item) {
-            $engine->_book['rs'] = $item;
-            $column = [];
-            foreach ($hackFuncs as $key => $func) {
-                $column[] = $func();
-            }
-            $temp[] = $column;
-        }
-        return $temp;
-    }
 
 }

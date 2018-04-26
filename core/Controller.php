@@ -160,7 +160,6 @@ abstract class Controller
         return Request::instance()->setCookie($name, $value, $options);
     }
 
-
     protected function file(string $name = null)
     {
         return Request::instance()->file($name);
@@ -202,15 +201,39 @@ abstract class Controller
     }
 
     /**
-     * 修正列表数据，这个函数是为了解决工具生成问题，创建的补丁函数，现在不需要了
-     * @deprecated 准备废弃的函数，不要在使用了，这个函数不应该出现
-     * @param $tplname
-     * @param array $items
+     * 根据模板补丁修正输出数据
+     * @param string $tplname
+     * @param array|null $list
+     * @param array $orgFields
+     * @param string $itemKeyName
      * @return array
      */
-    protected function hackData($tplname, array $items)
+    protected function hackData(string $tplname, array $list = null, array $orgFields = [], string $itemKeyName = 'rs')
     {
-        return View::instance()->hackData($this, $tplname, $items);
+        if ($list == null) {
+            $data = $this->getAssign();
+            $list = (isset($data['list']) && is_array($data['list'])) ? $data['list'] : [];
+        }
+        if (!isset($list[0])) {
+            return $list;
+        }
+        $this->fetch($tplname);
+        $retList = [];
+        $engine = $this->engine();
+        $hackFuncs = $engine->getHack();
+        foreach ($list as $item) {
+            $column = [];
+            foreach ($orgFields as $key) {
+                if (isset($item[$key])) {
+                    $column[$key] = $item;
+                }
+            }
+            foreach ($hackFuncs as $key => $func) {
+                $column[$key] = $func([$itemKeyName => $item]);
+            }
+            $retList[] = $column;
+        }
+        return $retList;
     }
 
     public function isGet()
