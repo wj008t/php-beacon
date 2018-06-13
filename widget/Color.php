@@ -16,7 +16,7 @@ class Color extends Hidden
     public function code(Field $field, $args)
     {
         $args['yee-module'] = 'color';
-        $args['type'] = 'hidden';
+        $args['type'] = 'text';
         $field->explodeAttr($attr, $args);
         $field->explodeData($attr, $args);
         return '<input ' . join(' ', $attr) . ' />';

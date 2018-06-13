@@ -6,7 +6,7 @@
  * Time: 18:02
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 use beacon\Field;
 use beacon\Request;
