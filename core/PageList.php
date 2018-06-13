@@ -99,12 +99,6 @@ class PageList
         if ($this->info != null) {
             return $this->info;
         }
-        $url = $_SERVER['REQUEST_URI'];
-        $Idx = strpos($url, '?');
-        $query = '';
-        if ($Idx !== false) {
-            $query = substr($url, $Idx + 1);
-        }
         if ($this->recordsCount == -1) {
             if ($this->selector) {
                 $this->recordsCount = $this->selector->getCount();
@@ -130,11 +124,8 @@ class PageList
         if ($this->page > $this->pageCount) {
             $this->page = $this->pageCount;
         }
-        $otlink = preg_replace('/' . $this->key . '=\d*&?/', '', $query);
         $this->info = array(
             'keyname' => $this->key,
-            'query' => $query,
-            'otherQuery' => $otlink,
             'page' => $this->page,
             'pageCount' => $this->pageCount,
             'recordsCount' => $this->recordsCount,

@@ -35,7 +35,6 @@ class Route
     private static $cachePath = null;
     private static $route = null;
 
-
     /**
      * 设置路由配置文件路径
      * @param string $path
@@ -490,7 +489,6 @@ class Route
             }
         }
 
-
         $request = Request::instance();
         try {
             if (self::$route == null) {
@@ -629,6 +627,8 @@ class Route
                             }
                         }
                     }
+                } else {
+                    throw new RouteError('未公开方法:' . $act . 'Action');
                 }
             } catch (\Error $e) {
                 throw $e;

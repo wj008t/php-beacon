@@ -25,6 +25,7 @@ namespace beacon;
  * @property $bitComp boolean
  * @property $encodeFunc Function|string
  * @property $remoteFunc Function|string
+ * @property $validFunc Function|string
  * @property $encodeValue string
  * @property $header  array|string
  * @property $plugType int
@@ -55,6 +56,7 @@ class Field
 
     public $value = null;
     public $default = null;
+    public $forceDefault = false;
     public $type = 'text';
     public $varType = 'string';
     public $dynamic = null;

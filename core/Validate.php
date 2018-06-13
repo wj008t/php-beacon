@@ -318,9 +318,15 @@ class Validate
         }
 
         if (is_array($value)) {
+            if(isset($field->validFunc) && is_callable($field->validFunc)){
+                $error=$field->validFunc($value);
+                if(!empty($error)){
+                    $field->error =$error;
+                    return false;
+                }
+            }
             return true;
         }
-
         if (strlen($value) > 0 || (isset($rules['force']) && $rules['force'])) {
             unset($rules['force']);
             foreach ($rules as $type => $args) {
@@ -352,6 +358,13 @@ class Validate
                     return false;
                 }
 
+            }
+        }
+        if(isset($field->validFunc) && is_callable($field->validFunc)){
+            $error=($field->validFunc)($value);
+            if(!empty($error)){
+                $field->error =$error;
+                return false;
             }
         }
         return true;

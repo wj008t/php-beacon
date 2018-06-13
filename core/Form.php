@@ -427,38 +427,12 @@ class Form
                 continue;
             }
             $box = self::getBoxInstance($field->type);
-            if ($box != null) {
-                $box->assign($field, $data);
-            } else {
-                $boxName = $field->boxName;
-                switch ($field->varType) {
-                    case 'bool':
-                    case 'boolean':
-                        $field->value = $request->input($data, $boxName . ':b', false);
-                        break;
-                    case 'int':
-                    case 'integer':
-                        $val = $request->input($data, $boxName . ':s', 0);
-                        if (preg_match('@[+-]?\d*\.\d+@', $field->default)) {
-                            $field->value = $request->input($data, $boxName . ':f', 0);
-                        } else {
-                            $field->value = $request->input($data, $boxName . ':i', 0);
-                        }
-                        break;
-                    case 'double':
-                    case 'float':
-                        $field->value = $request->input($data, $boxName . ':f', 0);
-                        break;
-                    case 'string':
-                        $field->value = $request->input($data, $boxName . ':s', '');
-                        break;
-                    case 'array':
-                        $field->value = $request->input($data, $boxName . ':a', []);
-                        break;
-                    default :
-                        $field->value = $request->input($data, $boxName, '');
-                        break;
-                }
+            if ($box == null) {
+                $box = self::getBoxInstance('hidden');
+            }
+            $box->assign($field, $data);
+            if ($field->forceDefault && !empty($field->default) && (is_string($field->value) || is_int($field->value) || is_double($field->value) || is_float($field->value) || is_array($field->value) || $field->value === null) && empty($field->value)) {
+                $field->value = $field->default;
             }
         }
         foreach ($valueFuncFields as $field) {
