@@ -8,7 +8,6 @@
 
 namespace beacon\widget;
 
-
 use beacon\Field;
 use beacon\Request;
 use beacon\Utils;
@@ -74,7 +73,7 @@ class Linkage implements BoxInterface
             $values = [];
             foreach ($field->names as $idx => $item) {
                 $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['field']);
+                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['type']);
                 if (empty($name)) {
                     continue;
                 }
@@ -104,7 +103,7 @@ class Linkage implements BoxInterface
             }
             foreach ($field->names as $idx => $item) {
                 $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['field']);
+                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['type']);
                 if (empty($name)) {
                     continue;
                 }
@@ -125,7 +124,7 @@ class Linkage implements BoxInterface
             $temps = [];
             foreach ($field->names as $idx => $item) {
                 $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['field']);
+                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['type']);
                 if (empty($name)) {
                     continue;
                 }
