@@ -232,15 +232,15 @@ class Request
         $string = $name . ':' . $value;
         if ($replace) {
             if ($http_response_code == null) {
-                header($string);
+                @header($string);
             } else {
-                header($string, $replace, $http_response_code);
+                @header($string, $replace, $http_response_code);
             }
         } else {
             if ($http_response_code == null) {
-                header($string, false);
+                @header($string, false);
             } else {
-                header($string, false, $http_response_code);
+                @header($string, false, $http_response_code);
             }
         }
     }
