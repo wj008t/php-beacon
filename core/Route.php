@@ -17,6 +17,7 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline, array $errconte
 });
 
 defined('DEV_DEBUG') or define('DEV_DEBUG', false);
+defined('DEBUG_LOG') or define('DEBUG_LOG', false);
 defined('IS_CGI') or define('IS_CGI', substr(PHP_SAPI, 0, 3) == 'cgi' ? true : false);
 defined('IS_CLI') or define('IS_CLI', PHP_SAPI == 'cli' ? true : false);
 defined('IS_WIN') or define('IS_WIN', strstr(PHP_OS, 'WIN') ? true : false);
@@ -648,7 +649,10 @@ class Route
     public static function rethrow(\Throwable $exception)
     {
         $request = Request::instance();
-        if (defined('DEV_DEBUG') && DEV_DEBUG) {
+        $isDebug = defined('DEV_DEBUG') && DEV_DEBUG;
+        $isLog = defined('DEBUG_LOG') && DEBUG_LOG;
+
+        if ($isDebug || $isLog) {
             $code = [];
             $code[] = get_class($exception) . ": {$exception->getMessage()}";
             $code[] = $exception->getTraceAsString();
@@ -656,22 +660,30 @@ class Route
                 $code[] = "----------------------------------------------------------------------------------------------------------";
                 $code[] = $exception->getStack();
             }
-            Console::error(join("\n", $code));
+            if ($isLog) {
+                Console::error(join("\n", $code));
+            }
             if ($request->isAjax()) {
                 $request->setContentType('json');
                 $out = [];
                 $out['status'] = false;
-                $out['stack'] = explode("\n", join("\n", $code));
-                $out['error'] = '数据出现异常:<br>' . $exception->getMessage();
+                if ($isDebug) {
+                    $out['stack'] = explode("\n", join("\n", $code));
+                    $out['error'] = '数据出现异常:<br>' . $exception->getMessage();
+                }
                 die(json_encode($out, JSON_UNESCAPED_UNICODE));
             }
             $request->setContentType('txt');
-            die(join("\n", $code));
+            if ($isDebug) {
+                die(join("\n", $code));
+            } else {
+                die('数据出现异常');
+            }
         } else {
             if ($request->isAjax()) {
                 $out = [];
                 $out['status'] = false;
-                $out['error'] = '数据出现异常:<br>' . $exception->getMessage();
+                $out['error'] = '数据出现异常';
                 die(json_encode($out, JSON_UNESCAPED_UNICODE));
             }
             $request->setContentType('txt');

@@ -165,7 +165,7 @@ class Mysql
             $args = [$args];
         }
         $time = microtime(true);
-        if (defined('DEV_DEBUG') && DEV_DEBUG) {
+        if (defined('DEBUG_LOG') && DEBUG_LOG) {
             $this->_lastSql = Mysql::format($sql, $args);
             $time = microtime(true);
         }
@@ -179,12 +179,12 @@ class Mysql
                     throw new MysqlException('执行语句错误', $this->_lastSql);
                 }
             }
-            if (defined('DEV_DEBUG') && DEV_DEBUG) {
+            if (defined('DEBUG_LOG') && DEBUG_LOG) {
                 Console::addSql($this->_lastSql, microtime(true) - $time);
             }
             return $sth;
         } catch (\Exception $exception) {
-            if (defined('DEV_DEBUG') && DEV_DEBUG) {
+            if (defined('DEBUG_LOG') && DEBUG_LOG) {
                 Console::addSql($this->_lastSql, microtime(true) - $time);
             }
             throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
