@@ -31,6 +31,8 @@ namespace beacon;
  * @property $plugMode string
  * @property $plugName string
  * @property $viewtplName string
+ * @property $viewTemplate string
+ * @property $viewTplCode string
  * @property $childError array
  * @property $autoSave boolean
  * @property $hideBox boolean
@@ -350,14 +352,18 @@ class Field
             if ($box === null) {
                 throw new \Exception('Unsupported input box type:' . $this->type);
             }
-            if (!empty($this->viewTemplate)) {
+            if (!empty($this->viewTemplate) || !empty(trim($this->viewTplCode))) {
                 $sdopx = View::newInstance();
                 $common_dir = Utils::path(ROOT_DIR, 'view/widget');
                 $sdopx->addTemplateDir($common_dir);
                 $sdopx->assign('form', $this->form);
                 $sdopx->assign('field', $this);
                 $sdopx->assign('args', $args);
-                return $sdopx->fetch($this->viewTemplate);
+                if (!empty($this->viewTemplate)) {
+                    return $sdopx->fetch($this->viewTemplate);
+                } else {
+                    return $sdopx->fetch('string:' . $this->viewTemplate);
+                }
             }
             return $box->code($this, $args);
         } catch (\Exception $exception) {
