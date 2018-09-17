@@ -15,7 +15,11 @@ class Console
 
     private static function _send($type, $args)
     {
-        if (!defined('DEV_DEBUG') || !DEV_DEBUG) {
+
+        if (!(defined('DEBUG_LOG') && DEBUG_LOG)) {
+            return;
+        }
+        if (!get_extension_funcs('sockets')) {
             return;
         }
         $backtrace = debug_backtrace(false);

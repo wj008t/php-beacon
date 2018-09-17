@@ -8,7 +8,6 @@
 
 namespace beacon\widget;
 
-
 use beacon\DB;
 use beacon\Field;
 use beacon\Form;
@@ -30,6 +29,21 @@ class Plugin extends Hidden
             if ($field->plugMode == 'simple') {
                 $child->boxId = $field->boxId . '_' . $child->boxId;
                 $child->boxName = $field->boxName . '[' . $child->boxName . ']';
+
+                //如果存在拆分的时候
+                if ($child->names && is_array($child->names)) {
+                    $names = $child->names;
+                    foreach ($names as $nkey => $nitem) {
+                        if (is_array($nitem) && $nitem['field']) {
+                            $nitem['field'] = $field->boxName . '[' . $nitem['field'] . ']';
+                        } elseif (is_string($nitem)) {
+                            $nitem = $field->boxName . '[' . $nitem . ']';
+                        }
+                        $names[$nkey] = $nitem;
+                    }
+                    $child->names = $names;
+                }
+
                 if ($child->dynamic && (!isset($child->dataDynamic) || empty($child->dataDynamic))) {
                     $form->createDynamic($child);
                     $dataDynamic = $child->dataDynamic;
@@ -53,7 +67,19 @@ class Plugin extends Hidden
             else {
                 $child->boxId = $field->boxId . '_' . $index . '_' . $child->boxId;
                 $child->boxName = $field->boxName . '[' . $index . '][' . $child->boxName . ']';
-
+                //如果存在拆分的时候
+                if ($child->names && is_array($child->names)) {
+                    $names = $child->names;
+                    foreach ($names as $nkey => $nitem) {
+                        if (is_array($nitem) && $nitem['field']) {
+                            $nitem['field'] = $field->boxName . '[' . $index . '][' . $nitem['field'] . ']';
+                        } elseif (is_string($nitem)) {
+                            $nitem = $field->boxName . '[' . $index . '][' . $nitem . ']';
+                        }
+                        $names[$nkey] = $nitem;
+                    }
+                    $child->names = $names;
+                }
                 if ($child->dynamic && (!isset($child->dataDynamic) || empty($child->dataDynamic))) {
                     $form->createDynamic($child);
                     $dataDynamic = $child->dataDynamic;
@@ -74,7 +100,6 @@ class Plugin extends Hidden
                     $child->dataDynamic = $dataDynamic;
                 }
             }
-
             if ($field->plugType == 1 || $field->plugType == 2 || $field->plugType == 4 || $field->plugType == 5) {
                 $child->dataValFor = '#' . $field->boxId . '-validation';
             }
@@ -184,6 +209,7 @@ class Plugin extends Hidden
             $form = self::getFormInstance($field);
             $form->fillComplete($itemData);
             if ($field->dataValOff !== true) {
+                $errors = [];
                 if (!$form->validation($errors)) {
                     $childError = [];
                     foreach ($errors as $key => $err) {
@@ -205,6 +231,7 @@ class Plugin extends Hidden
             $form = self::getFormInstance($field);
             $vdata = $form->fillComplete($item);
             if ($field->dataValOff !== true) {
+                $errors = [];
                 if (!$form->validation($errors)) {
                     foreach ($errors as $key => $err) {
                         $cboxName = $field->boxName . '[' . $idx . '][' . $key . ']';
