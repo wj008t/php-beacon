@@ -364,7 +364,7 @@ class Field
                 if (!empty($this->viewTemplate)) {
                     return $sdopx->fetch($this->viewTemplate);
                 } else {
-                    return $sdopx->fetch('string:' . $this->viewTemplate);
+                    return $sdopx->fetch('string:' . $this->viewTplCode);
                 }
             }
             return $box->code($this, $args);
