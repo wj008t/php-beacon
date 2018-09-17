@@ -350,6 +350,15 @@ class Field
             if ($box === null) {
                 throw new \Exception('Unsupported input box type:' . $this->type);
             }
+            if (!empty($this->viewTemplate)) {
+                $sdopx = View::newInstance();
+                $common_dir = Utils::path(ROOT_DIR, 'view/widget');
+                $sdopx->addTemplateDir($common_dir);
+                $sdopx->assign('form', $this->form);
+                $sdopx->assign('field', $this);
+                $sdopx->assign('args', $args);
+                return $sdopx->fetch($this->viewTemplate);
+            }
             return $box->code($this, $args);
         } catch (\Exception $exception) {
             throw new \Exception($this->type . ' 控件解析错误:' . $exception->getMessage(), $exception->getCode(), $exception);
