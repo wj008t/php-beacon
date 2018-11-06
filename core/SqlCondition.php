@@ -132,6 +132,14 @@ class SqlCondition
         if ($format !== null) {
             $value = preg_replace('@\{0\}@', $value);
         }
+        $maxCount = substr_count($sql, '?');
+        if ($maxCount > 1) {
+            $temp = [];
+            for ($i = 0; $i < $maxCount; $i++) {
+                $temp[] = $value;
+            }
+            $value = $temp;
+        }
         $this->where($sql, $value);
         return $this;
     }
