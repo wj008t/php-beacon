@@ -13,40 +13,64 @@ use beacon\widget\BoxInterface;
 class Form
 {
     /**
-     * @var $fields Field[];
-     */
-    public $fields = [];
-    /**
      * @var $boxInstance \beacon\widget\BoxInterface[]
      */
     private static $boxInstance = [];
+    /**
+     * @var $fields Field[];
+     */
+    public $fields = [];
 
+    /**
+     * 维护的数据库id
+     * @var int
+     */
     public $id = 0;
-    //基本属性
-    public $title = '';
-    public $caption = '';
-    public $tbname = '';
-    private $type = '';
-    public $useAjax = false;
-    public $viewNotBack = false;
+    /**
+     * 当前维护的数据表名
+     * @var string
+     */
+    public $tbName = '';
 
-    //视图属性
-    public $viewUseTab = false;
-    public $viewTabs = [];
-    public $viewCurrentTabIndex = '';
-    public $viewTabSplit = false;
-    public $viewScript = null;
+    /**
+     * 表单标题
+     * @var string
+     */
+    public $title = '';
+    /**
+     * 提交类型
+     * @var string
+     */
+    private $type = '';
+
     /**
      * @var Validate
      */
     private $validate = null;
 
-    private $inited = false;
 
-    private $cacheUsingFields = [];
+    /**
+     * 隐藏输入框
+     * @var array
+     */
     protected $hideBox = [];
 
+    /**
+     * 自动获取的值
+     * @var null
+     */
     private $_values = null;
+
+    /**
+     * 指定显示的tab
+     * @var string|null;
+     */
+    public $tabIndex = null;
+    /**
+     * 当前使用字段
+     * @var array
+     */
+    private $tabFields = [];
 
     /**
      * @param string $type
@@ -73,35 +97,13 @@ class Form
         return self::$boxInstance[$type];
     }
 
-    /**
-     * @param string $className
-     * @param string $type
-     * @return Form|null
-     */
-    public static function instance(string $className, string $type = '')
-    {
-        if (!class_exists($className)) {
-            return null;
-        }
-        return new $className($type);
-    }
 
-    public function __construct(string $type = '')
+    public function __construct(string $type = '', $tabIndex = null)
     {
         $this->type = empty($type) ? 'add' : $type;
-    }
-
-    public function initialize()
-    {
-        if ($this->inited) {
-            return;
-        }
-        $this->inited = true;
+        $this->tabIndex = $tabIndex;
+        //加载数据
         $load = $this->load();
-        if ($this->isEdit()) {
-            $loadEdit = $this->loadEdit();
-            $load = Utils::replaceItems($load, $loadEdit);
-        }
         if (is_array($load)) {
             foreach ($load as $name => $field) {
                 if (!is_array($field)) {
@@ -112,19 +114,13 @@ class Form
         }
     }
 
+    /**
+     * 需要继承的
+     * @return array
+     */
     protected function load()
     {
         return [];
-    }
-
-    protected function loadEdit()
-    {
-        return [];
-    }
-
-    public function isAdd()
-    {
-        return $this->type === 'add';
     }
 
     public function getType()
@@ -132,14 +128,15 @@ class Form
         return $this->type;
     }
 
-    public function isEdit()
-    {
-        return $this->type === 'edit';
-    }
-
+    /**
+     * 添加字段
+     * @param string $name
+     * @param $field
+     * @param string|null $before
+     * @return $this
+     */
     public function addField(string $name, $field, string $before = null)
     {
-        $this->initialize();
         if ($field instanceof Field) {
             $field->name = $name;
         } else if (is_array($field)) {
@@ -161,22 +158,25 @@ class Form
             $this->fields[$name] = $field;
         }
         return $this;
-
     }
 
     /**
+     * 获取字段
      * @param string $name
      * @return Field|null
      */
     public function getField(string $name)
     {
-        $this->initialize();
         return isset($this->fields[$name]) ? $this->fields[$name] : null;
     }
 
+    /**
+     * 删除字段
+     * @param string $name
+     * @return Field|null
+     */
     public function removeField(string $name)
     {
-        $this->initialize();
         $field = isset($this->fields[$name]) ? $this->fields[$name] : null;
         if ($field !== null) {
             unset($this->fields[$name]);
@@ -184,28 +184,43 @@ class Form
         return $field;
     }
 
+    /**
+     * 获取错误
+     * @param string $name
+     * @return null|string
+     */
     public function getError(string $name)
     {
-        $this->initialize();
         return isset($this->fields[$name]) ? $this->fields[$name]->error : '';
     }
 
+    /**
+     * 设置错误
+     * @param $name
+     * @param $error
+     */
     public function setError($name, $error)
     {
-        $this->initialize();
         if (isset($this->fields[$name])) {
             $this->fields[$name]->error = $error;
         }
     }
 
+    /**
+     * 删除错误
+     * @param $name
+     */
     public function removeError($name)
     {
-        $this->initialize();
         if (isset($this->fields[$name])) {
             $this->fields[$name]->error = null;
         }
     }
 
+    /**
+     * 获取第一条错误
+     * @return null
+     */
     public function getFirstError()
     {
         $fields = $this->getTabFields();
@@ -217,6 +232,10 @@ class Form
         return null;
     }
 
+    /**
+     * 获取所有错误
+     * @return array
+     */
     public function getAllError()
     {
         $errors = [];
@@ -236,7 +255,10 @@ class Form
         return $errors;
     }
 
-    public function cleanAllErrors()
+    /**
+     * 清除所有错误
+     */
+    public function clearAllErrors()
     {
         $fields = $this->getTabFields();
         foreach ($fields as $name => $field) {
@@ -246,20 +268,21 @@ class Form
         }
     }
 
-    public function emptyFieldsValue()
-    {
-        $this->initialize();
-        $fields = $this->fields;
-        foreach ($fields as $name => $field) {
-            $field->value = null;
-        }
-    }
-
+    /**
+     * 添加一个隐藏输入框
+     * @param string $name
+     * @param $value
+     */
     public function addHideBox(string $name, $value)
     {
         $this->hideBox[$name] = $value;
     }
 
+    /**
+     * 获取一个隐藏输入框的值
+     * @param string|null $name
+     * @return array|mixed
+     */
     public function getHideBox(string $name = null)
     {
         if (empty($name)) {
@@ -270,6 +293,10 @@ class Form
         }
     }
 
+    /**
+     * 输出隐藏输入框
+     * @return string
+     */
     public function fetchHideBox()
     {
         $box = [];
@@ -280,40 +307,34 @@ class Form
     }
 
     /**
+     * 获取当前tab 下的字段
      * @param string|null $tabIndex
      * @return Field[]
      */
     public function getTabFields(string $tabIndex = null)
     {
-        $this->initialize();
+        $tabIndex = empty($tabIndex) ? $this->tabIndex : null;
         if (empty($tabIndex)) {
-            if ($this->viewUseTab && $this->viewTabSplit) {
-                if (!empty($this->viewCurrentTabIndex)) {
-                    $this->viewCurrentTabIndex = Request::instance()->get('tabIndex:s');
-                    $tabIndex = $this->viewCurrentTabIndex;
-                }
-            }
-            if (empty($tabIndex)) {
-                return $this->fields;
-            }
+            return $this->fields;
         }
-        if (isset($this->cacheUsingFields[$tabIndex])) {
-            return $this->cacheUsingFields[$tabIndex];
+        if (isset($this->tabFields[$tabIndex])) {
+            return $this->tabFields[$tabIndex];
         }
         $temp = [];
         foreach ($this->fields as $name => $field) {
-            if (!empty($field->viewTabIndex) && $field->viewTabIndex == $tabIndex) {
+            if (!empty($field->tabIndex) && $field->tabIndex == $tabIndex) {
                 $temp[$name] = $field;
             }
         }
-        $this->cacheUsingFields[$tabIndex] = $temp;
+        $this->tabFields[$tabIndex] = $temp;
         return $temp;
     }
 
     /**
+     * 获取插件字段
      * @return Field[]
      */
-    public function getPluginFields()
+    public function getPlugFields()
     {
         $fields = $this->getTabFields();
         $plugins = [];
@@ -327,6 +348,7 @@ class Form
     }
 
     /**
+     * 获取表单值
      * @param bool $force 是否强制重新获取
      * @return array|null
      * @throws \Exception
@@ -356,7 +378,13 @@ class Form
         return $values;
     }
 
-    public function initValues(array $values = null, bool $force = false)
+    /**
+     * 设置表单值
+     * @param array|null $values
+     * @param bool $force
+     * @throws \Exception
+     */
+    public function setValues(array $values = null, bool $force = false)
     {
         if ($values == null) {
             return;
@@ -389,6 +417,19 @@ class Form
     }
 
     /**
+     * 清空表单值
+     */
+    public function clearValues()
+    {
+        $this->_values = null;
+        $fields = $this->fields;
+        foreach ($fields as $name => $field) {
+            $field->value = null;
+        }
+    }
+
+    /**
+     * 自动完成表单提取
      * @param string $method
      * @return array
      * @throws \Exception
@@ -406,6 +447,7 @@ class Form
     }
 
     /**
+     * 使用 数组填充
      * @param $data
      * @return array
      * @throws \Exception
@@ -441,6 +483,11 @@ class Form
         return $this->getValues();
     }
 
+    /**
+     * 验证表单
+     * @param null $errors
+     * @return bool
+     */
     public function validation(&$errors = null)
     {
         $fields = $this->getTabFields();
@@ -459,7 +506,7 @@ class Form
             if ($field->close || ($field->offEdit && $this->type == 'edit')) {
                 continue;
             }
-            $ret = $this->getValidateInstance()->checkField($field);
+            $ret = $this->getValidate()->checkField($field);
             if (!$ret) {
                 $result = false;
             }
@@ -471,7 +518,11 @@ class Form
         return $result;
     }
 
-    public function getValidateInstance()
+    /**
+     * 获取表单验证器
+     * @return Validate
+     */
+    public function getValidate()
     {
         if ($this->validate == null) {
             $this->validate = new Validate();
@@ -479,6 +530,10 @@ class Form
         return $this->validate;
     }
 
+    /**
+     * 创建动态字段数据
+     * @param Field $field
+     */
     public function createDynamic(Field $field)
     {
         if ($field->dynamic === null || !is_array($field->dynamic)) {
@@ -550,6 +605,10 @@ class Form
         }
     }
 
+    /**
+     * 验证动态字段数据
+     * @param Field $field
+     */
     private function validDynamic(Field $field)
     {
         if ($field->dynamic === null || !is_array($field->dynamic)) {
@@ -668,12 +727,17 @@ class Form
 
     }
 
-    public function getViewFields($name = null)
+    /**
+     * 获取要显示的字段
+     * @param null $tabIndex
+     * @return array
+     */
+    public function getViewFields($tabIndex = null)
     {
-        $fields = $this->getTabFields($name);
+        $fields = $this->getTabFields($tabIndex);
 
         //修正显示
-        foreach ($fields as $name => $field) {
+        foreach ($fields as $tabIndex => $field) {
             //处理视图的开关默认值
             if ($field->viewClose === null) {
                 if ($field->close) {
@@ -692,8 +756,8 @@ class Form
         $keys = array_keys($fields);
         $temp = [];
         for ($idx = 0, $len = count($keys); $idx < $len; $idx++) {
-            $name = $keys[$idx];
-            $field = $fields[$name];
+            $tabIndex = $keys[$idx];
+            $field = $fields[$tabIndex];
             if ($field->hideBox) {
                 $this->addHideBox($field->boxName, $field->_value);
                 continue;
@@ -724,7 +788,7 @@ class Form
             }
             //不合并
             if ($field->viewMerge == 0 && !$field->viewClose) {
-                $temp[$name] = $field;
+                $temp[$tabIndex] = $field;
             }
             if (!$field->viewClose) {
                 $this->createDynamic($field);
@@ -733,6 +797,13 @@ class Form
         return $temp;
     }
 
+    /**
+     * 获取一个输入框
+     * @param $name
+     * @param null $type
+     * @param array|null $args
+     * @throws \Exception
+     */
     public function box($name, $type = null, array $args = null)
     {
         if ($name === null) {
@@ -766,25 +837,24 @@ class Form
         return $field->box($args);
     }
 
-    //添加值
+    //添加值,联动添加
     public function insert($values = [])
     {
-        if (empty($this->tbname)) {
+        if (empty($this->tbName)) {
             return;
         }
-        $plugins = $this->getPluginFields();
+        $plugins = $this->getPlugFields();
         $vals = $this->getValues();
         $vals = array_merge($vals, $values);
-        $id = 0;
         if (empty($plugins)) {
-            DB::insert($this->tbname, $vals);
+            DB::insert($this->tbName, $vals);
             $id = DB::lastInsertId();
             $this->id = $id;
             return $id;
         }
         try {
             DB::beginTransaction();
-            DB::insert($this->tbname, $vals);
+            DB::insert($this->tbName, $vals);
             $id = DB::lastInsertId();
             $this->id = $id;
             foreach ($plugins as $field) {
@@ -799,23 +869,23 @@ class Form
         return $id;
     }
 
-    //编辑值
+    //编辑值 联动编辑
     public function update($id = 0, $values = [])
     {
-        if (empty($this->tbname)) {
+        if (empty($this->tbName)) {
             return;
         }
         $this->id = $id;
-        $plugins = $this->getPluginFields();
+        $plugins = $this->getPlugFields();
         $vals = $this->getValues();
         $vals = array_merge($vals, $values);
         if (empty($plugins)) {
-            DB::update($this->tbname, $vals, $id);
+            DB::update($this->tbName, $vals, $id);
             return $id;
         }
         try {
             DB::beginTransaction();
-            DB::update($this->tbname, $vals, $id);
+            DB::update($this->tbName, $vals, $id);
             //查询原有的数据---
             foreach ($plugins as $field) {
                 Plugin::update($field, $id);
@@ -829,15 +899,15 @@ class Form
         return 0;
     }
 
-    //获取单行数据
+    //获取单行数据,联动获取数据
     public function getRow($id = 0)
     {
         $this->id = $id;
-        if (empty($this->tbname)) {
+        if (empty($this->tbName)) {
             return null;
         }
-        $plugins = $this->getPluginFields();
-        $row = DB::getRow('select * from `' . $this->tbname . '` where id=?', $id);
+        $plugins = $this->getPlugFields();
+        $row = DB::getRow('select * from `' . $this->tbName . '` where id=?', $id);
         if (empty($plugins)) {
             return $row;
         }
@@ -850,21 +920,21 @@ class Form
         return $row;
     }
 
-    //删除值
+    //删除值 联动删除
     public function delete($id)
     {
         $this->id = $id;
-        if (empty($this->tbname)) {
+        if (empty($this->tbName)) {
             return;
         }
-        $plugins = $this->getPluginFields();
+        $plugins = $this->getPlugFields();
         if (empty($plugins)) {
-            DB::delete($this->tbname, $id);
+            DB::delete($this->tbName, $id);
             return $id;
         }
         try {
             DB::beginTransaction();
-            DB::delete($this->tbname, $id);
+            DB::delete($this->tbName, $id);
             foreach ($plugins as $field) {
                 Plugin::delete($field, $id);
             }
@@ -875,25 +945,4 @@ class Form
         return $id;
     }
 
-    public function maxSort()
-    {
-        if (empty($this->tbname)) {
-            return 0;
-        }
-        if (DB::existsField($this->tbname, 'sort')) {
-            return DB::getMax($this->tbname, 'sort') + 10;
-        }
-        return 0;
-    }
-
-    public function minSort()
-    {
-        if (empty($this->tbname)) {
-            return 0;
-        }
-        if (DB::existsField($this->tbname, 'sort')) {
-            return DB::getMin($this->tbname, 'sort') - 10;
-        }
-        return 0;
-    }
 }

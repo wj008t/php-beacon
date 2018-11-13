@@ -22,7 +22,7 @@ class View implements ViewInterface
     /**
      * @var Sdopx
      */
-    private $template = null;
+    public $template = null;
 
     /**
      * @return View|Sdopx

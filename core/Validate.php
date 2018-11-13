@@ -164,7 +164,7 @@ class Validate
         if (!empty($key) && preg_match('/^#(\w+)/i', $key, $m) != 0) {
             $name = isset($m[1]) ? $m[1] : '';
             if (!empty($name)) {
-                $str = Request::instance()->param($name . ':s');
+                $str = Request::param($name . ':s');
                 if (!empty($str)) {
                     return strval($val) == $str;
                 }

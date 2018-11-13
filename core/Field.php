@@ -80,7 +80,7 @@ class Field
     public $boxYeeModule = null;
 
     //视图属性
-    public $viewTabIndex = '';
+    public $tabIndex = '';
     public $viewTabShared = false;
     public $viewClose = false;
     public $viewMerge = 0;

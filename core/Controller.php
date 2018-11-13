@@ -78,7 +78,7 @@ abstract class Controller
     {
         $url = empty($url) ? '/' : $url;
         $url = Route::url($url, $query);
-        Request::instance()->setHeader('Location', $url);
+        Request::setHeader('Location', $url);
         exit;
     }
 
