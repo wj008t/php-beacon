@@ -159,7 +159,7 @@ abstract class Controller
      */
     public function get(string $name = null, $def = null)
     {
-        return Request::instance()->get($name, $def);
+        return Request::get($name, $def);
     }
 
     /**
@@ -170,7 +170,7 @@ abstract class Controller
      */
     public function post(string $name = null, $def = null)
     {
-        return Request::instance()->post($name, $def);
+        return Request::post($name, $def);
     }
 
     /**
@@ -181,7 +181,7 @@ abstract class Controller
      */
     public function param(string $name = null, $def = null)
     {
-        return Request::instance()->param($name, $def);
+        return Request::param($name, $def);
     }
 
     /**
@@ -192,7 +192,7 @@ abstract class Controller
      */
     public function getSession(string $name = null, $def = null)
     {
-        return Request::instance()->getSession($name, $def);
+        return Request::getSession($name, $def);
     }
 
     /**
@@ -202,7 +202,7 @@ abstract class Controller
      */
     protected function setSession(string $name, $value)
     {
-        return Request::instance()->setSession($name, $value);
+        return Request::setSession($name, $value);
     }
 
     /**
@@ -210,7 +210,7 @@ abstract class Controller
      */
     protected function delSession()
     {
-        return Request::instance()->delSession();
+        return Request::delSession();
     }
 
     /**
@@ -221,7 +221,7 @@ abstract class Controller
      */
     public function getCookie(string $name, $def = null)
     {
-        return Request::instance()->getCookie($name, $def);
+        return Request::getCookie($name, $def);
     }
 
     /**
@@ -233,7 +233,7 @@ abstract class Controller
      */
     protected function setCookie(string $name, $value, $options)
     {
-        return Request::instance()->setCookie($name, $value, $options);
+        return Request::setCookie($name, $value, $options);
     }
 
     /**
@@ -243,7 +243,7 @@ abstract class Controller
      */
     protected function file(string $name = null)
     {
-        return Request::instance()->file($name);
+        return Request::file($name);
     }
 
     /**
@@ -254,7 +254,7 @@ abstract class Controller
      */
     public function route(string $name = null, $def = null)
     {
-        return Request::instance()->route($name, $def);
+        return Request::route($name, $def);
     }
 
     /**
@@ -264,7 +264,7 @@ abstract class Controller
      */
     public function getHeader(string $name = null)
     {
-        return Request::instance()->getHeader($name);
+        return Request::getHeader($name);
     }
 
     /**
@@ -276,7 +276,7 @@ abstract class Controller
      */
     protected function setHeader(string $name, string $value, bool $replace = true, $http_response_code = null)
     {
-        return Request::instance()->setHeader($name, $value, $replace, $http_response_code);
+        return Request::setHeader($name, $value, $replace, $http_response_code);
     }
 
     /**
@@ -287,7 +287,7 @@ abstract class Controller
      */
     protected function getIP(bool $proxy = false, bool $forward = false)
     {
-        return Request::instance()->getIP($proxy, $forward);
+        return Request::getIP($proxy, $forward);
     }
 
     /**
@@ -297,7 +297,7 @@ abstract class Controller
      */
     protected function getContentType(bool $whole = false)
     {
-        return Request::instance()->getContentType($whole);
+        return Request::getContentType($whole);
     }
 
     /**
@@ -307,7 +307,7 @@ abstract class Controller
      */
     protected function setContentType(string $type, string $encoding = 'utf-8')
     {
-        return Request::instance()->setContentType($type, $encoding);
+        return Request::setContentType($type, $encoding);
     }
 
     /**
@@ -318,7 +318,7 @@ abstract class Controller
      */
     protected function config(string $name, $def = null)
     {
-        return Request::instance()->config($name, $def);
+        return Request::config($name, $def);
     }
 
     /**
@@ -363,7 +363,7 @@ abstract class Controller
      */
     protected function isGet()
     {
-        return Request::instance()->isGet();
+        return Request::isGet();
     }
 
     /**
@@ -373,7 +373,7 @@ abstract class Controller
      */
     protected function isMethod(string $method)
     {
-        return Request::instance()->isMethod($method);
+        return Request::isMethod($method);
     }
 
     /**
@@ -382,7 +382,7 @@ abstract class Controller
      */
     public function getMethod()
     {
-        return Request::instance()->getMethod();
+        return Request::getMethod();
     }
 
     /**
@@ -391,7 +391,7 @@ abstract class Controller
      */
     public function isPost()
     {
-        return Request::instance()->isPost();
+        return Request::isPost();
     }
 
     /**
@@ -400,7 +400,7 @@ abstract class Controller
      */
     public function isAjax()
     {
-        return Request::instance()->isAjax();
+        return Request::isAjax();
     }
 
     /**
@@ -409,6 +409,6 @@ abstract class Controller
      */
     public function getReferrer()
     {
-        return Request::instance()->getReferrer();
+        return Request::getReferrer();
     }
 }
