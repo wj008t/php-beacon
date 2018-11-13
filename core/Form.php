@@ -59,7 +59,7 @@ class Form
      * 自动获取的值
      * @var null
      */
-    private $_values = null;
+    private $values = null;
 
     /**
      * 指定显示的tab
@@ -355,8 +355,8 @@ class Form
      */
     public function getValues(bool $force = false)
     {
-        if (!$force && $this->_values !== null) {
-            return $this->_values;
+        if (!$force && $this->values !== null) {
+            return $this->values;
         }
         $values = [];
         $fields = $this->getTabFields();
@@ -374,7 +374,7 @@ class Form
                 $values[$name] = $field->value;
             }
         }
-        $this->_values = $values;
+        $this->values = $values;
         return $values;
     }
 
@@ -421,7 +421,7 @@ class Form
      */
     public function clearValues()
     {
-        $this->_values = null;
+        $this->values = null;
         $fields = $this->fields;
         foreach ($fields as $name => $field) {
             $field->value = null;
