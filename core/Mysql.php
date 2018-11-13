@@ -14,6 +14,11 @@ use \PDO as PDO;
 use \PDOException as PDOException;
 use \Throwable as Throwable;
 
+/**
+ * sql 语句片段,用于更新插入时使用
+ * Class SqlSection
+ * @package beacon
+ */
 class SqlSection
 {
     public $sql = null;
@@ -31,6 +36,11 @@ class SqlSection
     }
 }
 
+/**
+ * 错误处理
+ * Class MysqlException
+ * @package beacon
+ */
 class MysqlException extends \Exception
 {
 
@@ -69,33 +79,20 @@ class MysqlException extends \Exception
 
 }
 
+/**
+ * mysql 数据操作类
+ * Class Mysql
+ * @package beacon
+ */
 class Mysql
 {
     private static $instance = null;
-    private $prefix = '';
+    private static $logFunc = null;
+
     /**
-     * @var \PDO|null
+     * 获取一个单例
+     * @return Mysql|null
      */
-    private $pdo = null;
-    private $transactionCounter = 0;
-
-    private $_lastSql = '';
-
-    public function __construct($host, $port = 3306, $name = '', $user = '', $pass = '', $prefix = '')
-    {
-        $this->prefix = $prefix;
-        if (!empty($name)) {
-            $link = 'mysql:host=' . $host . ';port=' . $port . ';dbname=' . $name;
-        } else {
-            $link = 'mysql:host=' . $host . ';port=' . $port . ';';
-        }
-        try {
-            $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
-        } catch (PDOException $exc) {
-            throw $exc;
-        }
-    }
-
     public static function instance()
     {
         if (self::$instance == null) {
@@ -110,202 +107,32 @@ class Mysql
         return self::$instance;
     }
 
-    public function beginTransaction()
+    /**
+     * 设置日志输出函数
+     * @param $func
+     */
+    public static function setLogFunc($func)
     {
-        if (!$this->transactionCounter++) {
-            return $this->pdo->beginTransaction();
-        }
-        $this->pdo->exec('SAVEPOINT trans' . $this->transactionCounter);
-        return $this->transactionCounter >= 0;
+        self::$logFunc = $func;
     }
 
-    public function commit()
+    /**
+     * 使用定义的日志输出函数输出
+     * @param string $sql
+     * @param int $time
+     */
+    private static function log(string $sql, int $time)
     {
-        if (!--$this->transactionCounter) {
-            return $this->pdo->commit();
-        }
-        return $this->transactionCounter >= 0;
-    }
-
-    public function rollBack()
-    {
-        if (--$this->transactionCounter) {
-            $this->exec('ROLLBACK TO trans' . ($this->transactionCounter + 1));
-            return true;
-        }
-        return $this->pdo->rollBack();
-    }
-
-    public function exec(string $sql)
-    {
-        $time = microtime(true);
-        try {
-            $sql = str_replace('@pf_', $this->prefix, $sql);
-            $ret = $this->pdo->exec($sql);
-            return $ret;
-        } catch (\Exception $exception) {
-            throw new MysqlException($exception->getMessage(), $sql, $exception->getCode(), $exception);
-        }
-    }
-
-    public function lastInsertId($name = null)
-    {
-        return $this->pdo->lastInsertId($name);
-    }
-
-    public function lastSQL()
-    {
-        return $this->_lastSql;
-    }
-
-    public function execute(string $sql, $args = null)
-    {
-        $sql = str_replace('@pf_', $this->prefix, $sql);
-        if ($args !== null && !is_array($args)) {
-            $args = [$args];
-        }
-        $time = microtime(true);
-        if (defined('DEBUG_LOG') && DEBUG_LOG) {
-            $this->_lastSql = Mysql::format($sql, $args);
-            $time = microtime(true);
-        }
-        try {
-            $sth = $this->pdo->prepare($sql);
-            if ($sth->execute($args) === FALSE) {
-                $err = $sth->errorInfo();
-                if (isset($err[2])) {
-                    throw new MysqlException('执行语句错误 ' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
-                } else {
-                    throw new MysqlException('执行语句错误', $this->_lastSql);
-                }
-            }
-            if (defined('DEBUG_LOG') && DEBUG_LOG) {
-                Console::addSql($this->_lastSql, microtime(true) - $time);
-            }
-            return $sth;
-        } catch (\Exception $exception) {
-            if (defined('DEBUG_LOG') && DEBUG_LOG) {
-                Console::addSql($this->_lastSql, microtime(true) - $time);
-            }
-            throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
+        if (self::$logFunc && is_callable(self::$logFunc)) {
+            call_user_func(self::$logFunc, $sql, $time);
         }
     }
 
     /**
-     * @param string $sql
-     * @param null $args
-     * @param null $fetch_style
-     * @param null $fetch_argument
-     * @param array|null $ctor_args
-     * @return array
-     * @throws \Exception
+     * 编码 sql 语句
+     * @param $value
+     * @return false|int|string
      */
-    public function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
-    {
-        if ($fetch_style === null) {
-            $fetch_style = PDO::FETCH_ASSOC;
-        }
-        $stm = $this->execute($sql, $args);
-        if ($fetch_style !== null && $fetch_argument !== null && $ctor_args !== null) {
-            $rows = $stm->fetchAll($fetch_style, $fetch_argument, $ctor_args);
-        } elseif ($fetch_style !== null && $fetch_argument !== null) {
-            $rows = $stm->fetchAll($fetch_style, $fetch_argument);
-        } elseif ($fetch_style !== null) {
-            $rows = $stm->fetchAll($fetch_style);
-        } else {
-            $rows = $stm->fetchAll();
-        }
-        $stm->closeCursor();
-        return $rows;
-    }
-
-    /**
-     * @param string $sql
-     * @param null $args
-     * @param null $fetch_style
-     * @param null $cursor_orientation
-     * @param int $cursor_offset
-     * @return mixed|null
-     * @throws \Exception
-     */
-    public function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
-    {
-        if ($fetch_style === null) {
-            $fetch_style = PDO::FETCH_ASSOC;
-        }
-        $stm = $this->execute($sql, $args);
-        $row = $stm->fetch($fetch_style, $cursor_orientation, $cursor_offset);
-        $stm->closeCursor();
-        return $row === false ? null : $row;
-    }
-
-    /**
-     * 获得单个字段内容
-     * @param string $sql
-     * @param null $args
-     * @param null $field
-     * @return mixed|null
-     * @throws \Exception
-     */
-    public function getOne(string $sql, $args = null, $field = null)
-    {
-        $row = $this->getRow($sql, $args);
-        if ($row == null) {
-            return null;
-        }
-        if (is_string($field) && !empty($field)) {
-            return isset($row[$field]) ? $row[$field] : null;
-        }
-        return current($row);
-    }
-
-    public function getMax(string $tbname, string $field, $where = null, $args = null)
-    {
-        $sql = "select max(`{$field}`) from {$tbname}";
-        if ($where !== null) {
-            $where = trim($where);
-            if ($args != null) {
-                $args = is_array($args) ? $args : [$args];
-            }
-            if (is_int($where) || is_numeric($where)) {
-                $args = [intval($where)];
-                $where = 'id=?';
-            }
-            $sql .= ' where ' . $where;
-        }
-        $row = $this->getRow($sql, $args, PDO::FETCH_NUM);
-        if ($row == null) {
-            return null;
-        }
-        return $row[0];
-    }
-
-    public function getMin(string $tbname, string $field, $where = null, $args = null)
-    {
-        $sql = "select min(`{$field}`) from {$tbname}";
-        if ($where !== null) {
-            $where = trim($where);
-            if ($args != null) {
-                $args = is_array($args) ? $args : [$args];
-            }
-            if (is_int($where) || is_numeric($where)) {
-                $args = [intval($where)];
-                $where = 'id=?';
-            }
-            $sql .= ' where ' . $where;
-        }
-        $row = $this->getRow($sql, $args, PDO::FETCH_NUM);
-        if ($row == null) {
-            return null;
-        }
-        return $row[0];
-    }
-
-    public function sql(string $sql, $args = null)
-    {
-        return new SqlSection($sql, $args);
-    }
-
     public static function escape($value)
     {
         if ($value === null) {
@@ -358,6 +185,12 @@ class Mysql
         return $value;
     }
 
+    /**
+     * 格式化 sql 语句
+     * @param string $sql
+     * @param null $args
+     * @return null|string|string[]
+     */
     public static function format(string $sql, $args = null)
     {
         if ($args == null) {
@@ -381,6 +214,310 @@ class Mysql
         return $sql;
     }
 
+
+    /**
+     * 前缀
+     * @var string
+     */
+    private $prefix = '';
+    /**
+     * @var \PDO|null
+     */
+    private $pdo = null;
+    /**
+     * 事务计数器,防止多次调用
+     * @var int
+     */
+    private $transactionCounter = 0;
+    private $_lastSql = '';
+
+    /**
+     * 构造函数
+     * Mysql constructor.
+     * @param $host
+     * @param int $port
+     * @param string $name
+     * @param string $user
+     * @param string $pass
+     * @param string $prefix
+     */
+    public function __construct($host, $port = 3306, $name = '', $user = '', $pass = '', $prefix = '')
+    {
+        $this->prefix = $prefix;
+        if (!empty($name)) {
+            $link = 'mysql:host=' . $host . ';port=' . $port . ';dbname=' . $name;
+        } else {
+            $link = 'mysql:host=' . $host . ';port=' . $port . ';';
+        }
+        try {
+            $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
+        } catch (PDOException $exc) {
+            throw $exc;
+        }
+    }
+
+    /**
+     * 开启事务
+     * @return bool
+     */
+    public function beginTransaction()
+    {
+        if (!$this->transactionCounter++) {
+            return $this->pdo->beginTransaction();
+        }
+        $this->pdo->exec('SAVEPOINT trans' . $this->transactionCounter);
+        return $this->transactionCounter >= 0;
+    }
+
+    /**
+     * 提交事务
+     * @return bool
+     */
+    public function commit()
+    {
+        if (!--$this->transactionCounter) {
+            return $this->pdo->commit();
+        }
+        return $this->transactionCounter >= 0;
+    }
+
+    /**
+     * 回滚事务
+     * @return bool
+     * @throws MysqlException
+     */
+    public function rollBack()
+    {
+        if (--$this->transactionCounter) {
+            $this->exec('ROLLBACK TO trans' . ($this->transactionCounter + 1));
+            return true;
+        }
+        return $this->pdo->rollBack();
+    }
+
+    /**
+     * 执行sql
+     * @param string $sql
+     * @return int
+     * @throws MysqlException
+     */
+    public function exec(string $sql)
+    {
+        try {
+            $sql = str_replace('@pf_', $this->prefix, $sql);
+            $ret = $this->pdo->exec($sql);
+            return $ret;
+        } catch (\Exception $exception) {
+            throw new MysqlException($exception->getMessage(), $sql, $exception->getCode(), $exception);
+        }
+    }
+
+    /**
+     * 获取最后的插入的id
+     * @param null $name
+     * @return string
+     */
+    public function lastInsertId($name = null)
+    {
+        return $this->pdo->lastInsertId($name);
+    }
+
+    /**
+     * 获取最后执行语句,需要开启 DEBUG_MYSQL_LOG
+     * @return string
+     */
+    public function lastSql()
+    {
+        return $this->_lastSql;
+    }
+
+    /**
+     * 执行sql 语句
+     * @param string $sql
+     * @param null $args
+     * @return bool|\PDOStatement
+     * @throws MysqlException
+     */
+    public function execute(string $sql, $args = null)
+    {
+        $sql = str_replace('@pf_', $this->prefix, $sql);
+        if ($args !== null && !is_array($args)) {
+            $args = [$args];
+        }
+        $time = 0;
+        if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
+            $this->_lastSql = Mysql::format($sql, $args);
+            $time = microtime(true);
+        }
+        try {
+            $sth = $this->pdo->prepare($sql);
+            if ($sth->execute($args) === FALSE) {
+                $err = $sth->errorInfo();
+                if (isset($err[2])) {
+                    throw new MysqlException('execute sql statement error:' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
+                } else {
+                    throw new MysqlException('execute sql statement error:', $this->_lastSql);
+                }
+            }
+            if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
+                self::log($this->_lastSql, microtime(true) - $time);
+            }
+            return $sth;
+        } catch (\Exception $exception) {
+            if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
+                self::log($this->_lastSql, microtime(true) - $time);
+            }
+            throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
+        }
+    }
+
+    /**
+     * 获取多行记录
+     * @param string $sql
+     * @param null $args
+     * @param null $fetch_style
+     * @param null $fetch_argument
+     * @param array|null $ctor_args
+     * @return array
+     * @throws \Exception
+     */
+    public function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
+    {
+        if ($fetch_style === null) {
+            $fetch_style = PDO::FETCH_ASSOC;
+        }
+        $stm = $this->execute($sql, $args);
+        if ($fetch_style !== null && $fetch_argument !== null && $ctor_args !== null) {
+            $rows = $stm->fetchAll($fetch_style, $fetch_argument, $ctor_args);
+        } elseif ($fetch_style !== null && $fetch_argument !== null) {
+            $rows = $stm->fetchAll($fetch_style, $fetch_argument);
+        } elseif ($fetch_style !== null) {
+            $rows = $stm->fetchAll($fetch_style);
+        } else {
+            $rows = $stm->fetchAll();
+        }
+        $stm->closeCursor();
+        return $rows;
+    }
+
+    /**
+     * 获取单行记录
+     * @param string $sql
+     * @param null $args
+     * @param null $fetch_style
+     * @param null $cursor_orientation
+     * @param int $cursor_offset
+     * @return mixed|null
+     * @throws \Exception
+     */
+    public function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
+    {
+        if ($fetch_style === null) {
+            $fetch_style = PDO::FETCH_ASSOC;
+        }
+        $stm = $this->execute($sql, $args);
+        $row = $stm->fetch($fetch_style, $cursor_orientation, $cursor_offset);
+        $stm->closeCursor();
+        return $row === false ? null : $row;
+    }
+
+    /**
+     * 获得单个字段内容
+     * @param string $sql
+     * @param null $args
+     * @param null $field
+     * @return mixed|null
+     * @throws \Exception
+     */
+    public function getOne(string $sql, $args = null, $field = null)
+    {
+        $row = $this->getRow($sql, $args);
+        if ($row == null) {
+            return null;
+        }
+        if (is_string($field) && !empty($field)) {
+            return isset($row[$field]) ? $row[$field] : null;
+        }
+        return current($row);
+    }
+
+    /**
+     * 获取某个字段的最大值
+     * @param string $tbname
+     * @param string $field
+     * @param null $where
+     * @param null $args
+     * @return null
+     * @throws \Exception
+     */
+    public function getMax(string $tbname, string $field, $where = null, $args = null)
+    {
+        $sql = "select max(`{$field}`) from {$tbname}";
+        if ($where !== null) {
+            $where = trim($where);
+            if ($args != null) {
+                $args = is_array($args) ? $args : [$args];
+            }
+            if (is_int($where) || is_numeric($where)) {
+                $args = [intval($where)];
+                $where = 'id=?';
+            }
+            $sql .= ' where ' . $where;
+        }
+        $row = $this->getRow($sql, $args, PDO::FETCH_NUM);
+        if ($row == null) {
+            return null;
+        }
+        return $row[0];
+    }
+
+    /**
+     * 获取某个字段的最小值
+     * @param string $tbname
+     * @param string $field
+     * @param null $where
+     * @param null $args
+     * @return null
+     * @throws \Exception
+     */
+    public function getMin(string $tbname, string $field, $where = null, $args = null)
+    {
+        $sql = "select min(`{$field}`) from {$tbname}";
+        if ($where !== null) {
+            $where = trim($where);
+            if ($args != null) {
+                $args = is_array($args) ? $args : [$args];
+            }
+            if (is_int($where) || is_numeric($where)) {
+                $args = [intval($where)];
+                $where = 'id=?';
+            }
+            $sql .= ' where ' . $where;
+        }
+        $row = $this->getRow($sql, $args, PDO::FETCH_NUM);
+        if ($row == null) {
+            return null;
+        }
+        return $row[0];
+    }
+
+    /**
+     * 创建一个sql语句片段,一般用于更新 插入数据 时数组的值
+     * @param string $sql
+     * @param null $args
+     * @return SqlSection
+     */
+    public function sql(string $sql, $args = null)
+    {
+        return new SqlSection($sql, $args);
+    }
+
+    /**
+     * 插入记录
+     * @param string $tbname
+     * @param array $values
+     * @throws MysqlException
+     */
     public function insert(string $tbname, array $values = [])
     {
         if (count($values) == 0) {
@@ -431,6 +568,12 @@ class Mysql
         $Stm->closeCursor();
     }
 
+    /**
+     * 替换记录集
+     * @param string $tbname
+     * @param array $values
+     * @throws MysqlException
+     */
     public function replace(string $tbname, array $values = [])
     {
         if (count($values) == 0) {
@@ -481,6 +624,14 @@ class Mysql
         $Stm->closeCursor();
     }
 
+    /**
+     * 更新记录集
+     * @param string $tbname
+     * @param array $values
+     * @param null $where
+     * @param null $args
+     * @throws MysqlException
+     */
     public function update(string $tbname, array $values, $where = null, $args = null)
     {
         if (count($values) == 0) {
@@ -544,6 +695,13 @@ class Mysql
         $Stm->closeCursor();
     }
 
+    /**
+     * 删除记录集
+     * @param string $tbname
+     * @param null $where
+     * @param null $args
+     * @throws MysqlException
+     */
     public function delete(string $tbname, $where = null, $args = null)
     {
         $where = trim($where);
@@ -559,16 +717,35 @@ class Mysql
         $Stm->closeCursor();
     }
 
+    /**
+     * 获取表字段
+     * @param string $tbname
+     * @return array
+     * @throws \Exception
+     */
     public function getFields(string $tbname)
     {
         return $this->getList('show full fields from `' . $tbname . '`');
     }
 
+    /**
+     * 判断字段是否存在
+     * @param string $tbname
+     * @param string $field
+     * @return bool
+     * @throws \Exception
+     */
     public function existsField(string $tbname, string $field)
     {
         return $this->getRow('DESCRIBE `' . $tbname . '` `' . $field . '`;') !== null;
     }
 
+    /**
+     * 创建数据库表
+     * @param string $tbname
+     * @param array $options
+     * @throws MysqlException
+     */
     public function createTable(string $tbname, array $options = [])
     {
         $options = array_merge([
@@ -586,9 +763,16 @@ class Mysql
         }
     }
 
+    /**
+     * 添加字段
+     * @param string $tbname
+     * @param string $field
+     * @param array $options
+     * @return int
+     * @throws MysqlException
+     */
     public function addField(string $tbname, string $field, array $options = [])
     {
-
         $options = array_merge([
             'type' => 'VARCHAR',
             'len' => 250,
@@ -626,6 +810,14 @@ class Mysql
         return $this->exec($sql);
     }
 
+    /**
+     * 修改字段
+     * @param string $tbname
+     * @param string $field
+     * @param array $options
+     * @return int
+     * @throws MysqlException
+     */
     public function modifyField(string $tbname, string $field, array $options = [])
     {
         $chkNew = $this->existsField($tbname, $field);
@@ -668,6 +860,15 @@ class Mysql
         return $this->exec($sql);
     }
 
+    /**
+     * 更新字段
+     * @param string $tbname
+     * @param string $oldfield
+     * @param string $newfield
+     * @param array $options
+     * @return int
+     * @throws MysqlException
+     */
     public function updateField(string $tbname, string $oldfield, string $newfield, array $options = [])
     {
         if ($oldfield == $newfield) {
@@ -718,6 +919,13 @@ class Mysql
         return $this->exec($sql);
     }
 
+    /**
+     * 删除字段
+     * @param string $tbname
+     * @param string $field
+     * @return int|null
+     * @throws MysqlException
+     */
     public function dropField(string $tbname, string $field)
     {
         if ($this->existsField($tbname, $field)) {
@@ -727,6 +935,12 @@ class Mysql
         return null;
     }
 
+    /**
+     * 检查表是否存在
+     * @param string $tbname
+     * @return bool
+     * @throws \Exception
+     */
     public function existsTable(string $tbname)
     {
         $tbname = str_replace('@pf_', $this->prefix, $tbname);
@@ -734,6 +948,12 @@ class Mysql
         return $row != null;
     }
 
+    /**
+     * 删除表
+     * @param string $tbname
+     * @return int
+     * @throws MysqlException
+     */
     public function dropTable(string $tbname)
     {
         $tbname = str_replace('@pf_', $this->prefix, $tbname);
