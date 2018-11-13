@@ -78,6 +78,7 @@ class Field
     public $boxClass = null;
     public $boxStyle = null;
     public $boxYeeModule = null;
+
     //视图属性
     public $viewTabIndex = '';
     public $viewTabShared = false;
@@ -127,6 +128,11 @@ class Field
 
     }
 
+    /**
+     * 设置属性值
+     * @param $name
+     * @param $value
+     */
     private function setValue($name, $value)
     {
         if ($this->refClass->hasProperty($name)) {
@@ -139,6 +145,11 @@ class Field
         }
     }
 
+    /**
+     * 获取属性值
+     * @param $name
+     * @return mixed|null
+     */
     private function getValue($name)
     {
         $value = null;
@@ -153,11 +164,21 @@ class Field
         return $value;
     }
 
+    /**
+     * 属性赋值
+     * @param $name
+     * @param $value
+     */
     public function __set($name, $value)
     {
         $this->extends[$name] = $value;
     }
 
+    /**
+     * 获取属性
+     * @param $name
+     * @return false|int|mixed|null|string
+     */
     public function __get($name)
     {
         if ($name == '_value') {
@@ -189,6 +210,11 @@ class Field
         return $this->extends[$name];
     }
 
+    /**
+     * 判断属性存在
+     * @param $name
+     * @return bool
+     */
     public function __isset($name)
     {
         if ($name == '_value') {
@@ -197,16 +223,30 @@ class Field
         return isset($this->extends[$name]);
     }
 
+    /**
+     * 删除属性
+     * @param $name
+     * @return mixed
+     */
     public function __unset($name)
     {
         return __unset($this->extends[$name]);
     }
 
+    /**
+     * 获取表单
+     * @return Form|null
+     */
     public function getForm()
     {
         return $this->form;
     }
 
+    /**
+     * 获取输入框数据
+     * @return array
+     * @throws \ReflectionException
+     */
     public function getBoxData()
     {
         $data = [];
@@ -236,7 +276,12 @@ class Field
         return $data;
     }
 
-    public function getBoxAttribute()
+    /**
+     * 获取输入框属性
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function getBoxAttr()
     {
         $data = [];
         $refClass = new \ReflectionClass(get_class($this));
@@ -252,6 +297,7 @@ class Field
                 }
             }
         }
+
         foreach ($this->extends as $name => $value) {
             if ($value !== null && $value !== '') {
                 if (preg_match('@^box([A-Z].*)$@', $name, $m)) {
@@ -260,23 +306,32 @@ class Field
                 }
             }
         }
+
         if ($this->form != null && $this->form->getType() == 'edit') {
             if ($this->offEdit) {
                 $data['disabled'] = 'disabled';
             }
         }
+
         if ($this->_value !== null) {
             $data['value'] = $this->_value;
         }
         return $data;
     }
 
+    /**
+     * 导出属性
+     * @param array $base
+     * @param array $args
+     * @param null $filter
+     * @throws \ReflectionException
+     */
     public function explodeAttr(&$base = [], &$args = [], $filter = null)
     {
         if ($base == null) {
             $base = [];
         }
-        $attributes = $this->getBoxAttribute();
+        $attributes = $this->getBoxAttr();
         if (is_array($args)) {
             foreach ($args as $key => $val) {
                 $key = Utils::camelToAttr($key);
@@ -308,6 +363,13 @@ class Field
         }
     }
 
+    /**
+     * 导出绑定的数据
+     * @param array $base
+     * @param array $args
+     * @param null $filter
+     * @throws \ReflectionException
+     */
     public function explodeData(&$base = [], &$args = [], $filter = null)
     {
         if ($base == null) {
@@ -344,6 +406,11 @@ class Field
         }
     }
 
+    /**
+     * 显示数据
+     * @param null $args
+     * @throws \Exception
+     */
     public function box($args = null)
     {
         if ($args === null || !is_array($args)) {
@@ -355,21 +422,22 @@ class Field
                 throw new \Exception('Unsupported input box type:' . $this->type);
             }
             if (!empty($this->viewTemplate) || !empty(trim($this->viewTplCode))) {
-                $sdopx = View::newInstance();
-                $common_dir = Utils::path(ROOT_DIR, 'view/widget');
-                $sdopx->addTemplateDir($common_dir);
-                $sdopx->assign('form', $this->form);
-                $sdopx->assign('field', $this);
-                $sdopx->assign('args', $args);
+                $view = new View();
+                $widgetDir = Config::get('widget_dir', 'view/widget');
+                $widgetDir = Utils::path(ROOT_DIR, $widgetDir);
+                $view->template->addTemplateDir($widgetDir);
+                $view->assign('form', $this->form);
+                $view->assign('field', $this);
+                $view->assign('args', $args);
                 if (!empty($this->viewTemplate)) {
-                    return $sdopx->fetch($this->viewTemplate);
+                    return $view->fetch($this->viewTemplate);
                 } else {
-                    return $sdopx->fetch('string:' . $this->viewTplCode);
+                    return $view->fetch('string:' . $this->viewTplCode);
                 }
             }
             return $box->code($this, $args);
         } catch (\Exception $exception) {
-            throw new \Exception($this->type . ' 控件解析错误:' . $exception->getMessage(), $exception->getCode(), $exception);
+            throw new \Exception($this->type . 'plugin display error:' . $exception->getMessage(), $exception->getCode(), $exception);
         }
     }
 
