@@ -2,26 +2,31 @@
 
 namespace beacon;
 
+use sdopx\Sdopx;
+
+//开启调试模式
+if (Config::get('sdopx.debug')) {
+    Sdopx::$debug = true;
+}
+
 /**
  * Created by PhpStorm.
  * User: wj008
  * Date: 2017/12/12
  * Time: 15:50
  */
-
-class View
+class View implements ViewInterface
 {
 
-    private $_book = [];
-    private $_config_vars = [];
+    private static $instance = null;
+    /**
+     * @var Sdopx
+     */
+    private $template = null;
 
     /**
-     * @var \sdopx\Sdopx
+     * @return View|Sdopx
      */
-    public $engine = null;
-
-    private static $instance = null;
-
     public static function instance()
     {
         if (self::$instance == null) {
@@ -30,99 +35,68 @@ class View
         return self::$instance;
     }
 
-    public function assign($key, $val = null)
+    public function __construct()
     {
-        if (is_array($key)) {
-            $this->_book = array_replace($this->_book, $key);
-        } else {
-            $this->_book[$key] = $val;
-        }
-    }
-
-    public function getAssign()
-    {
-        return $this->_book;
-    }
-
-    public function assignConfig($key, $val = null)
-    {
-        if (is_array($key)) {
-            $this->_config_vars = array_replace($this->_config_vars, $key);
-        } else {
-            $this->_config_vars[$key] = $val;
-        }
-    }
-
-    public static function newInstance()
-    {
-        if (Config::get('sdopx.debug')) {
-            \sdopx\Sdopx::$debug = true;
-        }
-        $engine = new \sdopx\Sdopx();
-        $template_dir = Config::get('sdopx.template_dir', 'view');
-        if (is_array($template_dir)) {
-            foreach ($template_dir as &$dir) {
+        $config = Config::get('sdopx.*');
+        $this->template = $sdopx = new Sdopx();
+        //模板目录
+        $templateDir = empty($config['template_dir']) ? 'view' : $config['template_dir'];
+        if (is_array($templateDir)) {
+            foreach ($templateDir as &$dir) {
                 $dir = Utils::path(ROOT_DIR, $dir);
             }
         } else {
-            $template_dir = Utils::path(ROOT_DIR, $template_dir);
+            $templateDir = Utils::path(ROOT_DIR, $templateDir);
         }
-        $common_dir = Utils::path(ROOT_DIR, Config::get('sdopx.common_dir', 'view/common'));
-        $runtime_dir = Utils::path(ROOT_DIR, Config::get('sdopx.runtime_dir', 'runtime'));
-        $engine->setTemplateDir($template_dir);
-        $engine->addTemplateDir($common_dir, 'common');
-        $engine->setRuntimeDir($runtime_dir);
-        $plugins_dir = Config::get('sdopx.plugin_dir');
-        if (!empty($plugins_dir)) {
-            if (is_array($plugins_dir)) {
-                foreach ($plugins_dir as &$item) {
-                    $item = Utils::path(ROOT_DIR, $item);
-                }
-            } elseif (is_string($plugins_dir)) {
-                $plugins_dir = Utils::path(ROOT_DIR, $plugins_dir);
-            }
-            $engine->addPluginDir($plugins_dir);
+        //公共模板目录
+        $commonDir = Utils::path(ROOT_DIR, empty($config['common_dir']) ? 'view/common' : $config['common_dir']);
+        //运行时目录
+        $runtimeDir = Utils::path(ROOT_DIR, empty($config['runtime_dir']) ? 'runtime' : $config['runtime_dir']);
+        $sdopx->setTemplateDir($templateDir);
+        $sdopx->addTemplateDir($commonDir, 'common');
+        $sdopx->setCompileDir($runtimeDir);
+        //设置边界符号
+        if (!empty($config['leftDelimiter']) && !empty($config['rightDelimiter'])) {
+            $sdopx->leftDelimiter = $config['leftDelimiter'];
+            $sdopx->rightDelimiter = $config['rightDelimiter'];
         }
-        foreach ([
-                     'compile_force',
-                     'compile_check',
-                     'runtime_dir',
-                     'left_delimiter',
-                     'right_delimiter'
-                 ] as $key) {
-            $val = Config::get('sdopx.' . $key);
-            if (!empty($val)) {
-                $engine->setting($key, $val);
-            }
+        //强行编译
+        if (isset($config['compileForce'])) {
+            $sdopx->compileForce = $config['compileForce'];
         }
-        return $engine;
+        //检查编译
+        if (isset($config['compileCheck'])) {
+            $sdopx->compileForce = $config['compileCheck'];
+        }
     }
 
-    public function initialize()
+    public function assign($key, $val = null)
     {
-        if ($this->engine != null) {
-            return;
-        }
-        $this->engine = self::newInstance();
+        $this->template->assign($key, $val);
     }
 
-    public function display(Controller $ctl, $tplname)
+    public function fetch(string $tplName)
     {
-        $this->initialize();
-        $this->engine->_book = $this->_book;
-        $this->engine->_book['this'] = $ctl;
-        $this->engine->_config = Config::get();
-        echo $this->engine->fetch($tplname);
+        $this->template->fetch($tplName);
     }
 
-    public function fetch(Controller $ctl, $tplname)
+    public function display(string $tplName)
     {
-        $this->initialize();
-        $this->engine->_book = $this->_book;
-        $this->engine->_book['this'] = $ctl;
-        $this->engine->_config = Config::get();
-        return $this->engine->fetch($tplname);
+        $this->template->display($tplName);
     }
 
+    public function __call($method, $params)
+    {
+        return call_user_func_array([$this->template, $method], $params);
+    }
 
+    /**
+     * 设置模板引擎上下文
+     * @param Controller $controller
+     */
+    public function context(Controller $controller)
+    {
+        $this->template->context = $controller;
+        $this->assign('this', $controller);
+    }
 }
