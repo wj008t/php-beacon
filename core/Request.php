@@ -7,86 +7,19 @@ namespace beacon;
  * Date: 2017/12/11
  * Time: 20:44
  */
-
-
 class Request
 {
-    private static $instance = null;
-    private $header = null;
 
-    public static function instance()
-    {
-        if (self::$instance == null) {
-            self::$instance = new Request();
-        }
-        return self::$instance;
-    }
+    private static $header = null;
 
-    public function get(string $name = null, $def = null)
-    {
-        return $this->input($_GET, $name, $def);
-    }
-
-    public function post(string $name = null, $def = null)
-    {
-        return $this->input($_POST, $name, $def);
-    }
-
-    public function param(string $name = null, $def = null)
-    {
-        return $this->input($_REQUEST, $name, $def);
-    }
-
-    public function getSession(string $name = null, $def = null)
-    {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-        if (empty($name)) {
-            return $_SESSION;
-        }
-        return isset($_SESSION[$name]) ? $_SESSION[$name] : $def;
-    }
-
-    public function setSession(string $name, $value)
-    {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-        $_SESSION[$name] = $value;
-    }
-
-    public function delSession()
-    {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-        session_unset();
-        session_destroy();
-    }
-
-    public function getCookie(string $name, $def = null)
-    {
-        return isset($_COOKIE["name"]) ? $_COOKIE["name"] : $def;
-    }
-
-    public function setCookie(string $name, $value, $options)
-    {
-        if ($options == null) {
-            return setcookie($name, $value);
-        }
-        if (is_integer($options)) {
-            return setcookie($name, $value, $options);
-        }
-        $expire = isset($options['expire']) ? intval($options['expire']) : 0;
-        $path = isset($options['path']) ? intval($options['path']) : '';
-        $domain = isset($options['domain']) ? intval($options['domain']) : '';
-        $secure = isset($options['secure']) ? intval($options['secure']) : false;
-        $httponly = isset($options['httponly ']) ? intval($options['httponly ']) : false;
-        return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
-    }
-
-    public function input(array $data, string $name = null, $def = null)
+    /**
+     * 数据输入格式化
+     * @param array $data
+     * @param string|null $name
+     * @param null $def
+     * @return array|bool|float|mixed|null|string
+     */
+    public static function input(array $data, string $name = null, $def = null)
     {
         if (empty($name)) {
             return $data;
@@ -149,7 +82,7 @@ class Request
                 if (is_array($data[$name])) {
                     return $data[$name];
                 }
-                if (is_string($data[$name]) && Utils::isJsonString($data[$name])) {
+                if (is_string($data[$name]) && Utils::isJson($data[$name])) {
                     return json_decode($data[$name], true);
                 }
                 //拆分，取值
@@ -172,7 +105,121 @@ class Request
         }
     }
 
-    public function file(string $name = null)
+    /**
+     * get 获取数据 相当于 $_GET
+     * @param string|null $name
+     * @param null $def
+     * @return array|bool|float|mixed|null|string
+     */
+    public static function get(string $name = null, $def = null)
+    {
+        return self::input($_GET, $name, $def);
+    }
+
+    /**
+     * post 获取数据 相当于 $_POST
+     * @param string|null $name
+     * @param null $def
+     * @return array|bool|float|mixed|null|string
+     */
+    public static function post(string $name = null, $def = null)
+    {
+        return self::input($_POST, $name, $def);
+    }
+
+    /**
+     * param 获取数据 相当于 $_REQUEST
+     * @param string|null $name
+     * @param null $def
+     * @return array|bool|float|mixed|null|string
+     */
+    public static function param(string $name = null, $def = null)
+    {
+        return self::input($_REQUEST, $name, $def);
+    }
+
+    /**
+     * 获取 session 相当于 $_SESSION[$name]
+     * @param string|null $name
+     * @param null $def
+     * @return null
+     */
+    public static function getSession(string $name = null, $def = null)
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        if (empty($name)) {
+            return $_SESSION;
+        }
+        return isset($_SESSION[$name]) ? $_SESSION[$name] : $def;
+    }
+
+    /**
+     * 设置 session
+     * @param string $name
+     * @param $value
+     */
+    public static function setSession(string $name, $value)
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $_SESSION[$name] = $value;
+    }
+
+    /**
+     * 清空session
+     */
+    public static function delSession()
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        session_unset();
+        session_destroy();
+    }
+
+    /**
+     * 获取cookie
+     * @param string $name
+     * @param null $def
+     * @return null
+     */
+    public static function getCookie(string $name, $def = null)
+    {
+        return isset($_COOKIE[$name]) ? $_COOKIE[$name] : $def;
+    }
+
+    /**
+     * 设置cookie
+     * @param string $name
+     * @param $value
+     * @param $options
+     * @return bool
+     */
+    public static function setCookie(string $name, $value, $options)
+    {
+        if ($options == null) {
+            return setcookie($name, $value);
+        }
+        if (is_integer($options)) {
+            return setcookie($name, $value, $options);
+        }
+        $expire = isset($options['expire']) ? intval($options['expire']) : 0;
+        $path = isset($options['path']) ? intval($options['path']) : '';
+        $domain = isset($options['domain']) ? intval($options['domain']) : '';
+        $secure = isset($options['secure']) ? intval($options['secure']) : false;
+        $httponly = isset($options['httponly ']) ? intval($options['httponly ']) : false;
+        return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
+    }
+
+    /**
+     * 获取file 相当于 $_FILE[$name]
+     * @param string|null $name
+     * @return null
+     */
+    public static function file(string $name = null)
     {
         if (empty($name)) {
             return $_FILES;
@@ -180,7 +227,13 @@ class Request
         return isset($_FILES[$name]) ? $_FILES[$name] : null;
     }
 
-    public function route(string $name = null, $def = null)
+    /**
+     * 获取路由
+     * @param string|null $name 支持 ctl:控制器名  act:方法名  app:应用名
+     * @param null $def
+     * @return null
+     */
+    public static function route(string $name = null, $def = null)
     {
         $route = Route::get();
         if (empty($name)) {
@@ -195,14 +248,19 @@ class Request
         return $def;
     }
 
-    public function getHeader(string $name = null)
+    /**
+     * 获取请求头
+     * @param string|null $name
+     * @return array|mixed|null|string
+     */
+    public static function getHeader(string $name = null)
     {
-        if ($this->header == null) {
-            $this->header = [];
+        if (self::$header == null) {
+            self::$header = [];
             foreach ($_SERVER as $key => $value) {
                 if ('HTTP_' == substr($key, 0, 5)) {
                     $key = strtolower(str_replace('_', '-', substr($key, 5)));
-                    $this->header[$key] = $value;
+                    self::$header[$key] = $value;
                 }
             }
         }
@@ -212,17 +270,24 @@ class Request
                 $key = trim($mt[1]);
                 $value = trim($mt[2]);
                 $key = strtolower(str_replace('_', '-', $key));
-                $this->header[$key] = $value;
+                self::$header[$key] = $value;
             }
         }
         if (empty($name)) {
-            return $this->header;
+            return self::$header;
         }
         $name = strtolower(str_replace('_', '-', $name));
-        return isset($this->header[$name]) ? $this->header[$name] : '';
+        return isset(self::$header[$name]) ? self::$header[$name] : '';
     }
 
-    public function setHeader(string $name, string $value, bool $replace = true, $http_response_code = null)
+    /**
+     * 设置请求头
+     * @param string $name
+     * @param string $value
+     * @param bool $replace
+     * @param null $http_response_code
+     */
+    public static function setHeader(string $name, string $value, bool $replace = true, $http_response_code = null)
     {
         $nameTemps = explode('-', $name);
         foreach ($nameTemps as &$n) {
@@ -245,12 +310,18 @@ class Request
         }
     }
 
-    public function getIP(bool $proxy = false, bool $forward = false)
+    /**
+     * 获取ip
+     * @param bool $proxy
+     * @param bool $forward
+     * @return array|mixed|null|string
+     */
+    public static function getIP(bool $proxy = false, bool $forward = false)
     {
         $ip = '';
         if ($proxy) {
             if ($forward) {
-                $forwardIP = $this->getHeader('x-forwarded-for');
+                $forwardIP = self::getHeader('x-forwarded-for');
                 if (!empty($forwardIP)) {
                     $temps = explode(',', $forwardIP);
                     foreach ($temps as $item) {
@@ -260,7 +331,7 @@ class Request
                         }
                     }
                 }
-                $ip = $this->getHeader('x-real-ip');
+                $ip = self::getHeader('x-real-ip');
             }
         } else {
             if (isset($_SERVER['REMOTE_ADDR'])) {
@@ -273,9 +344,14 @@ class Request
         return $ip;
     }
 
-    public function getContentType($whole = false)
+    /**
+     * 获取 内容类型
+     * @param bool $whole
+     * @return array|mixed|null|string
+     */
+    public static function getContentType($whole = false)
     {
-        $content_type = $this->getHeader('content-type');
+        $content_type = self::getHeader('content-type');
         if ($whole) {
             return $content_type;
         }
@@ -283,7 +359,12 @@ class Request
         return $temp[0];
     }
 
-    public function setContentType($type, $encoding = 'utf-8')
+    /**
+     * 设置内容类型
+     * @param $type
+     * @param string $encoding
+     */
+    public static function setContentType($type, $encoding = 'utf-8')
     {
         if (strpos($type, '/') === false) {
             $mime_types = [
@@ -336,48 +417,79 @@ class Request
             ];
             $type = isset($mime_types[$type]) ? $mime_types[$type] : 'application/octet-stream';
         }
-        $content_type = $type . '; charset=' . $encoding;
-        $this->setHeader('Content-Type', $content_type);
+        $contentType = $type . '; charset=' . $encoding;
+        self::setHeader('Content-Type', $contentType);
     }
 
-    public function config(string $name, $def = null)
+    /**
+     * 获取配置项
+     * @param string $name
+     * @param null $def
+     * @return mixed|string
+     */
+    public static function config(string $name, $def = null)
     {
         return Config::get($name, $def);
     }
 
-    public function isGet()
+    /**
+     * 是否get请求
+     * @return bool
+     */
+    public static function isGet()
     {
-        return $this->isMethod('get');
+        return self::isMethod('get');
     }
 
-    public function isMethod(string $method)
+    /**
+     * 判断请求方式
+     * @param string $method
+     * @return bool
+     */
+    public static function isMethod(string $method)
     {
         return strtolower($_SERVER['REQUEST_METHOD']) == strtolower($method) ? true : false;
     }
 
-    public function getMethod()
+    /**
+     * 获取请求方式
+     * @return string
+     */
+    public static function getMethod()
     {
         return strtolower($_SERVER['REQUEST_METHOD']);
     }
 
-    public function isPost()
+    /**
+     * 是否post 请求
+     * @return bool
+     */
+    public static function isPost()
     {
-        return $this->isMethod('post');
+        return self::isMethod('post');
     }
 
-    public function isAjax()
+    /**
+     * 是否ajax
+     * @return bool
+     */
+    public static function isAjax()
     {
         if (isset($_SERVER['REQUEST_AJAX']) && $_SERVER['REQUEST_AJAX'] == true) {
             return true;
         }
-        return strtolower($this->getHeader('x-requested-with')) === 'xmlhttprequest';
+        return strtolower(self::getHeader('x-requested-with')) === 'xmlhttprequest';
     }
 
-    public function getReferrer()
+    /**
+     * 获取来源页
+     * @return array|mixed|null|string
+     */
+    public static function getReferrer()
     {
-        $referer = Request::instance()->getHeader('referer');
+        $referer = self::getHeader('referer');
         if (empty($referer)) {
-            $referer = Request::instance()->getHeader('referrer');
+            $referer = self::getHeader('referrer');
         }
         return $referer;
     }
