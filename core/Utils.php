@@ -8,10 +8,13 @@ namespace beacon;
  * Date: 2017/12/11
  * Time: 2:02
  */
-
-
 class Utils
 {
+    /**
+     * 路径
+     * @param mixed ...$paths
+     * @return string
+     */
     public static function path(...$paths)
     {
         $protocol = '';
@@ -41,6 +44,11 @@ class Utils
     }
 
 
+    /**
+     * 驼峰转下划线
+     * @param $name
+     * @return null|string|string[]
+     */
     public static function toUnder($name)
     {
         $name = preg_replace_callback('@[A-Z]@', function ($m) {
@@ -50,6 +58,11 @@ class Utils
         return $name;
     }
 
+    /**
+     * 下划线转驼峰
+     * @param $name
+     * @return null|string|string[]
+     */
     public static function toCamel($name)
     {
         $name = preg_replace('@_+@', '_', $name);
@@ -60,6 +73,11 @@ class Utils
         return $name;
     }
 
+    /**
+     * 属性 转 驼峰
+     * @param $name
+     * @return null|string|string[]
+     */
     public static function attrToCamel($name)
     {
         $name = preg_replace_callback('@-[a-z]@', function ($m) {
@@ -69,6 +87,11 @@ class Utils
         return $name;
     }
 
+    /**
+     * 驼峰转属性
+     * @param $name
+     * @return null|string|string[]
+     */
     public static function camelToAttr($name)
     {
         $name = preg_replace_callback('@[A-Z]@', function ($m) {
@@ -78,6 +101,11 @@ class Utils
         return $name;
     }
 
+    /**
+     * 随机字母数字
+     * @param int $len
+     * @return string
+     */
     public static function randWord($len = 4)
     {
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -88,6 +116,11 @@ class Utils
         return $word;
     }
 
+    /**
+     * 随机数字
+     * @param int $len
+     * @return string
+     */
     public static function randNum($len = 4)
     {
         $chars = '0123456789';
@@ -98,28 +131,44 @@ class Utils
         return $word;
     }
 
-    public static function isJsonString($str)
+    /**
+     * 是否json格式
+     * @param $str
+     * @return bool
+     */
+    public static function isJson($str)
     {
         return is_string($str) && !empty($str) && preg_match('@^[\[\{].*[\]\}]$@', $str);
     }
 
-    public static function makeDir($filedir, $mode = 0777)
+    /**
+     * 创建文件夹
+     * @param $dir
+     * @param int $mode
+     */
+    public static function makeDir($dir, $mode = 0777)
     {
-        if (!is_dir($filedir)) {
-            $pfiledir = dirname($filedir);
-            self::makeDir($pfiledir);
-            @mkdir($filedir, $mode);
+        if (!is_dir($dir)) {
+            $pDir = dirname($dir);
+            self::makeDir($pDir);
+            @mkdir($dir, $mode);
         }
     }
 
-    public static function replaceItems(array $a1, array $a2)
+    /**
+     * 扩展数组
+     * @param array $a1
+     * @param array $a2
+     * @return array
+     */
+    public static function extend(array $a1, array $a2)
     {
         foreach ($a2 as $key => $item) {
             if (!isset($a1[$key])) {
                 $a1[$key] = $item;
             } else {
                 if (is_array($item) && is_array($a1[$key])) {
-                    $a1[$key] = self::replaceItems($a1[$key], $item);
+                    $a1[$key] = self::extend($a1[$key], $item);
                 } else {
                     $a1[$key] = $item;
                 }
