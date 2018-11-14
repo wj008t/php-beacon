@@ -22,6 +22,7 @@ defined('IS_CGI') or define('IS_CGI', substr(PHP_SAPI, 0, 3) == 'cgi' ? true : f
 defined('IS_CLI') or define('IS_CLI', PHP_SAPI == 'cli' ? true : false);
 defined('IS_WIN') or define('IS_WIN', strstr(PHP_OS, 'WIN') ? true : false);
 
+
 class RouteError extends \Error implements \Throwable
 {
 //让路由结束退出的错误
@@ -30,7 +31,7 @@ class RouteError extends \Error implements \Throwable
 class Route
 {
 
-    private static $cache_uris = null;
+    private static $cacheUris = null;
     private static $routeMap = [];
     private static $routePath = null;
     private static $cachePath = null;
@@ -95,14 +96,13 @@ class Route
             if (empty(self::$routePath)) {
                 self::$routePath = Utils::path(ROOT_DIR, 'config');
             }
-            $filepath = Utils::path(self::$routePath, $name . '.route.php');
-            if (file_exists($filepath)) {
-                $map = require $filepath;
+            $filePath = Utils::path(self::$routePath, $name . '.route.php');
+            if (file_exists($filePath)) {
+                $map = require $filePath;
             }
         } else if (is_array($route)) {
             $map = array_merge($map, $route);
         }
-
         $map['name'] = $name;
         $map['base'] = rtrim(empty($map['base']) ? '' : $map['base'], '/');
         $map['base_match'] = '@^' . preg_quote($map['base'], '@') . '(/.*)?$@i';
@@ -170,7 +170,6 @@ class Route
         if ($idata == null) {
             return null;
         }
-
         //路由路径
         $uri = empty($idata['uri']) ? '/' : $idata['uri'];
         $name = $idata['name'];
@@ -189,19 +188,19 @@ class Route
                     continue;
                 }
                 foreach ($item as $key => $val) {
-                    $tval = null;
+                    $temp = null;
                     if (is_string($val)) {
-                        $tval = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m) {
+                        $temp = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m) {
                             return isset($m[$m2[1]]) ? $m[$m2[1]] : '';
                         }, $val);
                     } elseif (is_array($val)) {
-                        $tval = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m, $val) {
+                        $temp = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m, $val) {
                             return isset($m[$m2[1]]) ? $m[$m2[1]] : $val['def'];
                         }, $val['map']);
                     } else {
                         continue;
                     }
-                    $arg[$key] = $tval;
+                    $arg[$key] = $temp;
                 }
                 break;
             }
@@ -290,6 +289,11 @@ class Route
         return $path;
     }
 
+    /**
+     * 获取当前应用命名空间
+     * @param string|null $app
+     * @return mixed|null|string
+     */
     public static function getNamespace(string $app = null)
     {
         if ($app == null) {
@@ -334,19 +338,19 @@ class Route
             self::$cachePath = Utils::path(ROOT_DIR, 'runtime');
         }
         $filepath = Utils::path(self::$cachePath, 'route.' . $app . '.cache.php');
-        if (self::$cache_uris == null) {
-            self::$cache_uris = [];
+        if (self::$cacheUris == null) {
+            self::$cacheUris = [];
         }
-        if (!isset(self::$cache_uris[$app])) {
+        if (!isset(self::$cacheUris[$app])) {
             if (file_exists($filepath)) {
-                self::$cache_uris[$app] = require $filepath;
+                self::$cacheUris[$app] = require $filepath;
             } else {
-                self::$cache_uris[$app] = [];
+                self::$cacheUris[$app] = [];
             }
         }
         //使用了缓存
-        if (isset(self::$cache_uris[$app][$hash])) {
-            $temp_url = self::$cache_uris[$app][$hash];
+        if (isset(self::$cacheUris[$app][$hash])) {
+            $temp_url = self::$cacheUris[$app][$hash];
             $temp_url = preg_replace_callback('@\{(\w+)\}@', function ($m) use ($query) {
                 $key = $m[1];
                 return isset($query[$key]) ? urlencode($query[$key]) : '';
@@ -420,8 +424,8 @@ class Route
         if (count($queryStr) > 0) {
             $temp_url .= '?' . join('&', $queryStr);
         }
-        self::$cache_uris[$app][$hash] = $temp_url;
-        @file_put_contents($filepath, '<?php return ' . var_export(self::$cache_uris[$app], true) . ';');
+        self::$cacheUris[$app][$hash] = $temp_url;
+        @file_put_contents($filepath, '<?php return ' . var_export(self::$cacheUris[$app], true) . ';');
         // echo '创建缓存';
         $temp_url = preg_replace_callback('@\{(\w+)\}@', function ($m) use ($query) {
             $key = $m[1];
@@ -431,6 +435,7 @@ class Route
     }
 
     /**
+     * 获取生成的URL
      * ~/ctl/act
      * ^/admin/ctl/act
      * @param string $url
@@ -474,23 +479,130 @@ class Route
     }
 
     /**
+     * 运行实例的方法
+     * @param string $class
+     * @param string $method
+     * @throws \ReflectionException
+     */
+    public static function runMethod(string $class, string $method)
+    {
+        $oReflectionClass = new \ReflectionClass($class);
+        //获取方法信息
+        $method = $oReflectionClass->getMethod($method);
+        if (!$method->isPublic()) {
+            throw new RouteError('未公开方法:' . $method);
+        }
+        //获取方法参数
+        $params = $method->getParameters();
+        $args = [];
+        if (count($params) > 0) {
+            foreach ($params as $param) {
+                //获取变量名称
+                $name = $param->getName();
+                $type = 'any';
+                //如果可以获取类型
+                if (is_callable([$param, 'hasType'])) {
+                    if ($param->hasType()) {
+                        $refType = $param->getType();
+                        if ($refType != null) {
+                            if (is_callable([$refType, 'getName'])) {
+                                $type = $refType->getName();
+                            } else {
+                                $type = strval($refType);
+                            }
+                            $type = empty($type) ? 'any' : $type;
+                        }
+                    }
+                }
+                //类型获取不到
+                if ($type == 'any') {
+                    if (is_callable([$param, 'getClass'])) {
+                        $refType = $param->getClass();
+                        if ($refType != null) {
+                            if (is_callable([$refType, 'getName'])) {
+                                $type = $refType->getName();
+                            } else {
+                                $type = strval($refType);
+                            }
+                            $type = empty($type) ? 'any' : $type;
+                        }
+                    }
+                }
+                //默认值
+                $def = null;
+                //如果有默认值,从默认值中获取类型
+                if ($param->isOptional()) {
+                    $def = $param->getDefaultValue();
+                    if ($type == 'any') {
+                        $type = gettype($def);
+                    }
+                }
+                switch ($type) {
+                    case 'bool':
+                    case 'boolean':
+                        $args[] = Request::param($name . ':b', $def);
+                        break;
+                    case 'int':
+                    case 'integer':
+                        $val = Request::param($name . ':s', $def);
+                        //如果默认值是整数,但是传递的值是浮点数
+                        if (preg_match('@[+-]?\d*\.\d+@', $val)) {
+                            $args[] = Request::param($name . ':f', $def);
+                        } else {
+                            $args[] = Request::param($name . ':i', $def);
+                        }
+                        break;
+                    case 'double':
+                    case 'float':
+                        $args[] = Request::param($name . ':f', $def);
+                        break;
+                    case 'string':
+                        $args[] = Request::param($name . ':s', $def);
+                        break;
+                    case 'array':
+                        $args[] = Request::param($name . ':a', $def);
+                        break;
+                    default :
+                        $args[] = Request::param($name, $def);
+                        break;
+                }
+            }
+        }
+        $example = new $class();
+        //如果有初始化方法
+        if (method_exists($example, 'initialize')) {
+            $example->initialize();
+        }
+        //调用方法
+        $out = $method->invokeArgs($example, $args);
+        if (Request::getContentType() == 'application/json' || Request::getContentType() == 'text/json') {
+            die(json_encode($out, JSON_UNESCAPED_UNICODE));
+        } else if (is_array($out)) {
+            Request::setContentType('json');
+            die(json_encode($out, JSON_UNESCAPED_UNICODE));
+        } else if (!empty($out)) {
+            Request::setContentType('html');
+            echo $out;
+        }
+    }
+
+    /**
+     * 运行
      * @param string|null $url
      */
     public static function run(string $url = null)
     {
-        if (defined('DEV_DEBUG') && DEV_DEBUG) {
+        if (defined('DEBUG_LOG') && DEBUG_LOG) {
             error_reporting(E_ALL);
             //程序计时---
             if (isset($_SERVER['REQUEST_URI'])) {
                 $t1 = microtime(true);
                 register_shutdown_function(function () use ($t1) {
                     $t2 = microtime(true);
-                    Console::info('URL:', $_SERVER['REQUEST_URI'], '耗时' . round($t2 - $t1, 3) . '秒');
+                    Logger::info('URL:', $_SERVER['REQUEST_URI'], '耗时' . round($t2 - $t1, 3) . '秒');
                 });
             }
         }
-
-        $request = Request::instance();
         try {
             if (self::$route == null) {
                 $url = self::parse($url);
@@ -499,13 +611,13 @@ class Route
                 throw new RouteError('未初始化路由参数,url:' . $url);
             }
             if (empty(self::$route['app'])) {
-                throw new RouteError('不存在的路径,url:' . $url);
+                throw new RouteError('路由应用名称 app 为空,url:' . $url);
             }
             if (empty(self::$route['ctl'])) {
-                throw new RouteError('不存在的控制器,url:' . $url);
+                throw new RouteError('路由控制器名称 ctl 为空,url:' . $url);
             }
             if (empty(self::$route['act'])) {
-                throw new RouteError('不存在的控制器方法,url:' . $url);
+                throw new RouteError('路由方法名称 act 为空,url:' . $url);
             }
             $ctl = Utils::toCamel(self::$route['ctl']);
             $act = Utils::toCamel(self::$route['act']);
@@ -514,6 +626,7 @@ class Route
             if (empty($appPath)) {
                 throw new RouteError('没有设置应用目录,url:' . $url);
             }
+            //设置当前应用下的配置文件
             $config = Utils::path($appPath, 'config.php');
             if (file_exists($config)) {
                 $cfgData = Config::loadFile($config);
@@ -521,122 +634,14 @@ class Route
                     Config::set($key, $val);
                 }
             }
+            //开始进入入口---------------------
             $namespace = self::getNamespace();
             $class = $namespace . '\\controller\\' . $ctl;
             if (!class_exists($class)) {
-                throw new RouteError('不存在的控制器:' . $class);
+                throw new RouteError('不存在的控制器类:' . $class);
             }
-            try {
-                $oReflectionClass = new \ReflectionClass($class);
-                $method = $oReflectionClass->getMethod($act . 'Action');
-                if ($method->isPublic()) {
-                    $params = $method->getParameters();
-                    $args = [];
-                    if (count($params) > 0) {
-                        foreach ($params as $param) {
-                            $name = $param->getName();
-                            $type = 'any';
-                            if (is_callable([$param, 'hasType'])) {
-                                if ($param->hasType()) {
-                                    $refType = $param->getType();
-                                    if ($refType != null) {
-                                        if (is_callable([$refType, 'getName'])) {
-                                            $type = $refType->getName();
-                                        } else {
-                                            $type = strval($refType);
-                                        }
-                                        $type = empty($type) ? 'any' : $type;
-                                    }
-                                }
-                            }
-                            if ($type == 'any') {
-                                if (is_callable([$param, 'getClass'])) {
-                                    $refType = $param->getClass();
-                                    if ($refType != null) {
-                                        if (is_callable([$refType, 'getName'])) {
-                                            $type = $refType->getName();
-                                        } else {
-                                            $type = strval($refType);
-                                        }
-                                        $type = empty($type) ? 'any' : $type;
-                                    }
-                                }
-                            }
-                            $def = null;
-                            //如果有默认值
-                            if ($param->isOptional()) {
-                                $def = $param->getDefaultValue();
-                                if ($type == 'any') {
-                                    $type = gettype($def);
-                                }
-                            }
-
-                            switch ($type) {
-                                case 'bool':
-                                case 'boolean':
-                                    $args[] = $request->param($name . ':b', $def);
-                                    break;
-                                case 'int':
-                                case 'integer':
-                                    $val = $request->param($name . ':s', $def);
-                                    if (preg_match('@[+-]?\d*\.\d+@', $val)) {
-                                        $args[] = $request->param($name . ':f', $def);
-                                    } else {
-                                        $args[] = $request->param($name . ':i', $def);
-                                    }
-                                    break;
-                                case 'double':
-                                case 'float':
-                                    $args[] = $request->param($name . ':f', $def);
-                                    break;
-                                case 'string':
-                                    $args[] = $request->param($name . ':s', $def);
-                                    break;
-                                case 'array':
-                                    $args[] = $request->param($name . ':a', $def);
-                                    break;
-                                case '\beacon\Request':
-                                case 'beacon\Request':
-                                    $args[] = $request;
-                                    break;
-                                default :
-                                    $args[] = $request->param($name, $def);
-                                    break;
-                            }
-                        }
-                    }
-                    $example = new $class();
-                    if ($request->isAjax()) {
-                        $request->setContentType('json');
-                    }
-                    if (method_exists($example, 'initialize')) {
-                        $example->initialize($request);
-                    }
-                    $out = $method->invokeArgs($example, $args);
-                    if ($request->getContentType() == 'application/json' || $request->getContentType() == 'text/json') {
-                        echo json_encode($out, JSON_UNESCAPED_UNICODE);
-                        exit;
-                    } else {
-                        if (is_array($out)) {
-                            $request->setContentType('json');
-                            echo json_encode($out, JSON_UNESCAPED_UNICODE);
-                            exit;
-                        } else {
-                            if (!empty($out)) {
-                                $request->setContentType('html');
-                                echo $out;
-                            }
-                        }
-                    }
-                } else {
-                    throw new RouteError('未公开方法:' . $act . 'Action');
-                }
-            } catch (\Error $e) {
-                throw $e;
-            } catch (\Exception $e) {
-                throw $e;
-            }
-
+            //-------------------------------
+            self::runMethod($class, $act . 'Action');
         } catch (RouteError $exception) {
             self::rethrow($exception);
         } catch (\Exception $exception) {
@@ -648,11 +653,10 @@ class Route
 
     public static function rethrow(\Throwable $exception)
     {
-        $request = Request::instance();
-        $isDebug = defined('DEV_DEBUG') && DEV_DEBUG;
-        $isLog = defined('DEBUG_LOG') && DEBUG_LOG;
-
-        if ($isDebug || $isLog) {
+        $out = [];
+        $out['status'] = false;
+        //如果开启调试,打印更详细的栈信息.
+        if ((defined('DEV_DEBUG') && DEV_DEBUG)) {
             $code = [];
             $code[] = get_class($exception) . ": {$exception->getMessage()}";
             $code[] = $exception->getTraceAsString();
@@ -660,35 +664,33 @@ class Route
                 $code[] = "----------------------------------------------------------------------------------------------------------";
                 $code[] = $exception->getStack();
             }
-            if ($isLog) {
-                Console::error(join("\n", $code));
+            //开启日志
+            if ((defined('DEBUG_LOG') && DEBUG_LOG)) {
+                Logger::error(join("\n", $code));
             }
-            if ($request->isAjax()) {
-                $request->setContentType('json');
-                $out = [];
-                $out['status'] = false;
-                if ($isDebug) {
-                    $out['stack'] = explode("\n", join("\n", $code));
-                    $out['error'] = '数据出现异常:<br>' . $exception->getMessage();
-                }
-                die(json_encode($out, JSON_UNESCAPED_UNICODE));
-            }
-            $request->setContentType('txt');
-            if ($isDebug) {
-                die(join("\n", $code));
+            $out['stack'] = explode("\n", join("\n", $code));
+            if ($exception instanceof RouteError) {
+                $out['error'] = '404 页面没有找到:' . $exception->getMessage();
             } else {
-                die('数据出现异常');
+                $out['error'] = '数据出现异常:' . $exception->getMessage();
             }
         } else {
-            if ($request->isAjax()) {
-                $out = [];
-                $out['status'] = false;
-                $out['error'] = '数据出现异常';
-                die(json_encode($out, JSON_UNESCAPED_UNICODE));
+            if ($exception instanceof RouteError) {
+                $out['error'] = '404 页面没有找到!';
+            } else {
+                $out['error'] = '数据出现异常,请稍后再试.';
             }
-            $request->setContentType('txt');
-            die('数据出现异常');
         }
+        if (Request::isAjax()) {
+            Request::setContentType('json');
+            die(json_encode($out, JSON_UNESCAPED_UNICODE));
+        }
+        //输出错误页面--------
+        Request::setContentType('html');
+        $view = View::instance();
+        $view->assign('info', $out);
+        $template = Config::get('beacon.exception_template', '@exception.tpl');
+        $view->display($template);
     }
 }
 
