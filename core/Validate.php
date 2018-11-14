@@ -8,8 +8,6 @@ namespace beacon;
  * Date: 2017/12/14
  * Time: 0:26
  */
-
-
 class Validate
 {
     /**
@@ -133,6 +131,7 @@ class Validate
     }
 
     /**
+     * 判断是否是邮箱
      * @param $val
      * @return int
      */
@@ -141,6 +140,12 @@ class Validate
         return !!preg_match('/^(\w+[-_\.]?)*\w+@(\w+[-_\.]?)*\w+\.\w{2,6}([\.]\w{2,6})?$/', $val);
     }
 
+    /**
+     * 判断url
+     * @param $val
+     * @param bool $dc
+     * @return bool
+     */
     public static function test_url($val, $dc = false)
     {
         if ($dc && $val == '#') {
@@ -149,16 +154,34 @@ class Validate
         return !!preg_match('/^(http|https|ftp):\/\/\w+\.\w+/i', $val);
     }
 
+    /**
+     * 判断值相等
+     * @param $val
+     * @param $str
+     * @return bool
+     */
     public static function test_equal($val, $str)
     {
         return strval($val) == strval($str);
     }
 
+    /**
+     * 判断值不相等
+     * @param $val
+     * @param $str
+     * @return bool
+     */
     public static function test_notequal($val, $str)
     {
         return strval($val) != strval($str);
     }
 
+    /**
+     * 判断与比较的id相等
+     * @param $val
+     * @param $key
+     * @return bool
+     */
     public static function test_equalto($val, $key)
     {
         if (!empty($key) && preg_match('/^#(\w+)/i', $key, $m) != 0) {
@@ -173,21 +196,42 @@ class Validate
         return true;
     }
 
+    /**
+     * 判断手机号码
+     * @param $val
+     * @return bool
+     */
     public static function test_mobile($val)
     {
         return !!preg_match('/^1[34578]\d{9}$/', $val);
     }
 
+    /**
+     * 判断身份证
+     * @param $val
+     * @return bool
+     */
     public static function test_idcard($val)
     {
         return !!preg_match('/^[1-9]\d{5}(19|20)\d{2}(((0[13578]|1[02])([0-2]\d|30|31))|((0[469]|11)([0-2]\d|30))|(02[0-2][0-9]))\d{3}(\d|X|x)$/', $val);
     }
 
+    /**
+     * 判断字母开头的用户名
+     * @param $val
+     * @return bool
+     */
     public static function test_user($val)
     {
         return !!preg_match('/^[a-z]\w*$/i', $val);
     }
 
+    /**
+     * 正则校验
+     * @param $val
+     * @param $re
+     * @return bool
+     */
     public static function test_regex($val, $re)
     {
         $str = '#' . str_replace('#', '\#', $re) . '#';
@@ -198,16 +242,33 @@ class Validate
         return $rt != 0;
     }
 
+    /**
+     * 判断是数字
+     * @param $val
+     * @return bool
+     */
     public static function test_number($val)
     {
         return !!preg_match('/^[\-\+]?((\d+(\.\d*)?)|(\.\d+))$/', $val);
     }
 
+    /**
+     * 判断是整数
+     * @param $val
+     * @return bool
+     */
     public static function test_integer($val)
     {
         return !!preg_match('/^[\-\+]?\d+$/', $val);
     }
 
+    /**
+     * 判断值
+     * @param $val
+     * @param $num
+     * @param bool $noeq
+     * @return bool
+     */
     public static function test_max($val, $num, $noeq = false)
     {
         if ($noeq) {
@@ -217,6 +278,13 @@ class Validate
         }
     }
 
+    /**
+     * 判断值
+     * @param $val
+     * @param $num
+     * @param bool $noeq
+     * @return bool
+     */
     public static function test_min($val, $num, $noeq = false)
     {
         if ($noeq) {
@@ -226,41 +294,89 @@ class Validate
         }
     }
 
+    /**
+     * 判断值范围
+     * @param $val
+     * @param $min
+     * @param $max
+     * @param bool $noeq
+     * @return bool
+     */
     public static function test_range($val, $min, $max, $noeq = false)
     {
         return self::test_min($val, $min, $noeq) && self::test_max($val, $max, $noeq);
     }
 
+    /**
+     * 字符长度判断
+     * @param $val
+     * @param $len
+     * @return bool
+     */
     public static function test_minlength($val, $len)
     {
         return mb_strlen($val, 'UTF-8') >= intval($len);
     }
 
+    /**
+     * 字符长度判断
+     * @param $val
+     * @param $len
+     * @return bool
+     */
     public static function test_maxlength($val, $len)
     {
         return mb_strlen($val, 'UTF-8') <= intval($len);
     }
 
+    /**
+     * 字符区间判断
+     * @param $val
+     * @param $minlen
+     * @param $maxlen
+     * @return bool
+     */
     public static function test_rangelength($val, $minlen, $maxlen)
     {
         return self::test_minlength($val, $minlen) && self::test_maxlength($val, $maxlen);
     }
 
+    /**
+     * 判断是两位小数的金额
+     * @param $val
+     * @return bool
+     */
     public static function test_money($val)
     {
         return preg_match('/^[\-\+]{0,1}\d+[\.]\d{1,2}$/', $val) != 0 || self::test_integer($val);
     }
 
+    /**
+     * 判断日期时间格式
+     * @param $val
+     * @return bool
+     */
     public static function test_date($val)
     {
         return !!preg_match('/^\d{4}-\d{1,2}-\d{1,2}(\s\d{1,2}(:\d{1,2}(:\d{1,2})?)?)?$/', $val);
     }
 
+    /**
+     * 添加远程校验
+     * @param string $name
+     * @param $func
+     */
     public function addRemoute(string $name, $func)
     {
         $this->remoteFunc[$name] = $func;
     }
 
+    /**
+     * 添加校验函数
+     * @param string $type
+     * @param $func
+     * @param string|null $error
+     */
     public function addFunc(string $type, $func, string $error = null)
     {
         $this->func[$type] = $func;
@@ -269,6 +385,11 @@ class Validate
         }
     }
 
+    /**
+     * 字段检查
+     * @param Field $field
+     * @return bool
+     */
     public function checkField(Field $field)
     {
         if (Validate::$default_errors == null) {
@@ -316,12 +437,11 @@ class Validate
             }
             unset($rules['required']);
         }
-
         if (is_array($value)) {
-            if(isset($field->validFunc) && is_callable($field->validFunc)){
-                $error=$field->validFunc($value);
-                if(!empty($error)){
-                    $field->error =$error;
+            if (isset($field->validFunc) && is_callable($field->validFunc)) {
+                $error = $field->validFunc($value);
+                if (!empty($error)) {
+                    $field->error = $error;
                     return false;
                 }
             }
@@ -357,13 +477,12 @@ class Validate
                     $field->error = Validate::format($out['error'], $xargs);
                     return false;
                 }
-
             }
         }
-        if(isset($field->validFunc) && is_callable($field->validFunc)){
-            $error=($field->validFunc)($value);
-            if(!empty($error)){
-                $field->error =$error;
+        if (isset($field->validFunc) && is_callable($field->validFunc)) {
+            $error = ($field->validFunc)($value);
+            if (!empty($error)) {
+                $field->error = $error;
                 return false;
             }
         }
