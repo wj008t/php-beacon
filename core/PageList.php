@@ -132,7 +132,6 @@ class PageList
             'onlyCount' => $this->onlyCount,
             'pageSize' => $this->pageSize,
         );
-
         return $this->info;
     }
 

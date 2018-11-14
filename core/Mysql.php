@@ -87,7 +87,6 @@ class MysqlException extends \Exception
 class Mysql
 {
     private static $instance = null;
-    private static $logFunc = null;
 
     /**
      * 获取一个单例
@@ -105,27 +104,6 @@ class Mysql
             self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
         }
         return self::$instance;
-    }
-
-    /**
-     * 设置日志输出函数
-     * @param $func
-     */
-    public static function setLogFunc($func)
-    {
-        self::$logFunc = $func;
-    }
-
-    /**
-     * 使用定义的日志输出函数输出
-     * @param string $sql
-     * @param int $time
-     */
-    private static function log(string $sql, int $time)
-    {
-        if (self::$logFunc && is_callable(self::$logFunc)) {
-            call_user_func(self::$logFunc, $sql, $time);
-        }
     }
 
     /**
@@ -360,12 +338,12 @@ class Mysql
                 }
             }
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
-                self::log($this->_lastSql, microtime(true) - $time);
+                Logger::info($this->_lastSql, microtime(true) - $time);
             }
             return $sth;
         } catch (\Exception $exception) {
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
-                self::log($this->_lastSql, microtime(true) - $time);
+                Logger::info($this->_lastSql, microtime(true) - $time);
             }
             throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
         }

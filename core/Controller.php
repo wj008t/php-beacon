@@ -109,7 +109,7 @@ abstract class Controller
             if (!empty($option['template'])) {
                 $this->display($option['template']);
             } else {
-                $template = Config::get('template_error', '@error.tpl');
+                $template = Config::get('beacon.error_template', '@error.tpl');
                 $this->display($template);
             }
             exit;
@@ -144,7 +144,7 @@ abstract class Controller
             if (!empty($option['template'])) {
                 $this->display($option['template']);
             } else {
-                $template = Config::get('template_success', '@success.tpl');
+                $template = Config::get('beacon.success_template', '@success.tpl');
                 $this->display($template);
             }
             exit;

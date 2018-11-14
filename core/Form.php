@@ -455,7 +455,6 @@ class Form
     public function fillComplete(array $data)
     {
         $fields = $this->getTabFields();
-        $request = Request::instance();
         $valueFuncFields = [];
         foreach ($fields as $name => $field) {
             if ($field->close || ($field->offEdit && $this->type == 'edit')) {
