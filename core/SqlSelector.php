@@ -2,6 +2,8 @@
 
 namespace beacon;
 
+use sdopx\Sdopx;
+
 /**
  * Created by PhpStorm.
  * User: wj008
@@ -27,8 +29,11 @@ class SqlSelector
 {
 
 
-    private $table = '';
-    private $alias = '';
+    private $table = null;
+    private $alias = null;
+
+    private $sqlTemplate = null;
+    private $param = null;
 
     private $count = -1;
     /**
@@ -42,7 +47,7 @@ class SqlSelector
     /**
      * @var SqlItem;
      */
-    private $findItem = null;
+    private $fieldItem = null;
 
     private $limit = '';
     /**
@@ -67,7 +72,8 @@ class SqlSelector
      * 优化查询
      * @var bool
      */
-    private $optimize = true;
+    private $optimize = false;
+
 
     /**
      * 获取类实例
@@ -75,35 +81,61 @@ class SqlSelector
      * @param string $alias
      * @return SqlSelector
      */
-    public static function instance($table, $alias = '')
+    public static function instance(string $table, $alias = '')
     {
         return new SqlSelector($table, $alias);
     }
 
     /**
-     * SqlSelector constructor.
-     * @param $table
-     * @param string $alias
+     * Sql构造器
+     * @param string $sql
+     * @param null $param
      */
-    public function __construct($table, $alias = '')
+    public function __construct(string $table, $alias = '')
     {
         $this->table = $table;
         $this->alias = $alias;
         $this->condition = new SqlCondition();
     }
 
+    /**
+     * 使用SQL模板方式
+     * @param string $template
+     * @param array $param
+     */
+    public function setTemplate(string $template, array $param)
+    {
+        $this->sqlTemplate = $template;
+        $this->param = $param;
+    }
 
+    /**
+     * 设置别名
+     * @param $alias
+     * @return $this
+     */
     public function setAlias($alias)
     {
         $this->alias = $alias;
         return $this;
     }
 
-    public function createSqlCondition(string $type = 'and')
+    /**
+     * 创建一个查询条件
+     * @param string $type
+     * @return SqlCondition
+     */
+    public static function newCondition(string $type = 'and')
     {
         return new SqlCondition($type);
     }
 
+    /**
+     * 条件查询
+     * @param null $sql
+     * @param null $args
+     * @return $this
+     */
     public function where($sql = null, $args = null)
     {
         if ($sql === null) {
@@ -113,6 +145,14 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 条件搜索,如果值为空 放弃筛选
+     * @param string $sql
+     * @param $value
+     * @param int $type
+     * @param null $format
+     * @return $this
+     */
     public function search(string $sql, $value, $type = SqlCondition::WITHOUT_EMPTY, $format = null)
     {
         if (substr_count($sql, '??') == 1 && is_array($value)) {
@@ -130,17 +170,33 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 获取帧
+     * @return array
+     */
     public function getFrame()
     {
         return $this->condition->getFrame();
     }
 
-    public function field(string $find, $args = null)
+    /**
+     * 设置查询字段
+     * @param string $field
+     * @param null $args
+     * @return $this
+     */
+    public function field(string $field, $args = null)
     {
-        $this->findItem = new SqlItem($find, $args);
+        $this->fieldItem = new SqlItem($field, $args);
         return $this;
     }
 
+    /**
+     * 设置排序
+     * @param string $order
+     * @param null $args
+     * @return $this
+     */
     public function order(string $order, $args = null)
     {
         $order = trim($order);
@@ -155,6 +211,12 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 设置组
+     * @param string $group
+     * @param null $args
+     * @return $this
+     */
     public function group(string $group, $args = null)
     {
         $group = trim($group);
@@ -169,6 +231,12 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 结果筛选
+     * @param null $sql
+     * @param null $args
+     * @return $this
+     */
     public function having($sql = null, $args = null)
     {
         if (!empty($sql)) {
@@ -180,6 +248,12 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * join
+     * @param string $sql
+     * @param null $args
+     * @return $this
+     */
     public function join(string $sql, $args = null)
     {
         $sql = trim($sql);
@@ -194,6 +268,12 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * leftJoin
+     * @param string $sql
+     * @param null $args
+     * @return $this
+     */
     public function leftJoin(string $sql, $args = null)
     {
         $sql = trim($sql);
@@ -230,6 +310,12 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * Join ON 条件
+     * @param string $sql
+     * @param null $args
+     * @return $this
+     */
     public function joinOn(string $sql, $args = null)
     {
         $sql = trim($sql);
@@ -241,6 +327,11 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 联合另外一个查询器
+     * @param SqlSelector $selector
+     * @return $this
+     */
     public function union(SqlSelector $selector)
     {
         if ($selector == null) {
@@ -253,6 +344,11 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 联合,运行结果重复
+     * @param SqlSelector $selector
+     * @return $this
+     */
     public function unionAll(SqlSelector $selector)
     {
         if ($selector == null) {
@@ -265,7 +361,12 @@ class SqlSelector
         return $this;
     }
 
-
+    /**
+     * 设置分页
+     * @param int $offset
+     * @param int $size
+     * @return $this
+     */
     public function limit(int $offset = 0, int $size = 0)
     {
         if ($offset === 0 && $size == 0) {
@@ -279,7 +380,12 @@ class SqlSelector
         return $this;
     }
 
-
+    /**
+     * 按页码和分页尺寸进行分页
+     * @param int $page
+     * @param int $size
+     * @return $this
+     */
     public function pageLimit(int $page = 1, int $size = 20)
     {
         if ($page < 1) {
@@ -293,11 +399,137 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 数据片段
+     * @return array
+     */
+    public function getSegment()
+    {
+        $data = [];
+        $data['table'] = $this->table;
+        $field = '*';
+        if ($this->fieldItem !== null) {
+            $field = $this->fieldItem->sql;
+            if ($this->fieldItem->args !== null) {
+                $field = Mysql::format($field, $this->fieldItem->args);
+            }
+        }
+        $data['field'] = $field;
+        $data['alias'] = $this->alias;
+        $data['where'] = '';
+        $frame = $this->condition->getFrame();
+        if (!empty($frame['sql'])) {
+            if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
+                $data['where'] = 'where ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+            } else {
+                $data['where'] = 'where ' . $frame['sql'];
+            }
+            if ($frame['args'] !== null && is_array($frame['args'])) {
+                $data['where'] = Mysql::format($data['where'], $frame['args']);
+            }
+        }
+        $data['order'] = '';
+        if ($this->orderItem != null) {
+            $orderSql = $this->orderItem->sql;
+            $ordeArgs = $this->orderItem->args;
+            if (!empty($orderSql)) {
+                $data['order'] = 'order ' . $orderSql;
+            }
+            if ($ordeArgs !== null && is_array($ordeArgs)) {
+                $data['order'] = Mysql::format($data['order'], $ordeArgs);
+            }
+        }
+        $data['group'] = '';
+        if ($this->groupItem != null) {
+            $groupSql = $this->groupItem->sql;
+            $groupArgs = $this->groupItem->args;
+            if (!empty($groupSql)) {
+                $data['group'] = 'group ' . $groupSql;
+                if ($groupArgs !== null && is_array($groupArgs)) {
+                    $data['group'] = Mysql::format($data['group'], $groupArgs);
+                }
+            }
+        }
+        $data['having'] = '';
+        if ($this->havingItem != null) {
+            $frame = $this->havingItem->getFrame();
+            if (!empty($frame['sql'])) {
+                if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
+                    $data['having'] = 'having ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+                } else {
+                    $data['having'] = 'having ' . $frame['sql'];
+                }
+                if ($frame['args'] !== null && is_array($frame['args'])) {
+                    $data['having'] = Mysql::format($data['having'], $frame['args']);
+                }
+            }
+        }
+        $data['union'] = '';
+        if ($this->unionItem) {
+            $union = [];
+            array_unshift($union, '(');
+            $union[] = ')';
+            foreach ($this->unionItem as $item) {
+                $temp = $item->selector->createSql(0);
+                $uItem = '';
+                if ($item->all) {
+                    $uItem = 'union all ( ' . $temp['sql'] . ' )';
+                } else {
+                    $uItem = 'union ( ' . $temp['sql'] . ' )';
+                }
+                if (!empty($temp['args'])) {
+                    $uItem = Mysql::format($temp, $frame['args']);
+                }
+                if (!empty($uItem)) {
+                    $union[] = $uItem;
+                }
+            }
+            $data['union'] = join(' ', $union);
+        }
+        $data['join'] = '';
+        if ($this->joinItem !== null) {
+            $joinSql = $this->joinItem->sql;
+            if ($this->joinItem->args !== null) {
+                $joinSql = Mysql::format($joinSql, $this->joinItem->args);
+            }
+            if (!empty($joinSql)) {
+                $data['join'] = $joinSql;
+            }
+        }
+
+        $data['limit'] = $this->limit;
+        $data['param'] = $this->param;
+        return $data;
+    }
+
+    /**
+     * 创建sql
+     * @param int $type
+     * @return array
+     */
     public function createSql($type = 0)
     {
+
+        if (!empty($this->sqlTemplate)) {
+            if ($type == 2) {
+                $order = $this->orderItem;
+                $limit = $this->limit;
+                $this->orderItem = null;
+                $this->limit = null;
+                $segment = $this->getSegment();
+                $this->orderItem = $order;
+                $this->limit = $limit;
+                $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment);
+                return ['sql' => 'select count(1) from (' . $sql . ') countTempTable', 'args' => []];
+            } else {
+                $segment = $this->getSegment();
+                $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment);
+                return ['sql' => $sql, 'args' => []];
+            }
+        }
         $sqlItems = [];
         $argItems = [];
-
+        //获取查询数量的sql语句
         if ($type == 2) {
             if ($this->groupItem != null || $this->unionItem != null) {
                 $order = $this->orderItem;
@@ -315,13 +547,14 @@ class SqlSelector
                     $sqlItems[] = ' ' . $this->alias;
                 }
             }
-        } elseif ($type == 1) {
+        } //优化查询,只适合简单单表sql
+        elseif ($type == 1) {
             $alias = 'Zt';
             $findSql = $alias . '.*';
-            if ($this->findItem !== null) {
-                $findSql = $this->findItem->sql;
-                if ($this->findItem->args !== null) {
-                    $argItems = array_merge($argItems, $this->findItem->args);
+            if ($this->fieldItem !== null) {
+                $findSql = $this->fieldItem->sql;
+                if ($this->fieldItem->args !== null) {
+                    $argItems = array_merge($argItems, $this->fieldItem->args);
                 }
             }
             $sqlItems[] = "select {$findSql} from `{$this->table}` {$alias},(select id from `{$this->table}`";
@@ -330,10 +563,10 @@ class SqlSelector
             }
         } else {
             $findSql = '*';
-            if ($this->findItem !== null) {
-                $findSql = $this->findItem->sql;
-                if ($this->findItem->args !== null) {
-                    $argItems = array_merge($argItems, $this->findItem->args);
+            if ($this->fieldItem !== null) {
+                $findSql = $this->fieldItem->sql;
+                if ($this->fieldItem->args !== null) {
+                    $argItems = array_merge($argItems, $this->fieldItem->args);
                 }
             }
             $sqlItems[] = "select {$findSql} from `{$this->table}`";
@@ -390,7 +623,6 @@ class SqlSelector
                 }
             }
         }
-
         //UNION
         if ($type == 2 || $type == 0) {
             if ($this->unionItem) {
@@ -424,7 +656,6 @@ class SqlSelector
         if ($type != 2 && !empty($this->limit)) {
             $sqlItems[] = $this->limit;
         }
-
         if ($type == 1) {
             $alias = 'Zt';
             $sqlItems[] = ') Y where ' . $alias . '.id=Y.id';
@@ -460,7 +691,6 @@ class SqlSelector
         $this->count = $count;
     }
 
-
     public function getPageList($size = 20, $pagekey = 'page')
     {
         if ($this->count == -1) {
@@ -484,12 +714,12 @@ class SqlSelector
     }
 
     /**
-     * 关闭自动优化
+     * 设置开启或者关闭优化
      * @param bool $value
      */
-    public function closeOptimize()
+    public function setOptimize($value)
     {
-        $this->optimize = false;
+        $this->optimize = $value;
     }
 
     /**
