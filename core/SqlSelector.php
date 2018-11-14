@@ -23,7 +23,7 @@ class SqlUnionItem
     }
 }
 
-class SqlSelector implements SqlSelectInterface
+class SqlSelector
 {
 
 
