@@ -14,22 +14,20 @@ use beacon\Field;
 class Textarea extends Hidden
 {
 
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $args['type'] = '';
-
-        if (isset($args['value'])) {
-            $field->value = $args['value'];
+        $attr['type'] = '';
+        if (isset($attr['value'])) {
+            $field->value = $attr['value'];
         }
         $args['value'] = '';
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
-        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->_value) . '</textarea>';
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
+        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</textarea>';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
         $field->varType = 'string';
-        return parent::assign($field, $data);
+        return parent::assign($field, $input);
     }
 }

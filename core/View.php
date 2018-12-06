@@ -8,6 +8,15 @@ use sdopx\Sdopx;
 if (Config::get('sdopx.debug')) {
     Sdopx::$debug = true;
 }
+//设置后缀
+if (Config::get('sdopx.extension')) {
+    Sdopx::$extension = Config::get('sdopx.extension');
+}
+//注册配置项
+Sdopx::registerConfig(function ($key) {
+    return Config::get($key);
+});
+
 
 /**
  * Created by PhpStorm.
@@ -15,9 +24,12 @@ if (Config::get('sdopx.debug')) {
  * Date: 2017/12/12
  * Time: 15:50
  */
-class View implements ViewInterface
+class View
 {
 
+    /**
+     * @var View|Sdopx
+     */
     private static $instance = null;
     /**
      * @var Sdopx
@@ -37,52 +49,56 @@ class View implements ViewInterface
 
     public function __construct()
     {
-        $config = Config::get('sdopx.*');
         $this->template = $sdopx = new Sdopx();
-        //模板目录
-        $templateDir = empty($config['template_dir']) ? 'view' : $config['template_dir'];
-        if (is_array($templateDir)) {
-            foreach ($templateDir as &$dir) {
-                $dir = Utils::path(ROOT_DIR, $dir);
-            }
+        //如果已经有实例了，再次创建的时候使用相同的设置,可能会在实例中设置
+        if (self::$instance) {
+            $template = self::$instance->template;
+            $sdopx->setCompileDir($template->compileDir);
+            $sdopx->setTemplateDir($template->getTemplateDir());
+            $sdopx->leftDelimiter = $template->leftDelimiter;
+            $sdopx->rightDelimiter = $template->rightDelimiter;
+            $sdopx->compileForce = $template->compileForce;
+            $sdopx->compileCheck = $template->compileCheck;
+            $sdopx->context = $template->context;
+            $this->assign('this', $sdopx->context);
         } else {
-            $templateDir = Utils::path(ROOT_DIR, $templateDir);
-        }
-        //公共模板目录
-        $commonDir = Utils::path(ROOT_DIR, empty($config['common_dir']) ? 'view/common' : $config['common_dir']);
-        //运行时目录
-        $runtimeDir = Utils::path(ROOT_DIR, empty($config['runtime_dir']) ? 'runtime' : $config['runtime_dir']);
-        $sdopx->setTemplateDir($templateDir);
-        $sdopx->addTemplateDir($commonDir, 'common');
-        $sdopx->setCompileDir($runtimeDir);
-        //设置边界符号
-        if (!empty($config['leftDelimiter']) && !empty($config['rightDelimiter'])) {
-            $sdopx->leftDelimiter = $config['leftDelimiter'];
-            $sdopx->rightDelimiter = $config['rightDelimiter'];
-        }
-        //强行编译
-        if (isset($config['compileForce'])) {
-            $sdopx->compileForce = $config['compileForce'];
-        }
-        //检查编译
-        if (isset($config['compileCheck'])) {
-            $sdopx->compileForce = $config['compileCheck'];
-        }
-    }
+            $config = Config::get('sdopx.*');
+            //模板目录
+            $templateDir = empty($config['template_dir']) ? 'view' : $config['template_dir'];
+            if (is_array($templateDir)) {
+                foreach ($templateDir as &$dir) {
+                    $dir = Utils::trimPath($dir);
+                    $dir = Utils::path(ROOT_DIR, $dir);
+                }
+            } else {
+                $templateDir = Utils::trimPath($templateDir);
+                $templateDir = Utils::path(ROOT_DIR, $templateDir);
+            }
+            //公共模板目录
+            $commonDir = Utils::trimPath(empty($config['common_dir']) ? 'view/common' : $config['common_dir']);
+            $commonDir = Utils::path(ROOT_DIR, $commonDir);
+            //运行时目录
+            $runtimeDir = Utils::trimPath(empty($config['runtime_dir']) ? 'runtime' : $config['runtime_dir']);
+            $runtimeDir = Utils::path(ROOT_DIR, $runtimeDir);
+            $sdopx->setTemplateDir($templateDir);
+            $sdopx->addTemplateDir($commonDir, 'common');
+            $sdopx->setCompileDir($runtimeDir);
 
-    public function assign($key, $val = null)
-    {
-        $this->template->assign($key, $val);
-    }
 
-    public function fetch(string $tplName)
-    {
-        $this->template->fetch($tplName);
-    }
-
-    public function display(string $tplName)
-    {
-        $this->template->display($tplName);
+            //设置边界符号
+            if (!empty($config['left_delimiter']) && !empty($config['right_delimiter'])) {
+                $sdopx->leftDelimiter = $config['left_delimiter'];
+                $sdopx->rightDelimiter = $config['right_delimiter'];
+            }
+            //强行编译
+            if (isset($config['compile_force'])) {
+                $sdopx->compileForce = $config['compile_force'];
+            }
+            //检查编译
+            if (isset($config['compile_check'])) {
+                $sdopx->compileCheck = $config['compile_check'];
+            }
+        }
     }
 
     public function __call($method, $params)

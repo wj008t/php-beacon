@@ -6,26 +6,25 @@
  * Time: 4:01
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
-use beacon\Validate;
 
 class Integer extends Hidden
 {
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $args['yee-module'] = 'integer';
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr['yee-module'] = 'integer';
+        $attr['type'] = 'text';
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
         $field->varType = 'int';
-        return parent::assign($field, $data);
+        return parent::assign($field, $input);
     }
 
 }

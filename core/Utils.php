@@ -43,6 +43,22 @@ class Utils
         return $protocol . $path;
     }
 
+    /**
+     * 修剪掉root路径
+     * @param $path
+     * @param string $base
+     * @return bool|string
+     */
+    public static function trimPath($path, $base = ROOT_DIR)
+    {
+        $len = strlen($base);
+        if (strlen($path) > $len) {
+            if (substr($path, 0, $len) == $base) {
+                $path = substr($path, $len);
+            }
+        }
+        return $path;
+    }
 
     /**
      * 驼峰转下划线
@@ -65,7 +81,7 @@ class Utils
      */
     public static function toCamel($name)
     {
-        $name = preg_replace('@_+@', '_', $name);
+        $name = preg_replace('@[_-]+@', '_', $name);
         $name = preg_replace_callback('@_[a-z]@', function ($m) {
             return substr(strtoupper($m[0]), 1);
         }, $name);

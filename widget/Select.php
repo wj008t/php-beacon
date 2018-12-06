@@ -6,7 +6,7 @@
  * Time: 18:02
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -14,19 +14,17 @@ use beacon\Field;
 class Select extends Hidden
 {
 
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $value = isset($args['value']) ? $args['value'] : $field->_value;
-        $options = isset($args['@options']) ? $args['@options'] : $field->options;
+        $value = isset($attr['value']) ? $attr['value'] : $field->value;
+        $options = isset($attr['@options']) ? $attr['@options'] : $field->options;
         $options = $options == null ? [] : $options;
-
         $args['value'] = '';
         $args['type'] = '';
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
-
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         $out = [];
         $out[] = '<select ' . join(' ', $attr) . '>' . "\n";
+        //选项头
         if ($field->header !== null) {
             if (is_string($field->header)) {
                 $out[] = '<option value="">';
@@ -46,6 +44,7 @@ class Select extends Hidden
                 $out[] = '</option>';
             }
         }
+        //选项值
         foreach ($options as $item) {
             if ($item == null) {
                 continue;

@@ -69,7 +69,6 @@ class Request
                 }
                 return intval($data[$name]);
             case 'a':
-
                 if (!isset($data[$name])) {
                     if (is_array($def)) {
                         return $def;

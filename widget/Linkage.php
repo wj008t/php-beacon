@@ -12,63 +12,40 @@ use beacon\Field;
 use beacon\Request;
 use beacon\Utils;
 
-class Linkage implements BoxInterface
+class Linkage implements WidgetInterface
 {
 
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $values = isset($args['value']) ? $args['value'] : $field->_value;
-        if (is_string($values) && Utils::isJsonString($values)) {
+        $values = isset($attr['value']) ? $attr['value'] : $field->value;
+        if (is_string($values) && Utils::isJson($values)) {
             $values = json_decode($values, true);
         }
         if (!is_array($values)) {
             $values = [];
         }
-        foreach ($values as $key => $item) {
-            $values[$key] = strval($item);
-        }
-
-        $args['value'] = '';
+        $values = array_map(function ($v) {
+            return strval($v);
+        }, $values);
+        $attr['value'] = '';
         if (count($values) > 0) {
-            $args['value'] = $values;
+            $attr['value'] = $values;
         }
         if ($field->names !== null && is_array($field->names)) {
             foreach ($field->names as $idx => $item) {
                 $pname = is_string($item) ? $item : (isset($item['field']) ? $item['field'] : '');
                 $level = $idx + 1;
-                $args['data-name' . $level] = $pname;
+                $attr['data-name' . $level] = $pname;
             }
         }
         $args['yee-module'] = 'linkage';
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    private function convertType($value, $type)
-    {
-        if ($value === null) {
-            return null;
-        }
-        switch ($type) {
-            case 'bool':
-                $value = strval($value) === '1' || strval($value) === 'on' || strval($value) === 'yes' || strval($value) === 'true';
-                break;
-            case 'int':
-                $value = ($value === null || $value === '') ? 0 : intval($value);
-                break;
-            case 'float':
-                $value = ($value === null || $value === '') ? 0 : floatval($value);
-                break;
-            default :
-                break;
-        }
-        return $value;
-    }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
-        $request = Request::instance();
         if ($field->names !== null && is_array($field->names)) {
             $values = [];
             foreach ($field->names as $idx => $item) {
@@ -77,16 +54,16 @@ class Linkage implements BoxInterface
                 if (empty($name)) {
                     continue;
                 }
-                $values[] = $this->convertType($request->input($data, $name . ':s', ''), $type);
+                $values[] = WidgetHelper::getValue($type, $input, $name);
             }
             return $field->value = $values;
         }
         $boxName = $field->boxName;
-        $values = $request->input($data, $boxName, null);
+        $values = Request::input($input, $boxName, null);
         if (is_array($values)) {
             return $field->value = $values;
         }
-        if (Utils::isJsonString($values)) {
+        if (Utils::isJson($values)) {
             $values = json_decode($values);
             if (is_array($values)) {
                 return $field->value = $values;
@@ -107,7 +84,7 @@ class Linkage implements BoxInterface
                 if (empty($name)) {
                     continue;
                 }
-                $values[$name] = $this->convertType(isset($field->value[$idx]) ? $field->value[$idx] : '', $type);
+                $values[$name] = WidgetHelper::convertType(isset($field->value[$idx]) ? $field->value[$idx] : '', $type);
             }
             return;
         }
@@ -128,7 +105,7 @@ class Linkage implements BoxInterface
                 if (empty($name)) {
                     continue;
                 }
-                $temps[] = $this->convertType(isset($values[$name]) ? $values[$name] : '', $type);
+                $temps[] = WidgetHelper::convertType(isset($values[$name]) ? $values[$name] : '', $type);
             }
             return $field->value = $temps;
         }
@@ -136,7 +113,7 @@ class Linkage implements BoxInterface
         if (is_array($temps)) {
             return $field->value = $temps;
         }
-        if (Utils::isJsonString($temps)) {
+        if (Utils::isJson($temps)) {
             $temps = json_decode($temps);
             if (is_array($temps)) {
                 return $field->value = $temps;

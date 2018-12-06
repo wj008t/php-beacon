@@ -8,7 +8,6 @@ namespace beacon;
  * Date: 2017/12/12
  * Time: 15:56
  */
-
 class Config
 {
 
@@ -26,8 +25,8 @@ class Config
     {
         if (is_array($name)) {
             $data = [];
-            foreach ($name as $tname) {
-                $temp = self::load($tname);
+            foreach ($name as $value) {
+                $temp = self::load($value);
                 $data = array_merge($data, $temp);
             }
             return $data;
@@ -36,9 +35,9 @@ class Config
         //如果应用目录下存在配置文件夹使用应用目录下面的配置文件
         $appPath = Route::getPath();
         if (!empty($appPath)) {
-            $filepath = Utils::path($appPath, 'config', $name . '.config.php');
-            if (file_exists($filepath)) {
-                $loadData = require($filepath);
+            $filePath = Utils::path($appPath, 'config', $name . '.config.php');
+            if (file_exists($filePath)) {
+                $loadData = require($filePath);
                 if (is_array($loadData)) {
                     foreach ($loadData as $key => $val) {
                         if ($overwrite) {
@@ -58,9 +57,9 @@ class Config
         if (empty(self::$configPath)) {
             self::$configPath = Utils::path(ROOT_DIR, 'config');
         }
-        $filepath = Utils::path(self::$configPath, $name . '.config.php');
-        if (file_exists($filepath)) {
-            $loadData = require($filepath);
+        $filePath = Utils::path(self::$configPath, $name . '.config.php');
+        if (file_exists($filePath)) {
+            $loadData = require($filePath);
             if (is_array($loadData)) {
                 foreach ($loadData as $key => $val) {
                     if ($overwrite) {

@@ -2,6 +2,8 @@
 
 namespace beacon;
 
+use beacon\widget\WidgetInterface;
+
 /**
  * Created by PhpStorm.
  * User: wj008
@@ -11,59 +13,94 @@ namespace beacon;
 
 
 /**
- * Class Field
- * @package beacon
- * @property  $_value
- * @property $names array
- * @property $options array
- * @property $beforeText string
- * @property $afterText string
- * @property $dataValFor string
- * @property $boxPlaceholder string
+ * 字段类
+ * @property $value
+ * @property $boxName string
+ * @property $boxId string
+ *
+ * @property $dataValRule array  验证规则
+ * @property $dataValMessage array  验证提示
+ * @property $dataValDefault string  验证默认信息
+ * @property $dataValCorrect string  验证正确信息
+ * @property $dataValError string  验证初始返回错误信息
+ * @property $dataValDisabled bool  关闭验证
+ * @property $dataValOutput string 输出html节点jq选择
+ * @property $header
+ * //容器中用到的字段
+ * @property $plugName string 插件类名
+ * @property $mode string 模式
+ * @property $skin int 皮肤索引
+ * @property $skinName string 皮肤
+ * @property $childError array 子元素错误
+ *
+ * @property $names array 多个名称
+ * @property $itemType string 子项数据类型
+ * @property $hideBox bool  隐藏输入
+ * @property $autoSave bool
  * @property $dataDynamic array
- * @property $useUlList boolean
- * @property $bitComp boolean
- * @property $encodeFunc Function|string
- * @property $remoteFunc Function|string
- * @property $validFunc Function|string
- * @property $encodeValue string
- * @property $header  array|string
- * @property $plugType int
- * @property $plugMode string
- * @property $plugName string
- * @property $viewtplName string
- * @property $viewTemplate string
- * @property $viewTplCode string
- * @property $childError array
- * @property $autoSave boolean
- * @property $hideBox boolean
- * @property $itemType string
+ * @property $encodeValue string 密码框需要的字段
+ * @property $viewHide bool 隐藏行
  */
 class Field
 {
 
+    private static $instance = [];
+    /**
+     * 所在表单
+     * @var Form|null
+     */
     private $form = null;
-    //扩展属性
-    private $extends = [];
 
-    private $refClass = null;
+    /**
+     * 输入框属性
+     * @var array
+     */
+    private $_attr = [
+        'id' => '',
+        'name' => ''
+    ];
+    /**
+     * 绑定数据
+     * @var array
+     */
+    private $_data = [];
 
-    //基本属性
-    public $label = '';
-    public $name = '';
-    public $error = null;
-    public $close = false;
-    public $offEdit = false;
-    public $notSave = false;
+    /**
+     * 视图数据
+     * @var array
+     */
+    private $_view = [];
 
-    public $value = null;
-    public $default = null;
-    public $forceDefault = false;
-    public $type = 'text';
-    public $varType = 'string';
-    public $dynamic = null;
-    //插件关联字段
-    public $referenceField = null;
+    /**
+     * 扩展函数
+     * @var array
+     */
+    private $_func = [];
+
+    /**
+     * 字段属性扩展
+     * @var array
+     */
+    private $_extends = [];
+
+    //-----------------------------------------------------------
+    private $_value = null;         //值
+    public $default = null;         //默认值
+    public $forceDefault = false;   //如果值为空强制默认值
+    public $label = '';             //标题
+    public $name = '';              //字段名
+    public $error = null;           //错误信息
+    public $close = false;          //关闭控件
+    public $offEdit = false;        //禁止编辑
+    public $offSave = false;        //禁止保存
+    public $type = 'text';          //字段类型
+    public $varType = 'string';     //值类型
+    public $dynamic = null;         //动态控制数据
+    //视图属性
+    public $tabIndex = '';          //所在标签名称,如果为空,所有标签都会出现
+    public $viewClose = false;      //关闭视图
+    public $viewMerge = 0;      //关闭视图
+
     /**
      * @var Field
      */
@@ -72,96 +109,140 @@ class Field
      * @var Field
      */
     public $prev = null;
-    //控件属性
-    public $boxName = '';
-    public $boxId = '';
-    public $boxClass = null;
-    public $boxStyle = null;
-    public $boxYeeModule = null;
-
-    //视图属性
-    public $tabIndex = '';
-    public $viewTabShared = false;
-    public $viewClose = false;
-    public $viewMerge = 0;
-    //数据属性
-    public $dataValOff = false;
-    public $dataVal = null;
-    public $dataValMsg = null;
+    //----------------------------------------------------------------
+    private $_ref = null;
 
     public function __construct(Form $form = null, array $field = [])
     {
+        $this->_ref = new \ReflectionClass(get_class($this));
         $this->form = $form;
         if ($field == null) {
             $field = [];
         }
-        $this->refClass = new \ReflectionClass(get_class($this));
         foreach ($field as $key => $value) {
             $key = Utils::attrToCamel($key);
-            if (preg_match('@Func$@', $key)) {
-                $this->setValue($key, $value);
+            if (empty($key)) {
+                continue;
+            }
+            if (preg_match('@(.*)Func$@', $key, $m)) {
+                $this->regFunc($m[1], $value);
                 continue;
             }
             if ($value instanceof \Closure) {
                 $value = call_user_func($value, $this);
             }
-            $this->setValue($key, $value);
+            $this->set($key, $value, true);
         }
-        $this->boxName = empty($this->boxName) ? $this->name : $this->boxName;
-        $this->boxId = empty($this->boxId) ? $this->boxName : $this->boxId;
         //设置默认值
-        $config = Config::get('form.field_default');
+        $config = Config::get('form.field_default', []);
         foreach ($config as $key => $value) {
             $key = Utils::attrToCamel($key);
+            if (empty($key)) {
+                continue;
+            }
             if (preg_match('@Func$@', $key)) {
                 continue;
             }
-            $cur_value = $this->getValue($key);
-            if (!($cur_value === null || (is_string($cur_value) && $cur_value === ''))) {
+            $cur_value = $this->get($key, true);
+            if (!($cur_value === null || $cur_value === '')) {
                 continue;
             }
             if ($value instanceof \Closure) {
                 $value = call_user_func($value, $this);
             }
-            $this->setValue($key, $value);
+            $this->set($key, $value, true);
         }
-
+        if (empty($this->_attr['id'])) {
+            $this->_attr['id'] = $this->name;
+        }
+        if (empty($this->_attr['name'])) {
+            $this->_attr['name'] = $this->name;
+        }
     }
 
     /**
      * 设置属性值
-     * @param $name
+     * @param string $name
      * @param $value
+     * @param bool $p 包括原有属性
      */
-    private function setValue($name, $value)
+    private function set(string $name, $value, $p = false)
     {
-        if ($this->refClass->hasProperty($name)) {
-            $prop = $this->refClass->getProperty($name);
+        if (empty($name)) {
+            return;
+        }
+        if ($p && $this->_ref->hasProperty($name)) {
+            $prop = $this->_ref->getProperty($name);
             if ($prop->isPublic()) {
                 $prop->setValue($this, $value);
             }
+        } else if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
+            $name = Utils::camelToAttr($m[1]);
+            $this->_attr[$name] = $value;
+        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
+            $name = Utils::camelToAttr($name);
+            $this->_data[$name] = $value;
+        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
+            $this->_view[$name] = $value;
+        } else if ($name == 'value') {
+            $this->_value = $value;
         } else {
-            $this->extends[$name] = $value;
+            $this->_extends[$name] = $value;
         }
     }
 
     /**
      * 获取属性值
      * @param $name
+     * @param bool $p 包括原有属性
      * @return mixed|null
      */
-    private function getValue($name)
+    private function get($name, $p = false)
     {
-        $value = null;
-        if ($this->refClass->hasProperty($name)) {
-            $prop = $this->refClass->getProperty($name);
+        if ($p && $this->_ref->hasProperty($name)) {
+            $prop = $this->_ref->getProperty($name);
             if ($prop->isPublic()) {
-                $value = $prop->getValue($this);
+                return $prop->getValue($this);
+            }
+        } else if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
+            $name = Utils::camelToAttr($m[1]);
+            return isset($this->_attr[$name]) ? $this->_attr[$name] : null;
+        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
+            $name = Utils::camelToAttr($name);
+            return isset($this->_data[$name]) ? $this->_data[$name] : null;
+        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
+            return isset($this->_view[$name]) ? $this->_view[$name] : null;
+        } else if ($name == 'value') {
+            if (!($this->_value === null || $this->_value === '')) {
+                return $this->_value;
+            } else if ($this->form == null || $this->form->getType() != 'add' || $this->default === null || $this->default === '') {
+                return $this->_value;
+            } else {
+                return $this->default;
             }
         } else {
-            $value = isset($this->extends[$name]) ? $this->extends[$name] : null;
+            return isset($this->_extends[$name]) ? $this->_extends[$name] : null;
         }
-        return $value;
+    }
+
+    /**
+     * 注册函数
+     * @param string $name
+     * @param $func
+     */
+    public function regFunc(string $name, $func)
+    {
+        $this->_func[$name] = $func;
+    }
+
+    /**
+     * 获取函数
+     * @param string $name
+     * @return mixed|null
+     */
+    public function getFunc(string $name)
+    {
+        return isset($this->_func[$name]) ? $this->_func[$name] : null;
     }
 
     /**
@@ -171,7 +252,7 @@ class Field
      */
     public function __set($name, $value)
     {
-        $this->extends[$name] = $value;
+        $this->set($name, $value);
     }
 
     /**
@@ -181,33 +262,8 @@ class Field
      */
     public function __get($name)
     {
-        if ($name == '_value') {
-            if ($this->value !== null && $this->value !== '') {
-                if (is_array($this->value)) {
-                    return json_encode($this->value, JSON_UNESCAPED_UNICODE);
-                } elseif (is_bool($this->value)) {
-                    return $this->value ? 1 : 0;
-                } else {
-                    return $this->value;
-                }
-            }
-            if ($this->form !== null && $this->form->getType() == 'add') {
-                if ($this->default !== null && $this->default !== '') {
-                    if (is_array($this->default)) {
-                        return json_encode($this->default, JSON_UNESCAPED_UNICODE);
-                    } elseif (is_bool($this->default)) {
-                        return $this->default ? 1 : 0;
-                    } else {
-                        return $this->default;
-                    }
-                }
-            }
-            return null;
-        }
-        if (!isset($this->extends[$name])) {
-            return null;
-        }
-        return $this->extends[$name];
+
+        return $this->get($name);
     }
 
     /**
@@ -217,10 +273,19 @@ class Field
      */
     public function __isset($name)
     {
-        if ($name == '_value') {
+        if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
+            $name = Utils::camelToAttr($m[1]);
+            return isset($this->_attr[$name]);
+        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
+            $name = Utils::camelToAttr($name);
+            return isset($this->_data[$name]);
+        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
+            return isset($this->_view[$name]);
+        } else if ($name == 'value') {
             return true;
+        } else {
+            return isset($this->_extends[$name]);
         }
-        return isset($this->extends[$name]);
     }
 
     /**
@@ -230,7 +295,19 @@ class Field
      */
     public function __unset($name)
     {
-        return __unset($this->extends[$name]);
+        if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
+            $name = Utils::camelToAttr($m[1]);
+            unset($this->_attr[$name]);
+        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
+            $name = Utils::camelToAttr($name);
+            unset($this->_data[$name]);
+        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
+            unset($this->_view[$name]);
+        } else if ($name == 'value') {
+            return;
+        } else {
+            unset($this->_extends[$name]);
+        }
     }
 
     /**
@@ -243,202 +320,84 @@ class Field
     }
 
     /**
-     * 获取输入框数据
-     * @return array
-     * @throws \ReflectionException
-     */
-    public function getBoxData()
-    {
-        $data = [];
-        $refClass = new \ReflectionClass(get_class($this));
-        $props = $refClass->getProperties(\ReflectionProperty::IS_PUBLIC);
-        foreach ($props as $prop) {
-            $value = $prop->getValue($this);
-            if ($value !== null) {
-                $name = $prop->getName();
-                if (preg_match('@^data([A-Z].*)$@', $name, $m)) {
-                    $name = Utils::camelToAttr($m[1]);
-                    $data[$name] = $value;
-                }
-            }
-        }
-        foreach ($this->extends as $name => $value) {
-            if ($value !== null) {
-                if (preg_match('@^data([A-Z].*)$@', $name, $m)) {
-                    $name = Utils::camelToAttr($m[1]);
-                    $data[$name] = $value;
-                }
-            }
-        }
-        if (!empty($this->error)) {
-            $data['val-fail'] = $this->error;
-        }
-        return $data;
-    }
-
-    /**
      * 获取输入框属性
-     * @return array
-     * @throws \ReflectionException
      */
-    public function getBoxAttr()
+    public function getAttributes()
     {
-        $data = [];
-        $refClass = new \ReflectionClass(get_class($this));
-        $props = $refClass->getProperties(\ReflectionProperty::IS_PUBLIC);
-
-        foreach ($props as $prop) {
-            $value = $prop->getValue($this);
-            if ($value !== null && $value !== '') {
-                $name = $prop->getName();
-                if (preg_match('@^box([A-Z].*)$@', $name, $m)) {
-                    $name = Utils::camelToAttr($m[1]);
-                    $data[$name] = $value;
-                }
-            }
-        }
-
-        foreach ($this->extends as $name => $value) {
-            if ($value !== null && $value !== '') {
-                if (preg_match('@^box([A-Z].*)$@', $name, $m)) {
-                    $name = Utils::camelToAttr($m[1]);
-                    $data[$name] = $value;
-                }
-            }
-        }
-
+        $attr = array_merge($this->_attr, $this->_data);
+        $attr = array_filter($attr, function ($v) {
+            return $v !== null && $v !== '';
+        });
         if ($this->form != null && $this->form->getType() == 'edit') {
             if ($this->offEdit) {
-                $data['disabled'] = 'disabled';
+                $attr['disabled'] = 'disabled';
             }
         }
-
-        if ($this->_value !== null) {
-            $data['value'] = $this->_value;
+        if ($this->value !== null) {
+            $attr['value'] = $this->value;
         }
-        return $data;
+        return $attr;
     }
 
     /**
-     * 导出属性
-     * @param array $base
-     * @param array $args
-     * @param null $filter
-     * @throws \ReflectionException
-     */
-    public function explodeAttr(&$base = [], &$args = [], $filter = null)
-    {
-        if ($base == null) {
-            $base = [];
-        }
-        $attributes = $this->getBoxAttr();
-        if (is_array($args)) {
-            foreach ($args as $key => $val) {
-                $key = Utils::camelToAttr($key);
-                //排除隐藏的类型和数据绑定类型
-                if (preg_match('/^(@|data-)/', $key)) {
-                    continue;
-                }
-                $attributes[$key] = $val;
-            }
-        }
-        if (!isset($attributes['type'])) {
-            $attributes['type'] = 'text';
-        }
-        foreach ($attributes as $name => $val) {
-            if ($filter != null && is_callable($filter)) {
-                if (!call_user_func($filter, $name, $val)) {
-                    continue;
-                }
-            } else {
-                if ($val === null || $val === '') {
-                    continue;
-                }
-            }
-            if (is_array($val)) {
-                array_push($base, $name . '="' . htmlspecialchars(json_encode($val, JSON_UNESCAPED_UNICODE)) . '"');
-            } else {
-                array_push($base, $name . '="' . htmlspecialchars($val) . '"');
-            }
-        }
-    }
-
-    /**
-     * 导出绑定的数据
-     * @param array $base
-     * @param array $args
-     * @param null $filter
-     * @throws \ReflectionException
-     */
-    public function explodeData(&$base = [], &$args = [], $filter = null)
-    {
-        if ($base == null) {
-            $base = [];
-        }
-        $data = $this->getBoxData();
-        if (is_array($args)) {
-            foreach ($args as $key => $val) {
-                $key = Utils::camelToAttr($key);
-                //排除隐藏的类型和数据绑定类型
-                if (!preg_match('/^data-(.*)$/', $key, $match)) {
-                    continue;
-                }
-                $key = $match[1];
-                $data[$key] = $val;
-            }
-        }
-
-        foreach ($data as $name => $val) {
-            if ($filter != null && is_callable($filter)) {
-                if (!call_user_func($filter, $name, $val)) {
-                    continue;
-                }
-            } else {
-                if ($val === null || (is_string($val) && $val === '')) {
-                    continue;
-                }
-            }
-            if (is_array($val)) {
-                array_push($base, 'data-' . $name . '="' . htmlspecialchars(json_encode($val, JSON_UNESCAPED_UNICODE)) . '"');
-            } else {
-                array_push($base, 'data-' . $name . '="' . htmlspecialchars($val) . '"');
-            }
-        }
-    }
-
-    /**
-     * 显示数据
-     * @param null $args
+     * 获取插件显示的代码
+     * @param null $attr
+     * @return mixed|string|void
      * @throws \Exception
      */
-    public function box($args = null)
+    public function code($attr = null)
     {
-        if ($args === null || !is_array($args)) {
-            $args = [];
+        if ($attr === null || !is_array($attr)) {
+            $attr = [];
         }
         try {
-            $box = Form::getBoxInstance($this->type);
+            $box = self::getInstance($this->type);
             if ($box === null) {
                 throw new \Exception('Unsupported input box type:' . $this->type);
             }
-            if (!empty($this->viewTemplate) || !empty(trim($this->viewTplCode))) {
+            if (!empty($this->viewTemplate)) {
+                $template = $this->viewTemplate;
+                $this->viewTemplate = null;
                 $view = new View();
-                $widgetDir = Config::get('widget_dir', 'view/widget');
-                $widgetDir = Utils::path(ROOT_DIR, $widgetDir);
-                $view->template->addTemplateDir($widgetDir);
                 $view->assign('form', $this->form);
                 $view->assign('field', $this);
-                $view->assign('args', $args);
-                if (!empty($this->viewTemplate)) {
-                    return $view->fetch($this->viewTemplate);
-                } else {
-                    return $view->fetch('string:' . $this->viewTplCode);
-                }
+                $view->assign('attr', $attr);
+                $data = $view->fetch($template);
+                return $data;
             }
-            return $box->code($this, $args);
+            return $box->code($this, $attr);
         } catch (\Exception $exception) {
-            throw new \Exception($this->type . 'plugin display error:' . $exception->getMessage(), $exception->getCode(), $exception);
+            throw $exception;
         }
     }
+
+    /**
+     * 获取插件实例
+     * @param string $type
+     * @return WidgetInterface
+     * @throws \ReflectionException
+     */
+    public static function getInstance(string $type)
+    {
+        if (empty($type)) {
+            return null;
+        }
+        if (isset(self::$instance[$type])) {
+            return self::$instance[$type];
+        }
+
+        $class = '\\beacon\\widget\\' . Utils::toCamel($type);
+        //  Logger::log($class);
+        if (!class_exists($class)) {
+            return null;
+        }
+        $reflect = new \ReflectionClass($class);
+        if (!$reflect->implementsInterface(WidgetInterface::class)) {
+            return null;
+        }
+        self::$instance[$type] = new $class();
+        return self::$instance[$type];
+    }
+
 
 }

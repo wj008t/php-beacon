@@ -6,7 +6,7 @@
  * Time: 18:02
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -14,26 +14,26 @@ use beacon\Field;
 class Password extends Hidden
 {
 
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $args['type'] = 'password';
-        $args['value'] = null;
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr['type'] = 'password';
+        $attr['value'] = null;
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
         $field->varType = 'string';
-        return parent::assign($field, $data);
+        return parent::assign($field, $input);
     }
 
     public function fill(Field $field, array &$values)
     {
-        if ($field->value !== null && $field->value !== '' && $field->encodeValue !== $field->value && $field->encodeFunc !== null) {
-            if (is_callable($field->encodeFunc)) {
-                $field->encodeValue = call_user_func($field->encodeFunc, $field->value);
+        $encodeFunc = $field->getFunc('encode');
+        if ($field->value !== null && $field->value !== '' && $field->encodeValue !== $field->value && $encodeFunc !== null) {
+            if (is_callable($encodeFunc)) {
+                $field->encodeValue = call_user_func($encodeFunc, $field->value);
                 $values[$field->name] = $field->encodeValue;
                 return;
             }

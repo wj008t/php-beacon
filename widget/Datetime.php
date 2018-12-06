@@ -2,11 +2,11 @@
 /**
  * Created by PhpStorm.
  * User: wj008
- * Date: 2017/12/15
- * Time: 4:01
+ * Date: 18-12-3
+ * Time: 下午1:42
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -15,23 +15,18 @@ use beacon\Validate;
 
 class Datetime extends Hidden
 {
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $args['yee-module'] = 'date';
-        $args['data-type'] = 'datetime';
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr['yee-module'] = 'picker';
+        $attr['data-use-time'] = true;
+        $attr['type'] = 'text';
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    /**
-     * @param Field $field
-     * @param array $data
-     * @return array|mixed|null|void
-     */
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
-        $val = Request::instance()->input($data, $field->boxName . ':s', '');
+        $val = Request::input($input, $field->boxName . ':s', '');
         if (!Validate::test_date($val)) {
             $field->value = null;
         }
@@ -56,6 +51,4 @@ class Datetime extends Hidden
         }
         $field->value = isset($values[$field->name]) ? $values[$field->name] : null;
     }
-
-
 }

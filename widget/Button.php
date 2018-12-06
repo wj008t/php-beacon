@@ -6,27 +6,25 @@
  * Time: 18:02
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
 
-class Button implements BoxInterface
+class Button implements WidgetInterface
 {
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $args['type'] = '';
-        $args['name'] = '';
-        if (empty($args['href'])) {
-            $args['href'] = $field->boxHref == null ? 'javascript:;' : $field->boxHref;
+        $attr['type'] = '';
+        $attr['name'] = '';
+        if (empty($attr['href'])) {
+            $attr['href'] = $field->boxHref == null ? 'javascript:;' : $field->boxHref;
         }
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
-
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<a ' . join(' ', $attr) . ' >' . htmlspecialchars($field->label) . '</a>';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
 
     }

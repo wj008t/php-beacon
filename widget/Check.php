@@ -6,7 +6,7 @@
  * Time: 3:36
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -14,24 +14,19 @@ use beacon\Field;
 class Check extends Hidden
 {
 
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        if ($field->value === null && $field->getForm() != null && $field->getForm()->getType() == 'add') {
-            $args['checked'] = $field->default ? 'checked' : '';
-        } else {
-            $args['checked'] = $field->value ? 'checked' : '';
-        }
-        $args['type'] = 'checkbox';
-        $args['value'] = 1;
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr['checked'] = $field->value ? 'checked' : '';
+        $attr['type'] = 'checkbox';
+        $attr['value'] = 1;
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
         $field->varType = 'boolean';
-        return parent::assign($field, $data);
+        return parent::assign($field, $input);
     }
 
     public function fill(Field $field, array &$values)

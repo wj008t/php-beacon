@@ -2,53 +2,53 @@
 /**
  * Created by PhpStorm.
  * User: wj008
- * Date: 2018/3/25
- * Time: 2:31
+ * Date: 18-11-27
+ * Time: 下午11:35
  */
 
 namespace beacon\widget;
 
+
 use beacon\Field;
-use beacon\Request;
 use beacon\Utils;
 
-class Multiple extends Hidden
+class MultipleDialog extends Hidden
 {
-    public function code(Field $field, $args)
+
+    public function code(Field $field, $attr = [])
     {
-        $args['yee-module'] = 'multiple';
-        $args['type'] = 'text';
-        if (!empty($field->_value)) {
+        $attr['yee-module'] = 'multiple-dialog';
+        $attr['type'] = 'text';
+        if (!empty($field->value)) {
             $values = [];
-            if (Utils::isJsonString($field->_value)) {
+            if (Utils::isJson($field->value)) {
                 $values = json_decode($field->_value, 1);
             }
-            if ($field->textFunc !== null && is_callable($field->textFunc)) {
+            $textFunc = $field->getFunc('text');
+            if ($textFunc && is_callable($textFunc)) {
                 $data = [];
                 foreach ($values as $val) {
-                    $text = call_user_func($field->textFunc, $val);
+                    $text = call_user_func($textFunc, $val);
                     if (!empty($text)) {
                         $data[] = ['value' => $val, 'text' => $text];
                     }
                 }
-                $args['data-text'] = $data;
+                $attr['data-text'] = $data;
             } else {
                 $data = [];
                 foreach ($values as $val) {
                     $data[] = ['value' => $val, 'text' => $val];
                 }
-                $args['data-text'] = $data;
+                $attr['data-text'] = $data;
             }
         }
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
-        $request = Request::instance();
-        $values = $request->input($data, $field->boxName . ':a', []);
+        $values = Request::input($input, $field->boxName . ':a', []);
         $temp = [];
         if (is_array($values)) {
             foreach ($values as $item) {
@@ -75,11 +75,10 @@ class Multiple extends Hidden
         $temp = isset($values[$field->name]) ? $values[$field->name] : null;
         if (is_array($temp)) {
             $field->value = $temp;
-        } else if (is_string($temp) && Utils::isJsonString($temp)) {
+        } else if (is_string($temp) && Utils::isJson($temp)) {
             $field->value = json_decode($temp, true);
         } else {
             $field->value = null;
         }
     }
-
 }

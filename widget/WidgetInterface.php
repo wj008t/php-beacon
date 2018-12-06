@@ -6,16 +6,16 @@
  * Time: 17:34
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 use beacon\Field;
 
-interface BoxInterface
+interface WidgetInterface
 {
-    public function code(Field $field, $args);
+    public function code(Field $field, $attr = []);
 
     //从表单读数据
-    public function assign(Field $field, array $data);
+    public function assign(Field $field, array $input);
 
     //写入数据库的
     public function fill(Field $field, array &$values);

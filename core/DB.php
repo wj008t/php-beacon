@@ -15,6 +15,7 @@ class DB
     /**
      * 获取数据库引擎实例
      * @return Mysql|null
+     * @throws MysqlException
      */
     public static function engine()
     {
@@ -31,6 +32,7 @@ class DB
     /**
      * 开启事务
      * @return bool
+     * @throws MysqlException
      */
     public static function beginTransaction()
     {
@@ -57,6 +59,7 @@ class DB
     /**
      * 提交事务
      * @return bool
+     * @throws MysqlException
      */
     public static function commit()
     {
@@ -87,6 +90,7 @@ class DB
     /**
      * 获取最后一条sql 语句,需要开启 DEBUG_MYSQL_LOG
      * @return string
+     * @throws MysqlException
      */
     public static function lastSql()
     {
@@ -97,6 +101,7 @@ class DB
      * 获取最后的插入的id
      * @param null $name
      * @return string
+     * @throws MysqlException
      */
     public static function lastInsertId($name = null)
     {
@@ -190,11 +195,12 @@ class DB
      *  创建一个sql语句片段,一般用于更新 插入数据时数组的值
      * @param string $sql
      * @param null $args
-     * @return SqlSection
+     * @return SqlRaw
+     * @throws MysqlException
      */
-    public static function sql(string $sql, $args = null)
+    public static function raw(string $sql, $args = null)
     {
-        return self::engine()->sql($sql, $args);
+        return self::engine()->raw($sql, $args);
     }
 
     /**

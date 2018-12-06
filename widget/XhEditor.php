@@ -2,8 +2,8 @@
 /**
  * Created by PhpStorm.
  * User: wj008
- * Date: 2017/12/16
- * Time: 2:01
+ * Date: 18-12-4
+ * Time: 上午4:44
  */
 
 namespace beacon\widget;
@@ -11,14 +11,19 @@ namespace beacon\widget;
 
 use beacon\Field;
 
-class Color extends Hidden
+class XhEditor extends Hidden
 {
+
     public function code(Field $field, $attr = [])
     {
-        $attr['yee-module'] = 'color';
-        $attr['type'] = 'text';
+        $attr['yee-module'] = 'xh-editor';
+        $attr['type'] = '';
+        if (isset($attr['value'])) {
+            $field->value = $attr['value'];
+        }
+        $args['value'] = '';
         $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</textarea>';
     }
 
     public function assign(Field $field, array $input)
@@ -26,4 +31,5 @@ class Color extends Hidden
         $field->varType = 'string';
         return parent::assign($field, $input);
     }
+
 }

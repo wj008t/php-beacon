@@ -8,7 +8,9 @@ namespace beacon;
  * Date: 2017/12/11
  * Time: 1:43
  */
-
+if (!defined('ROOT_DIR')) {
+    die('未定义ROOT_DIR目录');
+}
 set_error_handler(function ($errno, $errstr, $errfile, $errline, array $errcontext) {
     if (0 === error_reporting()) {
         return false;
@@ -23,9 +25,8 @@ defined('IS_CLI') or define('IS_CLI', PHP_SAPI == 'cli' ? true : false);
 defined('IS_WIN') or define('IS_WIN', strstr(PHP_OS, 'WIN') ? true : false);
 
 
-class RouteError extends \Error implements \Throwable
+class RouteError extends \Exception
 {
-//让路由结束退出的错误
 }
 
 class Route
@@ -37,6 +38,8 @@ class Route
     private static $cachePath = null;
     private static $route = null;
 
+    private static $ctlPrefix = [];
+
     /**
      * 设置路由配置文件路径
      * @param string $path
@@ -47,7 +50,7 @@ class Route
     }
 
     /**
-     * 注册路由
+     * 注册路由规则
      * @param string $name
      * @param array|bool $route
      */
@@ -67,6 +70,11 @@ class Route
                     'act' => '$2',
                     'id' => '$3',
                 ],
+                '@^/(\w+)/(\d+)$@i' => [
+                    'ctl' => '$1',
+                    'act' => 'index',
+                    'id' => '$2',
+                ],
                 '@^/(\w+)/(\w+)$@i' => [
                     'ctl' => '$1',
                     'act' => '$2',
@@ -80,9 +88,9 @@ class Route
                     'act' => 'index',
                 ],
             ],
-            'resolve' => function ($ctl, $act, $keys) {
+            'resolve' => function ($ctl, $act, $keys = []) {
                 $url = '/{ctl}';
-                if (!empty($act)) {
+                if (!empty($act) && $act != 'index') {
                     $url .= '/{act}';
                 }
                 if (isset($keys['id'])) {
@@ -106,6 +114,7 @@ class Route
         $map['name'] = $name;
         $map['base'] = rtrim(empty($map['base']) ? '' : $map['base'], '/');
         $map['base_match'] = '@^' . preg_quote($map['base'], '@') . '(/.*)?$@i';
+        $map['path'] = Utils::trimPath($map['path']);
         self::$routeMap[$name] = $map;
     }
 
@@ -160,29 +169,33 @@ class Route
      */
     private static function parseUrl(string $url)
     {
+        if ('/favicon.ico' == $url) {
+            exit;
+        }
         $url_temp = parse_url($url);
         $url = $url_temp['path'];
         if (preg_match('@\.json$@i', $url)) {
             $_SERVER['REQUEST_AJAX'] = true;
             $url = preg_replace('@\.json$@i', '', $url);
         }
-        $idata = self::matchUrl($url);
-        if ($idata == null) {
+        $iData = self::matchUrl($url);
+
+        if ($iData == null) {
             return null;
         }
         //路由路径
-        $uri = empty($idata['uri']) ? '/' : $idata['uri'];
-        $name = $idata['name'];
+        $uri = empty($iData['uri']) ? '/' : $iData['uri'];
+        $name = $iData['name'];
         $arg = [
             'app' => $name,
-            'base' => $idata['base'],
+            'base' => $iData['base'],
             'ctl' => '',
             'act' => '',
         ];
-        if (!isset($idata['rules']) || !is_array($idata['rules'])) {
+        if (!isset($iData['rules']) || !is_array($iData['rules'])) {
             return null;
         }
-        foreach ($idata['rules'] as $preg => $item) {
+        foreach ($iData['rules'] as $preg => $item) {
             if (preg_match($preg, $uri, $m)) {
                 if (!is_array($item)) {
                     continue;
@@ -226,6 +239,7 @@ class Route
     }
 
     /**
+     * 解析URL
      * @param null $url
      * @return null|string
      */
@@ -264,6 +278,7 @@ class Route
             $request_uri = $url;
             self::parseUrl($url);
         }
+
         return $request_uri;
     }
 
@@ -442,9 +457,20 @@ class Route
      * @param array $query
      * @return bool|mixed|null|string
      */
-    public static function url(string $url = '', array $query = [])
+    public static function url($url = null, array $query = [])
     {
-        if (!(isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/')) {
+        if (is_array($url)) {
+            $url['app'] = isset($url['app']) ? $url['app'] : self::get('app');
+            $url['ctl'] = isset($url['ctl']) ? $url['ctl'] : self::get('ctl');
+            $url['act'] = isset($url['act']) ? $url['act'] : self::get('act');
+            $temp = '^' . $url['app'] . '/' . $url['ctl'] . '/' . $url['act'];
+            $url = $temp;
+        }
+        if (!is_string($url)) {
+            return $url;
+        }
+        $innerUri = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
+        if (!$innerUri) {
             if ($query == null || count($query) == 0) {
                 return $url;
             }
@@ -453,12 +479,13 @@ class Route
         $path = isset($info['path']) ? $info['path'] : '';
         $str_query = isset($info['query']) ? $info['query'] : '';
         $query = is_array($query) ? $query : [];
+        //合并参数
         if (!empty($str_query)) {
             $temp = [];
             parse_str($str_query, $temp);
             $query = array_merge($temp, $query);
         }
-        if (!(isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/')) {
+        if (!$innerUri) {
             $str_query = http_build_query($query);
             if (!empty($str_query)) {
                 return $path . '?' . $str_query;
@@ -475,6 +502,7 @@ class Route
         }
         $app = isset($data[1]) ? $data[1] : self::get('app');
         $path = isset($data[2]) ? $data[2] : self::get('path');
+        $path = empty($path) ? '/' : $path;
         return self::resolve($app, $path, $query);
     }
 
@@ -482,6 +510,7 @@ class Route
      * 运行实例的方法
      * @param string $class
      * @param string $method
+     * @throws RouteError
      * @throws \ReflectionException
      */
     public static function runMethod(string $class, string $method)
@@ -587,10 +616,69 @@ class Route
     }
 
     /**
-     * 运行
+     * 获取映射信息
      * @param string|null $url
+     * @return array
+     * @throws RouteError
      */
-    public static function run(string $url = null)
+    public static function getMapping(string $url = null)
+    {
+        $url = self::parse($url);
+        if (self::$route == null) {
+            throw new RouteError('未初始化路由参数,url:' . $url);
+        }
+        if (empty(self::$route['app'])) {
+            throw new RouteError('路由应用名称 app 为空,url:' . $url);
+        }
+        if (empty(self::$route['ctl'])) {
+            throw new RouteError('路由控制器名称 ctl 为空,url:' . $url);
+        }
+        if (empty(self::$route['act'])) {
+            throw new RouteError('路由方法名称 act 为空,url:' . $url);
+        }
+
+        $ctl = Utils::toCamel(self::$route['ctl']);
+        $act = Utils::toCamel(self::$route['act']);
+        $act = lcfirst($act);
+        $appPath = self::getPath();
+        if (empty($appPath)) {
+            throw new RouteError('没有设置应用目录,url:' . $url);
+        }
+        //设置当前应用下的配置文件
+        $config = Utils::path($appPath, 'config.php');
+        if (file_exists($config)) {
+            $cfgData = Config::loadFile($config);
+            foreach ($cfgData as $key => $val) {
+                Config::set($key, $val);
+            }
+        }
+        //开始进入入口---------------------
+        $namespace = self::getNamespace();
+        return [
+            'namespace' => $namespace,
+            'classFullName' => $namespace . '\\controller\\' . $ctl,
+            'className' => $ctl,
+            'method' => $act . 'Action'
+        ];
+    }
+
+    /**
+     * 添加控制器路由前缀
+     * @param string $app
+     * @param string $prefix
+     */
+    public static function addCtlPrefix(string $app, string $prefix)
+    {
+        if (!isset(self::$ctlPrefix[$app])) {
+            self::$ctlPrefix[$app] = [];
+        }
+        self::$ctlPrefix[$app][] = ltrim($prefix, '\\');
+    }
+
+    /**
+     * 记录运行时间
+     */
+    public static function recordRunTime()
     {
         if (defined('DEBUG_LOG') && DEBUG_LOG) {
             error_reporting(E_ALL);
@@ -603,45 +691,28 @@ class Route
                 });
             }
         }
+    }
+
+    /**
+     * 运行
+     * @param string|null $url
+     */
+    public static function run(string $url = null)
+    {
+        self::recordRunTime();
         try {
-            if (self::$route == null) {
-                $url = self::parse($url);
-            }
-            if (self::$route == null) {
-                throw new RouteError('未初始化路由参数,url:' . $url);
-            }
-            if (empty(self::$route['app'])) {
-                throw new RouteError('路由应用名称 app 为空,url:' . $url);
-            }
-            if (empty(self::$route['ctl'])) {
-                throw new RouteError('路由控制器名称 ctl 为空,url:' . $url);
-            }
-            if (empty(self::$route['act'])) {
-                throw new RouteError('路由方法名称 act 为空,url:' . $url);
-            }
-            $ctl = Utils::toCamel(self::$route['ctl']);
-            $act = Utils::toCamel(self::$route['act']);
-            $act = lcfirst($act);
-            $appPath = self::getPath();
-            if (empty($appPath)) {
-                throw new RouteError('没有设置应用目录,url:' . $url);
-            }
-            //设置当前应用下的配置文件
-            $config = Utils::path($appPath, 'config.php');
-            if (file_exists($config)) {
-                $cfgData = Config::loadFile($config);
-                foreach ($cfgData as $key => $val) {
-                    Config::set($key, $val);
+            $data = self::getMapping($url);
+            $app = self::$route['app'];
+            if (!class_exists($data['classFullName']) && isset(self::$ctlPrefix[$app])) {
+                foreach (self::$ctlPrefix[$app] as $prefix) {
+                    $classFullName = $data['namespace'] . '\\' . $prefix . $data['className'];
+                    if (class_exists($classFullName)) {
+                        $data['classFullName'] = $classFullName;
+                        break;
+                    }
                 }
             }
-            //开始进入入口---------------------
-            $namespace = self::getNamespace();
-            $class = $namespace . '\\controller\\' . $ctl;
-            if (!class_exists($class)) {
-                throw new RouteError('不存在的控制器类:' . $class);
-            }
-            //-------------------------------
-            self::runMethod($class, $act . 'Action');
+            self::runMethod($data['classFullName'], $data['method']);
         } catch (RouteError $exception) {
             self::rethrow($exception);
         } catch (\Exception $exception) {
@@ -651,6 +722,10 @@ class Route
         }
     }
 
+    /**
+     * 抛出错误
+     * @param \Throwable $exception
+     */
     public static function rethrow(\Throwable $exception)
     {
         $out = [];
@@ -660,25 +735,25 @@ class Route
             $code = [];
             $code[] = get_class($exception) . ": {$exception->getMessage()}";
             $code[] = $exception->getTraceAsString();
-            if (is_callable([$exception, 'getStack'])) {
+            if (is_callable([$exception, 'getDetail'])) {
                 $code[] = "----------------------------------------------------------------------------------------------------------";
-                $code[] = $exception->getStack();
+                $code[] = $exception->getDetail();
             }
             //开启日志
             if ((defined('DEBUG_LOG') && DEBUG_LOG)) {
                 Logger::error(join("\n", $code));
             }
-            $out['stack'] = explode("\n", join("\n", $code));
+            $out['_stack'] = explode("\n", join("\n", $code));
             if ($exception instanceof RouteError) {
-                $out['error'] = '404 页面没有找到:' . $exception->getMessage();
+                $out['msg'] = '404 页面没有找到:' . $exception->getMessage();
             } else {
-                $out['error'] = '数据出现异常:' . $exception->getMessage();
+                $out['msg'] = '数据出现异常:' . $exception->getMessage();
             }
         } else {
             if ($exception instanceof RouteError) {
-                $out['error'] = '404 页面没有找到!';
+                $out['msg'] = '404 页面没有找到!';
             } else {
-                $out['error'] = '数据出现异常,请稍后再试.';
+                $out['msg'] = '数据出现异常,请稍后再试.';
             }
         }
         if (Request::isAjax()) {
@@ -687,7 +762,7 @@ class Route
         }
         //输出错误页面--------
         Request::setContentType('html');
-        $view = View::instance();
+        $view = new View();
         $view->assign('info', $out);
         $template = Config::get('beacon.exception_template', '@exception.tpl');
         $view->display($template);

@@ -395,37 +395,37 @@ class Validate
         if (Validate::$default_errors == null) {
             Validate::$default_errors = Config::get('form.validate_default_errors', []);
         }
-        $name = $field->name;
         if (!empty($field->error)) {
             return false;
         }
-        if ($field->dataValOff) {
+        if ($field->dataValDisabled) {
             return true;
         }
         if (!empty($field->childError)) {
             return false;
         }
-        $rules = $field->dataVal;
+        $rules = $field->dataValRule;
         if ($rules == null) {
             return true;
         }
-        $errors = $field->dataValMsg;
+        $errors = $field->dataValMessage;
         if ($errors == null) {
             $errors = [];
         }
         $tempErrors = [];
         foreach ($errors as $type => $err) {
-            $rtype = Validate::getRealType($type);
-            $tempErrors[$rtype] = $err;
+            $realType = Validate::getRealType($type);
+            $tempErrors[$realType] = $err;
         }
         $errors = $tempErrors;
         $tempRules = [];
         foreach ($rules as $type => $args) {
-            $rtype = Validate::getRealType($type);
-            $tempRules[$rtype] = $args;
+            $realType = Validate::getRealType($type);
+            $tempRules[$realType] = $args;
         }
         $rules = $tempRules;
         $value = $field->value;
+        //Logger::log('xxxx', $rules, $value);
         //验证非空
         if (isset($rules['required']) && $rules['required']) {
             $func = isset($this->func['required']) ? $this->func['required'] : Validate::getFunc('required');
@@ -438,8 +438,9 @@ class Validate
             unset($rules['required']);
         }
         if (is_array($value)) {
-            if (isset($field->validFunc) && is_callable($field->validFunc)) {
-                $error = $field->validFunc($value);
+            $validFunc = $field->getFunc('valid');
+            if ($validFunc && is_callable($validFunc)) {
+                $error = $validFunc($value);
                 if (!empty($error)) {
                     $field->error = $error;
                     return false;
@@ -453,14 +454,9 @@ class Validate
                 if (!is_array($args)) {
                     $args = [$args];
                 }
-                $xargs = array_slice($args, 0);
+                $param = array_slice($args, 0);
                 array_unshift($args, $value);
-                $func = null;
-                if ($type == 'remote') {
-                    $func = isset($field->remoteFunc) ? $field->remoteFunc : (isset($this->remoteFunc[$name]) ? $this->remoteFunc[$name] : null);
-                } else {
-                    $func = isset($this->func[$type]) ? $this->func[$type] : Validate::getFunc($type);
-                }
+                $func = isset($this->func[$type]) ? $this->func[$type] : Validate::getFunc($type);
                 if ($func == null) {
                     continue;
                 }
@@ -470,22 +466,16 @@ class Validate
                         continue;
                     }
                     $err = isset($this->def_errors[$type]) ? $this->def_errors[$type] : (isset($errors[$type]) ? $errors[$type] : (isset(Validate::$default_errors[$type]) ? Validate::$default_errors[$type] : '格式错误'));
-                    $field->error = Validate::format($err, $xargs);
+                    $field->error = Validate::format($err, $param);
                     return false;
                 }
                 if (is_array($out) && isset($out['status']) && !$out['status'] && !empty($out['error'])) {
-                    $field->error = Validate::format($out['error'], $xargs);
+                    $field->error = Validate::format($out['error'], $param);
                     return false;
                 }
             }
         }
-        if (isset($field->validFunc) && is_callable($field->validFunc)) {
-            $error = ($field->validFunc)($value);
-            if (!empty($error)) {
-                $field->error = $error;
-                return false;
-            }
-        }
+
         return true;
     }
 }

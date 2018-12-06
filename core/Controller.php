@@ -36,7 +36,9 @@ abstract class Controller
      */
     protected function getAssign()
     {
-        return $this->view()->getAssign();
+        $data = $this->view()->getAssign();
+        unset($data['this']);
+        return $data;
     }
 
     /**
@@ -51,7 +53,7 @@ abstract class Controller
         if ($parent !== null) {
             return $this->view()->display($this, 'extends:' . $parent . '|' . $tplName);
         }
-        return $this->view()->display($this, $tplName);
+        return $this->view()->display($tplName);
     }
 
     /**
@@ -64,9 +66,9 @@ abstract class Controller
     {
         $this->view()->context($this);
         if ($parent !== null) {
-            return $this->view()->fetch($this, 'extends:' . $parent . '|' . $tplname);
+            return $this->view()->fetch('extends:' . $parent . '|' . $tplname);
         }
-        return $this->view()->fetch($this, $tplname);
+        return $this->view()->fetch($tplname);
     }
 
     /**
@@ -93,27 +95,26 @@ abstract class Controller
         if (is_array($error)) {
             $option['formError'] = $error;
             reset($error);
-            $option['error'] = current($error);
-            $option['error'] = $option['error'] == null ? '错误' : $option['error'];
+            $option['msg'] = current($error);
+            $option['msg'] = $option['msg'] == null ? '错误' : $option['msg'];
         } else {
-            $option['error'] = $error;
+            $option['msg'] = $error;
         }
-        if ($this->getContentType() == 'application/json' || $this->getContentType() == 'text/json') {
+        if ($this->isAjax() || $this->getContentType() == 'application/json' || $this->getContentType() == 'text/json') {
             echo json_encode($option, JSON_UNESCAPED_UNICODE);
             exit;
-        } else {
-            if (empty($option['back'])) {
-                $option['back'] = $this->getReferrer();
-            }
-            $this->assign('info', $option);
-            if (!empty($option['template'])) {
-                $this->display($option['template']);
-            } else {
-                $template = Config::get('beacon.error_template', '@error.tpl');
-                $this->display($template);
-            }
-            exit;
         }
+        if (empty($option['back'])) {
+            $option['back'] = $this->getReferrer();
+        }
+        $this->assign('info', $option);
+        if (!empty($option['template'])) {
+            $this->display($option['template']);
+        } else {
+            $template = Config::get('beacon.error_template', '@error.tpl');
+            $this->display($template);
+        }
+        exit;
     }
 
     /**
@@ -124,31 +125,29 @@ abstract class Controller
      */
     public function success($message = null, array $option = [])
     {
-        $option = [];
         $option['status'] = true;
         if (!empty($message)) {
-            $option['message'] = $message;
+            $option['msg'] = $message;
         }
-        if ($this->getContentType() == 'application/json' || $this->getContentType() == 'text/json') {
+        if ($this->isAjax() || $this->getContentType() == 'application/json' || $this->getContentType() == 'text/json') {
             echo json_encode($option, JSON_UNESCAPED_UNICODE);
             exit;
-        } else {
-            if (empty($option['back'])) {
-                $back = $this->param('__BACK__');
-                if (empty($back)) {
-                    $back = $this->getReferrer();
-                }
-                $option['back'] = $back;
-            }
-            $this->assign('info', $option);
-            if (!empty($option['template'])) {
-                $this->display($option['template']);
-            } else {
-                $template = Config::get('beacon.success_template', '@success.tpl');
-                $this->display($template);
-            }
-            exit;
         }
+        if (empty($option['back'])) {
+            $back = $this->param('__BACK__');
+            if (empty($back)) {
+                $back = $this->getReferrer();
+            }
+            $option['back'] = $back;
+        }
+        $this->assign('info', $option);
+        if (!empty($option['template'])) {
+            $this->display($option['template']);
+        } else {
+            $template = Config::get('beacon.success_template', '@success.tpl');
+            $this->display($template);
+        }
+        exit;
     }
 
     /**
@@ -325,11 +324,11 @@ abstract class Controller
      * 根据模板补丁修正输出数据
      * @param string $tplName
      * @param array|null $list
-     * @param array $orgFields
+     * @param array $origFields
      * @param string $assign
      * @return array
      */
-    protected function hook(string $tplName, array $list = null, array $orgFields = [], string $assign = 'rs')
+    protected function hook(string $tplName, array $list = null, array $origFields = [], string $assign = 'rs')
     {
         if ($list == null) {
             $data = $this->getAssign();
@@ -344,7 +343,7 @@ abstract class Controller
         $hookFunc = $view->getHook();
         foreach ($list as $item) {
             $column = [];
-            foreach ($orgFields as $key) {
+            foreach ($origFields as $key) {
                 if (isset($item[$key])) {
                     $column[$key] = $item;
                 }

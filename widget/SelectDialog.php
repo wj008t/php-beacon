@@ -2,31 +2,32 @@
 /**
  * Created by PhpStorm.
  * User: wj008
- * Date: 2017/12/16
- * Time: 2:04
+ * Date: 18-11-27
+ * Time: 下午11:35
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
 
 class SelectDialog extends Hidden
 {
-    public function code(Field $field, $args)
+
+    public function code(Field $field, $attr = [])
     {
-        $args['yee-module'] = 'select_dialog';
-        $args['type'] = 'text';
+        $attr['type'] = 'hidden';
+        $attr['yee-module'] = 'select-dialog';
         if (!empty($field->value)) {
-            if ($field->textFunc !== null && is_callable($field->textFunc)) {
-                $args['data-text'] = call_user_func($field->textFunc, $field->value);
+            $textFunc = $field->getFunc('text');
+            if ($textFunc && is_callable($textFunc)) {
+                $value = call_user_func($textFunc, $field->value);
+                $attr['data-text'] = $value;
             } else {
-                $args['data-text'] = $field->value;
+                $attr['data-text'] = $field->value;
             }
         }
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
-
 }

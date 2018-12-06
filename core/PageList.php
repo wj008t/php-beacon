@@ -125,7 +125,7 @@ class PageList
             $this->page = $this->pageCount;
         }
         $this->info = array(
-            'keyname' => $this->key,
+            'keyName' => $this->key,
             'page' => $this->page,
             'pageCount' => $this->pageCount,
             'recordsCount' => $this->recordsCount,

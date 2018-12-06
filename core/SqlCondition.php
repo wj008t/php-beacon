@@ -63,6 +63,12 @@ class SqlCondition
         $this->type = 'and';
     }
 
+    /**
+     * 查询条件
+     * @param null $sql
+     * @param null $args
+     * @return $this
+     */
     public function where($sql = null, $args = null)
     {
         if ($sql === null) {
@@ -103,6 +109,14 @@ class SqlCondition
         return $this;
     }
 
+    /**
+     * 检索条件,如果值为空 不加入筛选
+     * @param string $sql
+     * @param $value
+     * @param int $type
+     * @param string|null $format
+     * @return $this
+     */
     public function search(string $sql, $value, $type = self::WITHOUT_EMPTY, string $format = null)
     {
         switch ($type) {
@@ -144,6 +158,10 @@ class SqlCondition
         return $this;
     }
 
+    /**
+     * 获取代码帧
+     * @return array
+     */
     public function getFrame()
     {
         $sqlItems = [];
@@ -173,6 +191,11 @@ class SqlCondition
 
         }
         return ['sql' => join(' ', $sqlItems), 'args' => $argItems, 'type' => $this->type];
+    }
+
+    public function empty()
+    {
+        $this->items = [];
     }
 
 }

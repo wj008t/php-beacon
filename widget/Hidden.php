@@ -9,50 +9,20 @@
 namespace beacon\widget;
 
 use beacon\Field;
-use beacon\Request;
 
-class Hidden implements BoxInterface
+class Hidden implements WidgetInterface
 {
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $args['type'] = 'hidden';
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr['type'] = 'hidden';
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
         $boxName = $field->boxName;
-        $request = Request::instance();
-        switch ($field->varType) {
-            case 'bool':
-            case 'boolean':
-                $field->value = $request->input($data, $boxName . ':b', false);
-                break;
-            case 'int':
-            case 'integer':
-                $val = $request->input($data, $boxName . ':s', '');
-                if (preg_match('@[+-]?\d*\.\d+@', $val)) {
-                    $field->value = $request->input($data, $boxName . ':f', 0);
-                } else {
-                    $field->value = $request->input($data, $boxName . ':i', 0);
-                }
-                break;
-            case 'double':
-            case 'float':
-                $field->value = $request->input($data, $boxName . ':f', 0);
-                break;
-            case 'string':
-                $field->value = $request->input($data, $boxName . ':s', '');
-                break;
-            case 'array':
-                $field->value = $request->input($data, $boxName . ':a', []);
-                break;
-            default :
-                $field->value = $request->input($data, $boxName, '');
-                break;
-        }
+        $field->value = WidgetHelper::getValue($field->varType, $input, $boxName);
         return $field->value;
     }
 

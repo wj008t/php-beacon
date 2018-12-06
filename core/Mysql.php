@@ -10,6 +10,7 @@ namespace beacon;
  */
 
 
+use mysql_xdevapi\Exception;
 use \PDO as PDO;
 use \PDOException as PDOException;
 use \Throwable as Throwable;
@@ -19,7 +20,7 @@ use \Throwable as Throwable;
  * Class SqlSection
  * @package beacon
  */
-class SqlSection
+class SqlRaw
 {
     public $sql = null;
     public $args = null;
@@ -44,39 +45,18 @@ class SqlSection
 class MysqlException extends \Exception
 {
 
-    protected $stack = '';
+    protected $detail = '';
 
-    public function __construct(string $message = "", $stack = "", int $code = 0, Throwable $previous = null)
+    public function __construct(string $message = '', $detail = '', int $code = 0, Throwable $previous = null)
     {
-        $this->stack = $stack;
+        $this->detail = $detail;
         parent::__construct($message, $code, $previous);
     }
 
-    public function setFile(string $file)
+    public function getDetail()
     {
-        $this->file = $file;
+        return $this->detail;
     }
-
-    public function setLine(int $line)
-    {
-        $this->line = $line;
-    }
-
-    public function setStack(string $stack)
-    {
-        $this->stack = $stack;
-    }
-
-    public function getStack()
-    {
-        return $this->stack;
-    }
-
-    public function __toString()
-    {
-        return $this->stack . "\n" . parent::__toString();
-    }
-
 }
 
 /**
@@ -91,6 +71,7 @@ class Mysql
     /**
      * 获取一个单例
      * @return Mysql|null
+     * @throws MysqlException
      */
     public static function instance()
     {
@@ -101,7 +82,11 @@ class Mysql
             $user = Config::get('db.db_user', '');
             $pass = Config::get('db.db_pwd', '');
             $prefix = Config::get('db.db_prefix', 'sl_');
-            self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
+            try {
+                self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
+            } catch (Exception $e) {
+                throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            }
         }
         return self::$instance;
     }
@@ -324,13 +309,13 @@ class Mysql
         }
         $time = 0;
         if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
-            $this->_lastSql = Mysql::format($sql, $args);
             $time = microtime(true);
         }
         try {
             $sth = $this->pdo->prepare($sql);
             if ($sth->execute($args) === FALSE) {
                 $err = $sth->errorInfo();
+                $this->_lastSql = Mysql::format($sql, $args);
                 if (isset($err[2])) {
                     throw new MysqlException('execute sql statement error:' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
                 } else {
@@ -338,10 +323,12 @@ class Mysql
                 }
             }
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
+                $this->_lastSql = Mysql::format($sql, $args);
                 Logger::info($this->_lastSql, microtime(true) - $time);
             }
             return $sth;
         } catch (\Exception $exception) {
+            $this->_lastSql = Mysql::format($sql, $args);
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
                 Logger::info($this->_lastSql, microtime(true) - $time);
             }
@@ -480,14 +467,14 @@ class Mysql
     }
 
     /**
-     * 创建一个sql语句片段,一般用于更新 插入数据时数组的值
+     * 创建一个sql语句原义片段,一般用于更新 插入数据时数组的值
      * @param string $sql
      * @param null $args
-     * @return SqlSection
+     * @return SqlRaw
      */
-    public function sql(string $sql, $args = null)
+    public function raw(string $sql, $args = null)
     {
-        return new SqlSection($sql, $args);
+        return new SqlRaw($sql, $args);
     }
 
     /**
@@ -508,7 +495,7 @@ class Mysql
             $names[] = '`' . $key . '`';
             if ($item === null) {
                 $vals [] = 'NULL';
-            } else if ($item instanceof SqlSection) {
+            } else if ($item instanceof SqlRaw) {
                 $vals [] = $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -564,7 +551,7 @@ class Mysql
             $names[] = '`' . $key . '`';
             if ($item === null) {
                 $vals [] = 'NULL';
-            } else if ($item instanceof SqlSection) {
+            } else if ($item instanceof SqlRaw) {
                 $vals [] = $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -625,7 +612,7 @@ class Mysql
         foreach ($values as $key => $item) {
             if ($item === null) {
                 $maps [] = '`' . $key . '`=NULL';
-            } else if ($item instanceof SqlSection) {
+            } else if ($item instanceof SqlRaw) {
                 $maps [] = '`' . $key . '`=' . $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {

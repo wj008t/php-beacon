@@ -11,12 +11,12 @@ namespace beacon\widget;
 
 use beacon\Field;
 
-class Line implements WidgetInterface
+class Label implements WidgetInterface
 {
 
     public function code(Field $field, $attr = [])
     {
-        return '';
+        return '<span class="label">' . $field->value . "</span>";
     }
 
     public function assign(Field $field, array $input)

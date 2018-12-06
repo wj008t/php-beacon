@@ -28,7 +28,6 @@ class SqlUnionItem
 class SqlSelector
 {
 
-
     private $table = null;
     private $alias = null;
 
@@ -88,8 +87,9 @@ class SqlSelector
 
     /**
      * Sql构造器
-     * @param string $sql
-     * @param null $param
+     * SqlSelector constructor.
+     * @param string $table
+     * @param string $alias
      */
     public function __construct(string $table, $alias = '')
     {
@@ -107,6 +107,12 @@ class SqlSelector
     {
         $this->sqlTemplate = $template;
         $this->param = $param;
+    }
+
+    public function emptyWhere()
+    {
+        $this->condition->empty();
+        return $this;
     }
 
     /**
@@ -211,6 +217,12 @@ class SqlSelector
         return $this;
     }
 
+    public function emptyOrder()
+    {
+        $this->orderItem = null;
+        return $this;
+    }
+
     /**
      * 设置组
      * @param string $group
@@ -231,6 +243,12 @@ class SqlSelector
         return $this;
     }
 
+    public function emptyGroup()
+    {
+        $this->groupItem = null;
+        return $this;
+    }
+
     /**
      * 结果筛选
      * @param null $sql
@@ -245,6 +263,12 @@ class SqlSelector
             }
             $this->havingItem->where($sql, $args);
         }
+        return $this;
+    }
+
+    public function emptyHaving()
+    {
+        $this->havingItem = null;
         return $this;
     }
 
@@ -265,6 +289,12 @@ class SqlSelector
         } else {
             $this->joinItem->add($sql, $args);
         }
+        return $this;
+    }
+
+    public function emptyJoin()
+    {
+        $this->joinItem = null;
         return $this;
     }
 
@@ -341,6 +371,12 @@ class SqlSelector
             $this->unionItem = [];
         }
         $this->unionItem[] = new SqlUnionItem($selector, false);
+        return $this;
+    }
+
+    public function emptyUnion()
+    {
+        $this->unionItem = null;
         return $this;
     }
 
@@ -511,6 +547,9 @@ class SqlSelector
     {
 
         if (!empty($this->sqlTemplate)) {
+            $runtimeDir = Config::get('sdopx.runtime_dir', 'runtime');
+            $runtimeDir = Utils::trimPath($runtimeDir);
+            $runtimeDir = Utils::path(ROOT_DIR, $runtimeDir);
             if ($type == 2) {
                 $order = $this->orderItem;
                 $limit = $this->limit;
@@ -519,11 +558,11 @@ class SqlSelector
                 $segment = $this->getSegment();
                 $this->orderItem = $order;
                 $this->limit = $limit;
-                $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment);
+                $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment, $runtimeDir);
                 return ['sql' => 'select count(1) from (' . $sql . ') countTempTable', 'args' => []];
             } else {
                 $segment = $this->getSegment();
-                $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment);
+                $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment, $runtimeDir);
                 return ['sql' => $sql, 'args' => []];
             }
         }
@@ -724,7 +763,6 @@ class SqlSelector
 
     /**
      * 获取多条数据
-     * @param bool $optimize 是否使用优化，默认开启
      * @return array
      * @throws \Exception
      */
@@ -756,6 +794,16 @@ class SqlSelector
     {
         $temp = $this->createSql(0);
         return DB::getRow($temp['sql'], $temp['args']);
+    }
+
+    /**
+     * @return mixed|null
+     * @throws \Exception
+     */
+    public function getOne()
+    {
+        $temp = $this->createSql(0);
+        return DB::getOne($temp['sql'], $temp['args']);
     }
 
 }

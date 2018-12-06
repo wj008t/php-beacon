@@ -6,7 +6,7 @@
  * Time: 18:02
  */
 
-namespace  beacon\widget;
+namespace beacon\widget;
 
 
 use beacon\Field;
@@ -14,16 +14,16 @@ use beacon\Field;
 class Text extends Hidden
 {
 
-    public function code(Field $field, $args)
+    public function code(Field $field, $attr = [])
     {
-        $field->explodeAttr($attr, $args);
-        $field->explodeData($attr, $args);
+        $attr['type'] = 'text';
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
 
-    public function assign(Field $field, array $data)
+    public function assign(Field $field, array $input)
     {
         $field->varType = 'string';
-        return parent::assign($field, $data);
+        return parent::assign($field, $input);
     }
 }

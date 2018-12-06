@@ -2,21 +2,21 @@
 /**
  * Created by PhpStorm.
  * User: wj008
- * Date: 2017/12/15
- * Time: 4:01
+ * Date: 18-12-3
+ * Time: 上午3:35
  */
 
 namespace beacon\widget;
 
 
 use beacon\Field;
-use beacon\Validate;
 
-class Number extends Hidden
+class UpFile extends Hidden
 {
     public function code(Field $field, $attr = [])
     {
-        $attr['yee-module'] = 'number';
+        $attr['yee-module'] = 'upload';
+        $attr['data-type'] = 'file';
         $attr['type'] = 'text';
         $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
@@ -24,8 +24,7 @@ class Number extends Hidden
 
     public function assign(Field $field, array $input)
     {
-        $field->varType = 'float';
+        $field->varType = 'string';
         return parent::assign($field, $input);
     }
-
 }
