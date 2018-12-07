@@ -206,12 +206,15 @@ class SqlSelector
     public function order(string $order, $args = null)
     {
         $order = trim($order);
-        if (!preg_match('@^by\s+@i', $order)) {
-            $order = 'by ' . $order;
-        }
         if ($this->orderItem === null) {
+            if (!preg_match('@^by\s+@i', $order)) {
+                $order = 'by ' . $order;
+            }
             $this->orderItem = new SqlItem($order, $args);
         } else {
+            if (!preg_match('@^(by|,)\s+@i', $order)) {
+                $order = ',' . $order;
+            }
             $this->orderItem->add($order, $args);
         }
         return $this;
@@ -232,12 +235,15 @@ class SqlSelector
     public function group(string $group, $args = null)
     {
         $group = trim($group);
-        if (!preg_match('@^by\s+@i', $group)) {
-            $group = 'by ' . $group;
-        }
         if ($this->groupItem === null) {
+            if (!preg_match('@^by\s+@i', $group)) {
+                $group = 'by ' . $group;
+            }
             $this->groupItem = new SqlItem($group, $args);
         } else {
+            if (!preg_match('@^(by|,)\s+@i', $group)) {
+                $group = ',' . $group;
+            }
             $this->groupItem->add($group, $args);
         }
         return $this;
@@ -467,12 +473,12 @@ class SqlSelector
         $data['order'] = '';
         if ($this->orderItem != null) {
             $orderSql = $this->orderItem->sql;
-            $ordeArgs = $this->orderItem->args;
+            $orderArgs = $this->orderItem->args;
             if (!empty($orderSql)) {
                 $data['order'] = 'order ' . $orderSql;
             }
-            if ($ordeArgs !== null && is_array($ordeArgs)) {
-                $data['order'] = Mysql::format($data['order'], $ordeArgs);
+            if ($orderArgs !== null && is_array($orderArgs)) {
+                $data['order'] = Mysql::format($data['order'], $orderArgs);
             }
         }
         $data['group'] = '';
