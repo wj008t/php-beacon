@@ -124,7 +124,7 @@ class Field
             if (empty($key)) {
                 continue;
             }
-            if (preg_match('@(.*)Func$@', $key, $m)) {
+            if (preg_match('@^(.*)Func$@', $key, $m)) {
                 $this->regFunc($m[1], $value);
                 continue;
             }
@@ -262,7 +262,6 @@ class Field
      */
     public function __get($name)
     {
-
         return $this->get($name);
     }
 
@@ -385,7 +384,6 @@ class Field
         if (isset(self::$instance[$type])) {
             return self::$instance[$type];
         }
-
         $class = '\\beacon\\widget\\' . Utils::toCamel($type);
         //  Logger::log($class);
         if (!class_exists($class)) {

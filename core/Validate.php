@@ -404,8 +404,18 @@ class Validate
         if (!empty($field->childError)) {
             return false;
         }
+
+        $validFunc = $field->getFunc('valid');
+        if ($validFunc && is_callable($validFunc)) {
+            $error = $validFunc($value);
+            if (!empty($error)) {
+                $field->error = $error;
+                return false;
+            }
+        }
+
         $rules = $field->dataValRule;
-        if ($rules == null) {
+        if ($rules == null || $validFunc == null) {
             return true;
         }
         $errors = $field->dataValMessage;
@@ -425,7 +435,6 @@ class Validate
         }
         $rules = $tempRules;
         $value = $field->value;
-        //Logger::log('xxxx', $rules, $value);
         //验证非空
         if (isset($rules['required']) && $rules['required']) {
             $func = isset($this->func['required']) ? $this->func['required'] : Validate::getFunc('required');
@@ -437,20 +446,9 @@ class Validate
             }
             unset($rules['required']);
         }
-
-        $validFunc = $field->getFunc('valid');
-        if ($validFunc && is_callable($validFunc)) {
-            $error = $validFunc($value);
-            if (!empty($error)) {
-                $field->error = $error;
-                return false;
-            }
-        }
-
         if (is_array($value)) {
             return true;
         }
-
         if (strlen($value) > 0 || (isset($rules['force']) && $rules['force'])) {
             unset($rules['force']);
             foreach ($rules as $type => $args) {
