@@ -404,7 +404,7 @@ class Validate
         if (!empty($field->childError)) {
             return false;
         }
-
+        $value = $field->value;
         $validFunc = $field->getFunc('valid');
         if ($validFunc && is_callable($validFunc)) {
             $error = $validFunc($value);
@@ -434,7 +434,6 @@ class Validate
             $tempRules[$realType] = $args;
         }
         $rules = $tempRules;
-        $value = $field->value;
         //验证非空
         if (isset($rules['required']) && $rules['required']) {
             $func = isset($this->func['required']) ? $this->func['required'] : Validate::getFunc('required');
