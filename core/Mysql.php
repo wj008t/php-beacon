@@ -84,7 +84,9 @@ class Mysql
             $prefix = Config::get('db.db_prefix', 'sl_');
             try {
                 self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
-            } catch (Exception $e) {
+            } catch (\PDOException $e) {
+                throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            } catch (\Exception $e) {
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
             }
         }
