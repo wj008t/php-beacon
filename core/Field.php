@@ -213,9 +213,7 @@ class Field
         } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
             return isset($this->_view[$name]) ? $this->_view[$name] : null;
         } else if ($name == 'value') {
-            if (!($this->_value === null || $this->_value === '')) {
-                return $this->_value;
-            } else if ($this->form == null || $this->form->getType() != 'add' || $this->default === null || $this->default === '') {
+            if ($this->_value !== null || $this->form == null || $this->form->getType() != 'add' || $this->default === null || $this->default === '') {
                 return $this->_value;
             } else {
                 return $this->default;
