@@ -452,7 +452,8 @@ class Form
             if ($field->close || ($field->offEdit && $this->type == 'edit')) {
                 continue;
             }
-            if (!empty($field->valueFunc) && is_callable($field->valueFunc)) {
+            $valFunc = $field->getFunc('value');
+            if (!empty($valFunc) && is_callable($valFunc)) {
                 $valueFuncFields[] = $field;
             }
             if ($field->viewClose) {
@@ -469,7 +470,8 @@ class Form
             }
         }
         foreach ($valueFuncFields as $field) {
-            $field->value = call_user_func($field->valueFunc, $this);
+            $valFunc = $field->getFunc('value');
+            $field->value = call_user_func($valFunc, $this);
         }
         return $this->getValues();
     }
