@@ -16,7 +16,6 @@ class UpFile extends Hidden
     public function code(Field $field, $attr = [])
     {
         $attr['yee-module'] = 'upload';
-        $attr['data-type'] = 'file';
         $attr['type'] = 'text';
         $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
