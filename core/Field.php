@@ -348,6 +348,9 @@ class Field
             $attr = [];
         }
         try {
+            if ($this->form != null) {
+                $this->form->createDynamic($this);
+            }
             $box = self::getInstance($this->type);
             if ($box === null) {
                 throw new \Exception('Unsupported input box type:' . $this->type);

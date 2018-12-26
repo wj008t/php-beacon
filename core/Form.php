@@ -158,9 +158,13 @@ class Form
      * @param string $name
      * @return Field|null
      */
-    public function getField(string $name)
+    public function getField(string $name, bool $isView = false)
     {
-        return isset($this->fields[$name]) ? $this->fields[$name] : null;
+        $field = isset($this->fields[$name]) ? $this->fields[$name] : null;
+        if ($field && $isView) {
+            $this->createDynamic($field);
+        }
+        return $field;
     }
 
     /**
@@ -746,8 +750,6 @@ class Form
                 continue;
             }
         }
-
-
         $keys = array_keys($fields);
         $temp = [];
         for ($idx = 0, $len = count($keys); $idx < $len; $idx++) {
@@ -780,9 +782,6 @@ class Form
             //不合并
             if ($field->viewMerge == 0 && !$field->viewClose) {
                 $temp[$key] = $field;
-            }
-            if (!$field->viewClose) {
-                $this->createDynamic($field);
             }
         }
         return $temp;
