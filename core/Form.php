@@ -316,7 +316,7 @@ class Form
     {
         $fields = $this->getFields($tabIndex);
         foreach ($fields as $field) {
-            if (!($field->close || $field->viewClose) && $field->hideBox) {
+            if ($field->hideBox) {
                 $field->viewClose = true;
                 $this->addHideBox($field->boxName, $field->value);
                 continue;
