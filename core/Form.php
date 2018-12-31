@@ -309,10 +309,19 @@ class Form
 
     /**
      * 输出隐藏输入框
+     * @param null $tabIndex
      * @return string
      */
-    public function fetchHideBox()
+    public function fetchHideBox($tabIndex = null)
     {
+        $fields = $this->getFields($tabIndex);
+        foreach ($fields as $field) {
+            if (!($field->close || $field->viewClose) && $field->hideBox) {
+                $field->viewClose = true;
+                $this->addHideBox($field->boxName, $field->value);
+                continue;
+            }
+        }
         $box = [];
         foreach ($this->hideBox as $name => $val) {
             $box[] = '<input type="hidden" name="' . htmlspecialchars($name, ENT_QUOTES) . '" value="' . htmlspecialchars($val, ENT_QUOTES) . '">';
@@ -746,7 +755,6 @@ class Form
             //隐藏字段
             if ($field->hideBox) {
                 $field->viewClose = true;
-                $this->addHideBox($field->boxName, $field->value);
                 continue;
             }
         }
