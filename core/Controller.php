@@ -345,7 +345,7 @@ abstract class Controller
             $column = [];
             foreach ($origFields as $key) {
                 if (isset($item[$key])) {
-                    $column[$key] = $item;
+                    $column[$key] = isset($item[$key]) ? $item[$key] : null;
                 }
             }
             foreach ($hookFunc as $key => $func) {
