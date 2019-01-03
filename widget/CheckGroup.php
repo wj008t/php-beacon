@@ -79,7 +79,17 @@ class CheckGroup implements WidgetInterface
             if (!empty($attributes['readonly'])) {
                 $inpAttr .= ' readonly="' . $attributes['readonly'] . '"';
             }
-            $out[] = '<input type="checkbox" name="' . $name . '[]" value="' . htmlspecialchars($val) . '"' . $inpAttr . '/>';
+            $out[] = '<input type="checkbox" name="' . $name . '[]" value="' . htmlspecialchars($val) . '"' . $inpAttr;
+            foreach ($item as $k => $dval) {
+                if (preg_match('@^data-([a-z0-9_-]+)$@', $k)) {
+                    if (is_array($dval)) {
+                        $out[] = ' ' . $k . '="' . htmlspecialchars(json_encode($dval)) . '"';
+                    } else {
+                        $out[] = ' ' . $k . '="' . htmlspecialchars($dval) . '"';
+                    }
+                }
+            }
+            $out[] = '/>';
             $out[] = '<span>' . htmlspecialchars($text);
             if (!empty(strval($tips))) {
                 $out[] = '<em>' . htmlspecialchars($tips) . '</em>';

@@ -72,9 +72,9 @@ class RadioGroup extends Hidden
 
             $out[] = '<input type="radio" name="' . $name . '" value="' . htmlspecialchars($val) . '"' . $inpAttr;
             foreach ($item as $k => $dval) {
-                if ($k == 'bind') {
+                if (preg_match('@^data-([a-z0-9_-]+)$@', $k)) {
                     if (is_array($dval)) {
-                        $out[] = ' data-' . $k . '="' . htmlspecialchars(json_encode($dval)) . '"';
+                        $out[] = ' ' . $k . '="' . htmlspecialchars(json_encode($dval)) . '"';
                     } else {
                         $out[] = ' ' . $k . '="' . htmlspecialchars($dval) . '"';
                     }
