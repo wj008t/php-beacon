@@ -19,8 +19,8 @@ class Select extends Hidden
         $value = isset($attr['value']) ? $attr['value'] : $field->value;
         $options = isset($attr['@options']) ? $attr['@options'] : $field->options;
         $options = $options == null ? [] : $options;
-        $args['value'] = '';
-        $args['type'] = '';
+        $attr['value'] = '';
+        $attr['type'] = '';
         $attr = WidgetHelper::mergeAttributes($field, $attr);
         $out = [];
         $out[] = '<select ' . join(' ', $attr) . '>' . "\n";
