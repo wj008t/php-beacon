@@ -464,6 +464,12 @@ class Route
             $url['ctl'] = isset($url['ctl']) ? $url['ctl'] : self::get('ctl');
             $url['act'] = isset($url['act']) ? $url['act'] : self::get('act');
             $temp = '^/' . $url['app'] . '/' . $url['ctl'] . '/' . $url['act'];
+            unset($url['app']);
+            unset($url['ctl']);
+            unset($url['act']);
+            if (!empty($url) && is_array($query)) {
+                $query = array_merge($url, $query);
+            }
             $url = $temp;
         }
         if (!is_string($url)) {
