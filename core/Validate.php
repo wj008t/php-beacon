@@ -392,6 +392,7 @@ class Validate
      */
     public function checkField(Field $field)
     {
+
         if (Validate::$default_errors == null) {
             Validate::$default_errors = Config::get('form.validate_default_errors', []);
         }
@@ -413,9 +414,8 @@ class Validate
                 return false;
             }
         }
-
         $rules = $field->dataValRule;
-        if ($rules == null || $validFunc == null) {
+        if ($rules == null) {
             return true;
         }
         $errors = $field->dataValMessage;
@@ -434,9 +434,11 @@ class Validate
             $tempRules[$realType] = $args;
         }
         $rules = $tempRules;
+        Logger::log($rules);
         //验证非空
         if (isset($rules['required']) && $rules['required']) {
             $func = isset($this->func['required']) ? $this->func['required'] : Validate::getFunc('required');
+
             $r = call_user_func_array($func, [$value]);
             if (!$r) {
                 $err = isset($this->def_errors['required']) ? $this->def_errors['required'] : (isset($errors['required']) ? $errors['required'] : (isset(Validate::$default_errors['required']) ? Validate::$default_errors['required'] : '必填项'));
