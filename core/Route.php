@@ -463,7 +463,7 @@ class Route
             $url['app'] = isset($url['app']) ? $url['app'] : self::get('app');
             $url['ctl'] = isset($url['ctl']) ? $url['ctl'] : self::get('ctl');
             $url['act'] = isset($url['act']) ? $url['act'] : self::get('act');
-            $temp = '^' . $url['app'] . '/' . $url['ctl'] . '/' . $url['act'];
+            $temp = '^/' . $url['app'] . '/' . $url['ctl'] . '/' . $url['act'];
             $url = $temp;
         }
         if (!is_string($url)) {
