@@ -22,8 +22,8 @@ class DelaySelect extends Hidden
     public function code(Field $field, $attr = [])
     {
         $value = isset($attr['value']) ? $attr['value'] : $field->value;
-        $args['value'] = '';
-        $args['type'] = '';
+        $attr['value'] = '';
+        $attr['type'] = '';
         $attr['yee-module'] = 'delay-select';
         $attr['data-value'] = $value;
         //选项头
