@@ -215,7 +215,7 @@ class Container extends Hidden
             if ($field->dataInitSize) {
                 $data[] = 'data-init-size="' . $field->dataInitSize . '"';
             }
-            return $wrapFunc(['field' => $field, 'form' => $form, 'body' => join('', $out), 'source' => base64_encode($code), 'lastIndex' => $index, 'attrs' => join(' ', $data)]);
+            return $wrapFunc(['field' => $field, 'form' => $form, 'body' => join('', $out), 'source' =>$source, 'lastIndex' => $index, 'attrs' => join(' ', $data)]);
         }
     }
 
