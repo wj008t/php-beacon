@@ -202,7 +202,20 @@ class Container extends Hidden
             }
             self::perfect($field, $form);
             $code = $itemFunc(['field' => $field, 'form' => $form, 'index' => '@@index@@']);
-            return $wrapFunc(['field' => $field, 'form' => $form, 'body' => join('', $out), 'source' => base64_encode($code), 'lastIndex' => $index]);
+            $source = base64_encode($code);
+            $data = [];
+            $data[] = 'data-index="' . htmlspecialchars($index) . '"';
+            
+            if ($field->dataMinSize) {
+                $data[] = 'data-min-size="' . $field->dataMinSize . '"';
+            }
+            if ($field->dataMaxSize) {
+                $data[] = 'data-max-size="' . $field->dataMaxSize . '"';
+            }
+            if ($field->dataInitSize) {
+                $data[] = 'data-init-size="' . $field->dataInitSize . '"';
+            }
+            return $wrapFunc(['field' => $field, 'form' => $form, 'body' => join('', $out), 'source' => base64_encode($code), 'lastIndex' => $index, 'attrs' => join(' ', $data)]);
         }
     }
 
