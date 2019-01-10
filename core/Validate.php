@@ -434,7 +434,6 @@ class Validate
             $tempRules[$realType] = $args;
         }
         $rules = $tempRules;
-        Logger::log($rules);
         //验证非空
         if (isset($rules['required']) && $rules['required']) {
             $func = isset($this->func['required']) ? $this->func['required'] : Validate::getFunc('required');
