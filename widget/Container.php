@@ -8,12 +8,9 @@
 
 namespace beacon\widget;
 
-use beacon\DB;
 use beacon\Field;
 use beacon\Form;
-use beacon\Logger;
 use beacon\Request;
-use beacon\Route;
 use beacon\Utils;
 use beacon\View;
 
@@ -205,7 +202,6 @@ class Container extends Hidden
             $source = base64_encode($code);
             $data = [];
             $data[] = 'data-index="' . htmlspecialchars($index) . '"';
-            
             if ($field->dataMinSize) {
                 $data[] = 'data-min-size="' . $field->dataMinSize . '"';
             }
@@ -215,7 +211,14 @@ class Container extends Hidden
             if ($field->dataInitSize) {
                 $data[] = 'data-init-size="' . $field->dataInitSize . '"';
             }
-            return $wrapFunc(['field' => $field, 'form' => $form, 'body' => join('', $out), 'source' =>$source, 'lastIndex' => $index, 'attrs' => join(' ', $data)]);
+            return $wrapFunc([
+                'field' => $field,
+                'form' => $form,
+                'body' => join('', $out),
+                'source' => base64_encode($code),
+                'lastIndex' => $index,
+                'attrs' => join(' ', $data)
+            ]);
         }
     }
 
