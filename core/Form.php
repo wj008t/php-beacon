@@ -842,7 +842,7 @@ class Form
         if (empty($this->tbName)) {
             return;
         }
-        $values = $this->getValues();
+        $values = $this->getValues(true);
         $values = array_merge($values, $replace);
         DB::insert($this->tbName, $values);
         $id = DB::lastInsertId();
@@ -856,7 +856,7 @@ class Form
         if (empty($this->tbName)) {
             return;
         }
-        $values = $this->getValues();
+        $values = $this->getValues(true);
         $values = array_merge($values, $replace);
         if (!isset($values['id']) || empty($values['id'])) {
             DB::insert($this->tbName, $values);
@@ -877,7 +877,7 @@ class Form
             return;
         }
         $this->id = $id;
-        $values = $this->getValues();
+        $values = $this->getValues(true);
         $values = array_merge($values, $replace);
         DB::update($this->tbName, $values, $id);
         return $id;
