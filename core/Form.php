@@ -850,6 +850,26 @@ class Form
         return $id;
     }
 
+    //替换值
+    public function replace($replace = [])
+    {
+        if (empty($this->tbName)) {
+            return;
+        }
+        $values = $this->getValues();
+        $values = array_merge($values, $replace);
+        if (!isset($values['id']) || empty($values['id'])) {
+            DB::insert($this->tbName, $values);
+            $id = DB::lastInsertId();
+            $this->id = $id;
+            return $id;
+        }
+        DB::replace($this->tbName, $values);
+        $id = $values['id'];
+        $this->id = $id;
+        return $id;
+    }
+
     //编辑值
     public function update($id = 0, $replace = [])
     {
