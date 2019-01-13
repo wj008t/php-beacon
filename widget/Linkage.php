@@ -38,7 +38,7 @@ class Linkage implements WidgetInterface
                 $attr['data-name' . $level] = $pname;
             }
         }
-        $args['yee-module'] = 'linkage';
+        $attr['yee-module'] = 'linkage';
         $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
