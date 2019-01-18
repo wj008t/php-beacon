@@ -33,7 +33,7 @@ class Logger
         $backtrace = debug_backtrace(false);
         $backtrace_message = 'unknown';
         if (isset($backtrace[1]) && isset($backtrace[1]['file']) && isset($backtrace[1]['line'])) {
-            $backtrace_message = $backtrace[1]['file'] . ' : ' . $backtrace[1]['line'];
+            $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'].')';
         }
         foreach ($args as &$arg) {
             try {
