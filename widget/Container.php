@@ -128,9 +128,17 @@ class Container extends Hidden
         return new $className($field->getForm()->getType());
     }
 
+    /**
+     * 生成代码
+     * @param Field $field
+     * @param array $attr
+     * @return string
+     * @throws \Exception
+     */
     public function code(Field $field, $attr = [])
     {
         $field->mode = empty($field->mode) ? 'single' : $field->mode;
+        #单一模式
         if ($field->mode == 'single') {
             $attr['type'] = '';
             $attr['name'] = '';
@@ -160,6 +168,7 @@ class Container extends Hidden
             $code = $wrapFunc(['field' => $field, 'form' => $form]);
             return '<div ' . join(' ', $attr) . '>' . $code . '</div>';
         } else {
+            #多增模式
             if (empty($field->plugName)) {
                 return '';
             }
@@ -183,7 +192,7 @@ class Container extends Hidden
             $tinker = $field->getFunc('tinker');
             if (!empty($values) && is_array($values)) {
                 foreach ($values as $idx => $item) {
-                    $pForm = self::plugForm($field);
+                    $pForm = self::plugForm($field, 'edit');
                     if ($tinker && is_callable($tinker)) {
                         call_user_func($tinker, $pForm);
                     }
