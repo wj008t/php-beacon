@@ -208,7 +208,6 @@ class Container extends Hidden
             }
             self::perfect($field, $form);
             $code = $itemFunc(['field' => $field, 'form' => $form, 'index' => '@@index@@']);
-            $source = base64_encode($code);
             $data = [];
             $data[] = 'data-index="' . htmlspecialchars($index) . '"';
             if ($field->dataMinSize) {
