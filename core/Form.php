@@ -521,6 +521,9 @@ class Form
             $this->afterValid($fields);
         }
         $errors = $this->getAllError();
+        if (count($errors) > 0) {
+            return false;
+        }
         return $result;
     }
 
