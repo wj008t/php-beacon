@@ -230,6 +230,12 @@ class Container extends Hidden
         }
     }
 
+    /**
+     * @param Field $field
+     * @param array $input
+     * @return array|null
+     * @throws \Exception
+     */
     public function assign(Field $field, array $input)
     {
         $field->mode = empty($field->mode) ? 'single' : $field->mode;
