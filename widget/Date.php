@@ -39,7 +39,11 @@ class Date extends Hidden
             $values[$field->name] = strtotime($field->value);
             return;
         }
-        $values[$field->name] = $field->value;
+        if (empty($field->value)) {
+            $values[$field->name] = null;
+        } else {
+            $values[$field->name] = $field->value;
+        }
     }
 
     public function init(Field $field, array $values)
