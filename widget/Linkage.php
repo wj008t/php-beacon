@@ -109,7 +109,7 @@ class Linkage implements WidgetInterface
             }
             return $field->value = $temps;
         }
-        $temps = isset($values[$field->name]) ? '' : $values[$field->name];
+        $temps = isset($values[$field->name]) ? $values[$field->name] : '';
         if (is_array($temps)) {
             return $field->value = $temps;
         }
