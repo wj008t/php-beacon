@@ -19,7 +19,7 @@ class DB
      */
     public static function engine()
     {
-        if (self::$engine !== null) {
+        if (self::$engine != null) {
             return self::$engine;
         }
         $driver = Config::get('db.db_driver', 'Mysql');
@@ -27,6 +27,7 @@ class DB
             self::$engine = Mysql::instance();
             return self::$engine;
         }
+        throw new \Exception('不支持的数据库驱动类型');
     }
 
     /**

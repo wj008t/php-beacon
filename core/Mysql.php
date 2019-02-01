@@ -85,8 +85,10 @@ class Mysql
             try {
                 self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
             } catch (\PDOException $e) {
+                self::$instance = null;
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
             } catch (\Exception $e) {
+                self::$instance = null;
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
             }
         }
@@ -196,6 +198,10 @@ class Mysql
     private $transactionCounter = 0;
     private $_lastSql = '';
 
+    private $link = null;
+    private $user = null;
+    private $pass = null;
+
     /**
      * 构造函数
      * Mysql constructor.
@@ -214,8 +220,20 @@ class Mysql
         } else {
             $link = 'mysql:host=' . $host . ';port=' . $port . ';';
         }
+        $this->link = $link;
+        $this->user = $user;
+        $this->pass = $pass;
         try {
             $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
+        } catch (PDOException $exc) {
+            throw $exc;
+        }
+    }
+
+    public function reconnection()
+    {
+        try {
+            $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
         } catch (PDOException $exc) {
             throw $exc;
         }
@@ -314,9 +332,24 @@ class Mysql
             $time = microtime(true);
         }
         try {
+            $retry = 0;
+            redo:
             $sth = $this->pdo->prepare($sql);
-            if ($sth->execute($args) === FALSE) {
+            $ret = false;
+            try {
+                $ret = $sth->execute($args);
+            } catch (\Exception $exception) {
+                $ret = false;
+            }
+            if ($ret === FALSE) {
                 $err = $sth->errorInfo();
+                if (isset($err[1]) && $err[1] == 2006) {
+                    $this->reconnection();
+                    if ($retry == 0) {
+                        $retry = 1;
+                        goto redo;
+                    }
+                }
                 $this->_lastSql = Mysql::format($sql, $args);
                 if (isset($err[2])) {
                     throw new MysqlException('execute sql statement error:' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
