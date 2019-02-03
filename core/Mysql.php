@@ -379,7 +379,7 @@ class Mysql
      * @param null $fetch_argument
      * @param array|null $ctor_args
      * @return array
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
     {
@@ -408,7 +408,7 @@ class Mysql
      * @param null $cursor_orientation
      * @param int $cursor_offset
      * @return mixed|null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
     {
@@ -427,7 +427,7 @@ class Mysql
      * @param null $args
      * @param null $field
      * @return mixed|null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getOne(string $sql, $args = null, $field = null)
     {
@@ -448,7 +448,7 @@ class Mysql
      * @param null $where
      * @param null $args
      * @return null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getMax(string $tbname, string $field, $where = null, $args = null)
     {
@@ -478,7 +478,7 @@ class Mysql
      * @param null $where
      * @param null $args
      * @return null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getMin(string $tbname, string $field, $where = null, $args = null)
     {
@@ -721,7 +721,7 @@ class Mysql
      * 获取表字段
      * @param string $tbname
      * @return array
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getFields(string $tbname)
     {
@@ -733,7 +733,7 @@ class Mysql
      * @param string $tbname
      * @param string $field
      * @return bool
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function existsField(string $tbname, string $field)
     {
@@ -754,12 +754,12 @@ class Mysql
             'comment' => '',
         ], $options);
         if ($this->existsTable($tbname)) {
-            throw new \Exception("数据库表已经存在,{$tbname}");
+            throw new MysqlException("数据库表已经存在,{$tbname}");
         }
         $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=?";
         $stm = $this->execute($sql, [$options['comment']]);
         if (!$stm) {
-            throw new \Exception("创建数据库表失败,{$tbname}");
+            throw new MysqlException("创建数据库表失败,{$tbname}");
         }
     }
 
@@ -939,7 +939,7 @@ class Mysql
      * 检查表是否存在
      * @param string $tbname
      * @return bool
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function existsTable(string $tbname)
     {
