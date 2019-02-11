@@ -15,7 +15,7 @@ class DB
     /**
      * 获取数据库引擎实例
      * @return Mysql|null
-     * @throws Exception
+     * @throws MysqlException
      */
     public static function engine()
     {
@@ -43,7 +43,7 @@ class DB
     /**
      * 事务闭包
      * @param $func
-     * @throws Exception
+     * @throws \Exception
      */
     public static function transaction($func)
     {

@@ -10,10 +10,7 @@ namespace beacon;
  */
 
 
-use mysql_xdevapi\Exception;
-use \PDO as PDO;
-use \PDOException as PDOException;
-use \Throwable as Throwable;
+use PDO as PDO;
 
 /**
  * sql 语句片段,用于更新插入时使用
@@ -47,7 +44,7 @@ class MysqlException extends \Exception
 
     protected $detail = '';
 
-    public function __construct(string $message = '', $detail = '', int $code = 0, Throwable $previous = null)
+    public function __construct(string $message = '', $detail = '', int $code = 0, \Throwable $previous = null)
     {
         $this->detail = $detail;
         parent::__construct($message, $code, $previous);
@@ -225,7 +222,7 @@ class Mysql
         $this->pass = $pass;
         try {
             $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
-        } catch (PDOException $exc) {
+        } catch (\PDOException $exc) {
             throw $exc;
         }
     }
@@ -234,7 +231,7 @@ class Mysql
     {
         try {
             $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
-        } catch (PDOException $exc) {
+        } catch (\PDOException $exc) {
             throw $exc;
         }
     }
