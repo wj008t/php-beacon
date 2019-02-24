@@ -41,6 +41,16 @@ class DB
     }
 
     /**
+     * 是否在事物里面
+     * @return bool
+     * @throws MysqlException
+     */
+    public static function inTransaction()
+    {
+        return self::engine()->inTransaction();
+    }
+
+    /**
      * 事务闭包
      * @param $func
      * @throws \Exception

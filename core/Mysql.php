@@ -250,6 +250,15 @@ class Mysql
     }
 
     /**
+     * 是否在事务里面
+     * @return bool
+     */
+    public function inTransaction()
+    {
+        return $this->transactionCounter > 0;
+    }
+
+    /**
      * 提交事务
      * @return bool
      */
