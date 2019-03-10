@@ -736,6 +736,7 @@ class Route
     {
         $out = [];
         $out['status'] = false;
+        $out['_code'] = 500;
         //如果开启调试,打印更详细的栈信息.
         if ((defined('DEV_DEBUG') && DEV_DEBUG)) {
             $code = [];
