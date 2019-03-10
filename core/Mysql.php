@@ -10,10 +10,7 @@ namespace beacon;
  */
 
 
-use mysql_xdevapi\Exception;
-use \PDO as PDO;
-use \PDOException as PDOException;
-use \Throwable as Throwable;
+use PDO as PDO;
 
 /**
  * sql 语句片段,用于更新插入时使用
@@ -47,7 +44,7 @@ class MysqlException extends \Exception
 
     protected $detail = '';
 
-    public function __construct(string $message = '', $detail = '', int $code = 0, Throwable $previous = null)
+    public function __construct(string $message = '', $detail = '', int $code = 0, \Throwable $previous = null)
     {
         $this->detail = $detail;
         parent::__construct($message, $code, $previous);
@@ -85,8 +82,10 @@ class Mysql
             try {
                 self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
             } catch (\PDOException $e) {
+                self::$instance = null;
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
             } catch (\Exception $e) {
+                self::$instance = null;
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
             }
         }
@@ -196,6 +195,10 @@ class Mysql
     private $transactionCounter = 0;
     private $_lastSql = '';
 
+    private $link = null;
+    private $user = null;
+    private $pass = null;
+
     /**
      * 构造函数
      * Mysql constructor.
@@ -214,9 +217,21 @@ class Mysql
         } else {
             $link = 'mysql:host=' . $host . ';port=' . $port . ';';
         }
+        $this->link = $link;
+        $this->user = $user;
+        $this->pass = $pass;
         try {
             $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
-        } catch (PDOException $exc) {
+        } catch (\PDOException $exc) {
+            throw $exc;
+        }
+    }
+
+    public function reconnection()
+    {
+        try {
+            $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
+        } catch (\PDOException $exc) {
             throw $exc;
         }
     }
@@ -232,6 +247,15 @@ class Mysql
         }
         $this->pdo->exec('SAVEPOINT trans' . $this->transactionCounter);
         return $this->transactionCounter >= 0;
+    }
+
+    /**
+     * 是否在事务里面
+     * @return bool
+     */
+    public function inTransaction()
+    {
+        return $this->transactionCounter > 0;
     }
 
     /**
@@ -314,9 +338,24 @@ class Mysql
             $time = microtime(true);
         }
         try {
+            $retry = 0;
+            redo:
             $sth = $this->pdo->prepare($sql);
-            if ($sth->execute($args) === FALSE) {
+            $ret = false;
+            try {
+                $ret = $sth->execute($args);
+            } catch (\Exception $exception) {
+                $ret = false;
+            }
+            if ($ret === FALSE) {
                 $err = $sth->errorInfo();
+                if (isset($err[1]) && $err[1] == 2006) {
+                    $this->reconnection();
+                    if ($retry == 0) {
+                        $retry = 1;
+                        goto redo;
+                    }
+                }
                 $this->_lastSql = Mysql::format($sql, $args);
                 if (isset($err[2])) {
                     throw new MysqlException('execute sql statement error:' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
@@ -346,7 +385,7 @@ class Mysql
      * @param null $fetch_argument
      * @param array|null $ctor_args
      * @return array
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
     {
@@ -375,7 +414,7 @@ class Mysql
      * @param null $cursor_orientation
      * @param int $cursor_offset
      * @return mixed|null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
     {
@@ -394,7 +433,7 @@ class Mysql
      * @param null $args
      * @param null $field
      * @return mixed|null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getOne(string $sql, $args = null, $field = null)
     {
@@ -415,7 +454,7 @@ class Mysql
      * @param null $where
      * @param null $args
      * @return null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getMax(string $tbname, string $field, $where = null, $args = null)
     {
@@ -445,7 +484,7 @@ class Mysql
      * @param null $where
      * @param null $args
      * @return null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getMin(string $tbname, string $field, $where = null, $args = null)
     {
@@ -688,7 +727,7 @@ class Mysql
      * 获取表字段
      * @param string $tbname
      * @return array
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function getFields(string $tbname)
     {
@@ -700,7 +739,7 @@ class Mysql
      * @param string $tbname
      * @param string $field
      * @return bool
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function existsField(string $tbname, string $field)
     {
@@ -721,12 +760,12 @@ class Mysql
             'comment' => '',
         ], $options);
         if ($this->existsTable($tbname)) {
-            throw new \Exception("数据库表已经存在,{$tbname}");
+            throw new MysqlException("数据库表已经存在,{$tbname}");
         }
         $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=?";
         $stm = $this->execute($sql, [$options['comment']]);
         if (!$stm) {
-            throw new \Exception("创建数据库表失败,{$tbname}");
+            throw new MysqlException("创建数据库表失败,{$tbname}");
         }
     }
 
@@ -906,7 +945,7 @@ class Mysql
      * 检查表是否存在
      * @param string $tbname
      * @return bool
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function existsTable(string $tbname)
     {

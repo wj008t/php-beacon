@@ -16,7 +16,8 @@ class Label implements WidgetInterface
 
     public function code(Field $field, $attr = [])
     {
-        return '<span class="label">' . $field->value . "</span>";
+        $attr = WidgetHelper::mergeAttributes($field, $attr);
+        return '<span ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</span>';
     }
 
     public function assign(Field $field, array $input)
@@ -29,5 +30,7 @@ class Label implements WidgetInterface
 
     public function init(Field $field, array $values)
     {
+        $name = $field->name;
+        $field->value = isset($values[$name]) ? $values[$name] : null;
     }
 }

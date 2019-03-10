@@ -19,7 +19,7 @@ class DB
      */
     public static function engine()
     {
-        if (self::$engine !== null) {
+        if (self::$engine != null) {
             return self::$engine;
         }
         $driver = Config::get('db.db_driver', 'Mysql');
@@ -27,6 +27,7 @@ class DB
             self::$engine = Mysql::instance();
             return self::$engine;
         }
+        throw new \Exception('不支持的数据库驱动类型');
     }
 
     /**
@@ -37,6 +38,16 @@ class DB
     public static function beginTransaction()
     {
         return self::engine()->beginTransaction();
+    }
+
+    /**
+     * 是否在事物里面
+     * @return bool
+     * @throws MysqlException
+     */
+    public static function inTransaction()
+    {
+        return self::engine()->inTransaction();
     }
 
     /**
@@ -128,7 +139,7 @@ class DB
      * @param null $fetch_argument
      * @param array|null $ctor_args
      * @return array
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
     {
@@ -143,7 +154,7 @@ class DB
      * @param null $cursor_orientation
      * @param int $cursor_offset
      * @return mixed|null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
     {
@@ -156,7 +167,7 @@ class DB
      * @param null $args
      * @param null $field
      * @return mixed|null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function getOne(string $sql, $args = null, $field = null)
     {
@@ -170,7 +181,7 @@ class DB
      * @param null $where
      * @param null $args
      * @return null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function getMax(string $tbname, string $field, $where = null, $args = null)
     {
@@ -184,7 +195,7 @@ class DB
      * @param null $where
      * @param null $args
      * @return null
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function getMin(string $tbname, string $field, $where = null, $args = null)
     {
@@ -254,7 +265,7 @@ class DB
      * 获取表字段 判断字段是否存在
      * @param string $tbname
      * @return array
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function getFields(string $tbname)
     {
@@ -266,7 +277,7 @@ class DB
      * @param string $tbname
      * @param string $field
      * @return bool
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function existsField(string $tbname, string $field)
     {
@@ -340,7 +351,7 @@ class DB
      * 检查表是否存在
      * @param string $tbname
      * @return bool
-     * @throws \Exception
+     * @throws MysqlException
      */
     public static function existsTable(string $tbname)
     {

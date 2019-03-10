@@ -39,6 +39,8 @@ class Route
     private static $route = null;
 
     private static $ctlPrefix = [];
+    private static $rethrowFunc = null;
+
 
     /**
      * 设置路由配置文件路径
@@ -734,6 +736,13 @@ class Route
      */
     public static function rethrow(\Throwable $exception)
     {
+
+        if (self::$rethrowFunc && is_callable(self::$rethrowFunc)) {
+            $ret = call_user_func(self::$rethrowFunc, $exception);
+            if ($ret === false) {
+                return;
+            }
+        }
         $out = [];
         $out['status'] = false;
         $out['_code'] = 500;
@@ -773,6 +782,14 @@ class Route
         $view->assign('info', $out);
         $template = Config::get('beacon.exception_template', '@exception.tpl');
         $view->display($template);
+    }
+
+    /**
+     * @param \Closure $func
+     */
+    public static function extendRethrow(\Closure $func)
+    {
+        self::$rethrowFunc = $func;
     }
 }
 
