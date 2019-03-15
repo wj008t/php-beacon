@@ -10,6 +10,7 @@ namespace beacon\widget;
 
 
 use beacon\Field;
+use beacon\Request;
 use beacon\Utils;
 
 class MultipleDialog extends Hidden
