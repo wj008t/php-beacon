@@ -22,7 +22,9 @@ class MultipleDialog extends Hidden
         $attr['type'] = 'text';
         if (!empty($field->value)) {
             $values = [];
-            if (Utils::isJson($field->value)) {
+            if (is_array($field->value)) {
+                $values = $field->value;
+            } else if (Utils::isJson($field->value)) {
                 $values = json_decode($field->_value, 1);
             }
             $textFunc = $field->getFunc('text');
@@ -30,9 +32,7 @@ class MultipleDialog extends Hidden
                 $data = [];
                 foreach ($values as $val) {
                     $text = call_user_func($textFunc, $val);
-                    if (!empty($text)) {
-                        $data[] = ['value' => $val, 'text' => $text];
-                    }
+                    $data[] = ['value' => $val, 'text' => $text];
                 }
                 $attr['data-text'] = $data;
             } else {
@@ -46,6 +46,7 @@ class MultipleDialog extends Hidden
         $attr = WidgetHelper::mergeAttributes($field, $attr);
         return '<input ' . join(' ', $attr) . ' />';
     }
+
 
     public function assign(Field $field, array $input)
     {
