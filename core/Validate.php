@@ -536,16 +536,16 @@ class Validate
      */
     public static function checkValue($value, array $rules = null, array $message = null, string &$error)
     {
-        $validFunc = isset($rule['validFunc']);
+        if ($rules == null || count($rules) == 0) {
+            return true;
+        }
+        $validFunc = isset($rules['validFunc']) ? $rules['validFunc'] : null;
         if ($validFunc && is_callable($validFunc)) {
             $err = $validFunc($value);
             if (!empty($err)) {
                 $error = $err;
                 return false;
             }
-        }
-        if ($rules == null || count($rules) == 0) {
-            return true;
         }
         if ($message == null) {
             $message = [];
