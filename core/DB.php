@@ -273,6 +273,27 @@ class DB
     }
 
     /**
+     * 对数据表进行过滤字段
+     * @param array $data
+     * @param string $tbname
+     * @return array
+     * @throws MysqlException
+     */
+    public static function fieldFilter(array $data, string $tbname)
+    {
+        $fields = self::engine()->getFields($tbname);
+        $temp = [];
+        foreach ($fields as $field) {
+            $key = $field['Field'];
+            if (isset($data[$key])) {
+                $temp[$key] = $data[$key];
+            }
+        }
+        return $temp;
+    }
+
+
+    /**
      * 判断字段是否存在
      * @param string $tbname
      * @param string $field
