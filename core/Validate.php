@@ -184,7 +184,7 @@ class Validate
      */
     public static function test_equalto($val, $key)
     {
-        if (!empty($key) && preg_match('/^#(\w+)/i', $key, $m) != 0) {
+        if (!empty($key) && preg_match('/^#?(\w+)/i', $key, $m) != 0) {
             $name = isset($m[1]) ? $m[1] : '';
             if (!empty($name)) {
                 $str = Request::param($name . ':s');
@@ -392,7 +392,6 @@ class Validate
      */
     public function checkField(Field $field)
     {
-
         if (Validate::$default_errors == null) {
             Validate::$default_errors = Config::get('form.validate_default_errors', []);
         }
@@ -437,7 +436,6 @@ class Validate
         //验证非空
         if (isset($rules['required']) && $rules['required']) {
             $func = isset($this->func['required']) ? $this->func['required'] : Validate::getFunc('required');
-
             $r = call_user_func_array($func, [$value]);
             if (!$r) {
                 $err = isset($this->def_errors['required']) ? $this->def_errors['required'] : (isset($errors['required']) ? $errors['required'] : (isset(Validate::$default_errors['required']) ? Validate::$default_errors['required'] : '必填项'));
@@ -476,7 +474,137 @@ class Validate
                 }
             }
         }
+        return true;
+    }
 
+    /**
+     * 验证数据返回错误集合
+     * @param array $rule
+     */
+    public static function validRules(array $input = [], array $ruleMap = [], array &$errors = [], bool $suspend = false)
+    {
+        if (Validate::$default_errors == null) {
+            Validate::$default_errors = Config::get('form.validate_default_errors', []);
+        }
+        $tempErrors = [];
+        $result = true;
+        foreach ($ruleMap as $key => $item) {
+            $tempErrors[$key] = '';
+            if (!isset($item['rule'])) {
+                $item['rule'] = null;
+            }
+            if (!isset($item['message'])) {
+                $item['message'] = null;
+            }
+            if (isset($input[$key])) {
+                $result = self::checkValue($input[$key], $item['rule'], $item['message'], $tempErrors[$key]) && $result;
+            } else {
+                $result = self::checkValue(null, $item['rule'], $item['message'], $tempErrors[$key]) && $result;
+            }
+            if (!$result) {
+                $errors[$key] = $tempErrors[$key];
+            }
+            if ($suspend && !$result) {
+                return false;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 验证返回当个错误
+     * @param array $input
+     * @param array $ruleMap
+     * @param string $errors
+     * @return bool
+     */
+    public static function validRule(array $input = [], array $ruleMap = [], string &$errors = '')
+    {
+        $tempErrors = [];
+        $result = self::validRules($input, $ruleMap, $tempErrors, true);
+        if (!$result) {
+            $errors = current($tempErrors);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 验证单个错误
+     * @param array $value
+     * @param array $rule
+     */
+    public static function checkValue($value, array $rules = null, array $message = null, string &$error)
+    {
+        $validFunc = isset($rule['validFunc']);
+        if ($validFunc && is_callable($validFunc)) {
+            $err = $validFunc($value);
+            if (!empty($err)) {
+                $error = $err;
+                return false;
+            }
+        }
+        if ($rules == null || count($rules) == 0) {
+            return true;
+        }
+        if ($message == null) {
+            $message = [];
+        }
+        //获取
+        $tempMegs = [];
+        foreach ($message as $type => $msg) {
+            $realType = Validate::getRealType($type);
+            $tempMegs[$realType] = $msg;
+        }
+        $message = $tempMegs;
+        $tempRules = [];
+        foreach ($rules as $type => $args) {
+            $realType = Validate::getRealType($type);
+            $tempRules[$realType] = $args;
+        }
+        $rules = $tempRules;
+        //验证非空
+        if (isset($rules['required']) && $rules['required']) {
+            $func = Validate::getFunc('required');
+            $r = call_user_func_array($func, [$value]);
+            if (!$r) {
+                $error = (isset($message['required']) ? $message['required'] : (isset(Validate::$default_errors['required']) ? Validate::$default_errors['required'] : '必填项'));
+                return false;
+            }
+            unset($rules['required']);
+        }
+        //如果是数组直接放弃
+        if (is_array($value) || $value instanceof \stdClass) {
+            return true;
+        }
+
+        if (strlen($value) > 0 || (isset($rules['force']) && $rules['force'])) {
+            unset($rules['force']);
+            foreach ($rules as $type => $args) {
+                if (!is_array($args)) {
+                    $args = [$args];
+                }
+                $param = array_slice($args, 0);
+                array_unshift($args, $value);
+                $func = Validate::getFunc($type);
+                if ($func == null) {
+                    continue;
+                }
+                $out = call_user_func_array($func, $args);
+                if (is_bool($out)) {
+                    if ($out) {
+                        continue;
+                    }
+                    $err = (isset($message[$type]) ? $message[$type] : (isset(Validate::$default_errors[$type]) ? Validate::$default_errors[$type] : '格式错误'));
+                    $error = Validate::format($err, $param);
+                    return false;
+                }
+                if (is_array($out) && isset($out['status']) && !$out['status'] && !empty($out['error'])) {
+                    $error = Validate::format($out['error'], $param);
+                    return false;
+                }
+            }
+        }
         return true;
     }
 }
