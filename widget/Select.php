@@ -55,6 +55,8 @@ class Select extends Hidden
             $text = isset($item['text']) ? $item['text'] : (isset($item[1]) ? $item[1] : (isset($item[0]) ? $item[0] : null));
             $tips = isset($item['tips']) ? $item['tips'] : (isset($item[2]) ? $item[2] : null);
             $val = isset($item['value']) ? $item['value'] : (isset($item[0]) ? $item[0] : null);
+            $style = isset($item['style']) ? $item['style'] : null;
+            $disabled = isset($item['disabled']) ? $item['disabled'] : false;
             $group = isset($item['group']) ? $item['group'] : null;
             if ($val === null) {
                 $val = $text;
@@ -72,10 +74,18 @@ class Select extends Hidden
                     $gtext = isset($gitem['text']) ? $gitem['text'] : (isset($gitem[1]) ? $gitem[1] : (isset($gitem[0]) ? $gitem[0] : null));
                     $gtips = isset($gitem['tips']) ? $gitem['tips'] : (isset($gitem[2]) ? $gitem[2] : null);
                     $gval = isset($gitem['value']) ? $gitem['value'] : (isset($gitem[0]) ? $gitem[0] : null);
+                    $gstyle = isset($gitem['style']) ? $gitem['style'] : null;
+                    $gdisabled = isset($gitem['disabled']) ? $gitem['disabled'] : false;
                     if ($gval === null) {
                         $gval = $gtext;
                     }
                     $selected = strval($gval) == strval($value) ? ' selected="selected"' : '';
+                    if (!empty($gstyle)) {
+                        $selected .= ' style="' . $gstyle . '"';
+                    }
+                    if ($gdisabled) {
+                        $selected .= ' disabled="disabled"';
+                    }
                     $out[] = '  <option value="' . htmlspecialchars($gval) . '"' . $selected . '>';
                     $out[] = htmlspecialchars($gtext);
                     if (!empty($gtips)) {
@@ -87,6 +97,12 @@ class Select extends Hidden
                 continue;
             }
             $selected = strval($val) == strval($value) ? ' selected="selected"' : '';
+            if (!empty($style)) {
+                $selected .= ' style="' . $style . '"';
+            }
+            if ($disabled) {
+                $selected .= ' disabled="disabled"';
+            }
             $out[] = '<option value="' . htmlspecialchars($val) . '"' . $selected . '>';
             $out[] = htmlspecialchars($text);
             if (!empty($tips)) {
