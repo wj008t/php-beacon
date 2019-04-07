@@ -79,8 +79,9 @@ class Mysql
             $user = Config::get('db.db_user', '');
             $pass = Config::get('db.db_pwd', '');
             $prefix = Config::get('db.db_prefix', 'sl_');
+            $charset = Config::get('db.db_charset', 'utf8');
             try {
-                self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix);
+                self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset);
             } catch (\PDOException $e) {
                 self::$instance = null;
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
@@ -198,6 +199,7 @@ class Mysql
     private $link = null;
     private $user = null;
     private $pass = null;
+    private $charset = 'utf8';
 
     /**
      * 构造函数
@@ -208,8 +210,9 @@ class Mysql
      * @param string $user
      * @param string $pass
      * @param string $prefix
+     * @param string $charset
      */
-    public function __construct($host, $port = 3306, $name = '', $user = '', $pass = '', $prefix = '')
+    public function __construct($host, $port = 3306, $name = '', $user = '', $pass = '', $prefix = '', $charset = 'utf8')
     {
         $this->prefix = $prefix;
         if (!empty($name)) {
@@ -220,8 +223,9 @@ class Mysql
         $this->link = $link;
         $this->user = $user;
         $this->pass = $pass;
+        $this->charset = $charset;
         try {
-            $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
+            $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
         } catch (\PDOException $exc) {
             throw $exc;
         }
@@ -230,7 +234,7 @@ class Mysql
     public function reconnection()
     {
         try {
-            $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"]);
+            $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
         } catch (\PDOException $exc) {
             throw $exc;
         }
