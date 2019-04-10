@@ -334,6 +334,30 @@ class SqlSelector
         return $this;
     }
 
+    public function innerJoin(string $sql, $args = null)
+    {
+        $sql = trim($sql);
+        $sql = 'inner join ' . $sql;
+        if ($this->joinItem === null) {
+            $this->joinItem = new SqlItem($sql, $args);
+        } else {
+            $this->joinItem->add($sql, $args);
+        }
+        return $this;
+    }
+
+    public function outerJoin(string $sql, $args = null)
+    {
+        $sql = trim($sql);
+        $sql = 'outer join ' . $sql;
+        if ($this->joinItem === null) {
+            $this->joinItem = new SqlItem($sql, $args);
+        } else {
+            $this->joinItem->add($sql, $args);
+        }
+        return $this;
+    }
+
     public function fullJoin(string $sql, $args = null)
     {
         $sql = trim($sql);
