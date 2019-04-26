@@ -18,6 +18,8 @@ class Select extends Hidden
     {
         $value = isset($attr['value']) ? $attr['value'] : $field->value;
         $options = isset($attr['@options']) ? $attr['@options'] : $field->options;
+        $header = isset($attr['@header']) ? $attr['@header'] : $field->header;
+
         $options = $options == null ? [] : $options;
         $attr['value'] = '';
         $attr['type'] = '';
@@ -25,22 +27,22 @@ class Select extends Hidden
         $out = [];
         $out[] = '<select ' . join(' ', $attr) . '>' . "\n";
         //选项头
-        if ($field->header !== null) {
-            if (is_string($field->header)) {
+        if ($header !== null) {
+            if (is_string($header)) {
                 $out[] = '<option value="">';
-                $out[] = htmlspecialchars($field->header);
+                $out[] = htmlspecialchars($header);
                 $out[] = '</option>';
-            } else if (is_array($field->header) && isset($field->header['text'])) {
-                if (isset($field->header['value'])) {
-                    $out[] = '<option value="' . htmlspecialchars($field->header['value']) . '">';
+            } else if (is_array($header) && isset($header['text'])) {
+                if (isset($header['value'])) {
+                    $out[] = '<option value="' . htmlspecialchars($header['value']) . '">';
                 } else {
                     $out[] = '<option value="">';
                 }
-                $out[] = htmlspecialchars($field->header['text']);
+                $out[] = htmlspecialchars($header['text']);
                 $out[] = '</option>';
-            } else if (is_array($field->header) && isset($field->header[1])) {
-                $out[] = '<option value="' . htmlspecialchars($field->header[0]) . '">';
-                $out[] = htmlspecialchars($field->header[1]);
+            } else if (is_array($header) && isset($header[1])) {
+                $out[] = '<option value="' . htmlspecialchars($header[0]) . '">';
+                $out[] = htmlspecialchars($header[1]);
                 $out[] = '</option>';
             }
         }

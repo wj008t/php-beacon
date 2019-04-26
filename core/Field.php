@@ -40,6 +40,8 @@ use beacon\widget\WidgetInterface;
  * @property $dataDynamic array
  * @property $encodeValue string 密码框需要的字段
  * @property $viewHide bool 隐藏行
+ *
+ *  @property $options array
  */
 class Field
 {
