@@ -23,7 +23,9 @@ class UpImage extends Hidden
 
     public function assign(Field $field, array $input)
     {
-        $field->varType = 'string';
+        if ($field->varType != 'array') {
+            $field->varType = 'string';
+        }
         return parent::assign($field, $input);
     }
 }
