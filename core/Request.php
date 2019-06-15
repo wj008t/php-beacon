@@ -197,7 +197,7 @@ class Request
      * @param $options
      * @return bool
      */
-    public static function setCookie(string $name, $value, $options)
+    public static function setCookie(string $name, $value, $options = null)
     {
         if ($options == null) {
             return setcookie($name, $value);
@@ -209,7 +209,7 @@ class Request
         $path = isset($options['path']) ? intval($options['path']) : '';
         $domain = isset($options['domain']) ? intval($options['domain']) : '';
         $secure = isset($options['secure']) ? intval($options['secure']) : false;
-        $httponly = isset($options['httponly ']) ? intval($options['httponly ']) : false;
+        $httponly = isset($options['httponly']) ? intval($options['httponly']) : false;
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
 

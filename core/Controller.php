@@ -45,6 +45,7 @@ abstract class Controller
      * 输出显示
      * @param string $tplName
      * @param string|null $parent
+     * @return string|null;
      */
     protected function display(string $tplName, string $parent = null)
     {
@@ -230,7 +231,7 @@ abstract class Controller
      * @param $options
      * @return bool
      */
-    protected function setCookie(string $name, $value, $options)
+    protected function setCookie(string $name, $value, $options=null)
     {
         return Request::setCookie($name, $value, $options);
     }
