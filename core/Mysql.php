@@ -698,7 +698,7 @@ class Mysql
             foreach ($args as $it) {
                 $temp[] = $it;
             }
-        } else {
+        } elseif ($args !== null) {
             $temp[] = $args;
         }
         $Stm = $this->execute($sql, $temp);
