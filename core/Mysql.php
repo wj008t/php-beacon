@@ -519,7 +519,8 @@ class Mysql
      */
     public function raw(string $sql, $args = null)
     {
-        return new SqlRaw($sql, $args);
+        $data = new SqlRaw($sql, $args);
+        return $data;
     }
 
     /**
@@ -546,6 +547,8 @@ class Mysql
                     foreach ($item->args as $it) {
                         $temp[] = $it;
                     }
+                } elseif ($item->args !== null) {
+                    $temp[] = $item->args;
                 }
             } else {
                 $vals [] = '?';
@@ -602,6 +605,8 @@ class Mysql
                     foreach ($item->args as $it) {
                         $temp[] = $it;
                     }
+                } elseif ($item->args !== null) {
+                    $temp[] = $item->args;
                 }
             } else {
                 $vals [] = '?';
@@ -663,6 +668,8 @@ class Mysql
                     foreach ($item->args as $it) {
                         $temp[] = $it;
                     }
+                } elseif ($item->args !== null) {
+                    $temp[] = $item->args;
                 }
             } else {
                 $maps [] = '`' . $key . '`=?';
