@@ -107,19 +107,23 @@ class WidgetHelper
                 if ($key[0] == '@') {
                     continue;
                 }
-                $attributes[$key] = $val;
+                if ($key == 'yee-module' && isset($attributes[$key])) {
+                    $old_module = preg_split('@\s+@', $attributes[$key]);
+                    $new_module = preg_split('@\s+@', $val);
+                    foreach ($new_module as $tag) {
+                        $tag = trim($tag);
+                        if (in_array($tag, $old_module)) {
+                            continue;
+                        }
+                        $old_module[] = $tag;
+                    }
+                    $attributes[$key] = join(' ', $old_module);
+                } else {
+                    $attributes[$key] = $val;
+                }
             }
         }
         $base = [];
-        // Logger::log($attributes);
-        /*
-        if (isset($attributes['data-dynamic'])) {
-            if (!isset($attributes['yee-module'])) {
-                $attributes['yee-module'] = 'dynamic';
-            } else {
-                $attributes['yee-module'] .= ' dynamic';
-            }
-        }*/
         foreach ($attributes as $name => $val) {
             if ($val === null || $val === '') {
                 continue;
