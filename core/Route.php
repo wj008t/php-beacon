@@ -337,9 +337,13 @@ class Route
      */
     public static function resolve(string $app, string $pathname = '', array $query = [])
     {
-
         if (empty($app)) {
             return '';
+        }
+        $pinfo = pathinfo($pathname);
+        $ext = $pinfo['extension'];
+        if (!empty($ext)) {
+            $pathname = $pinfo['dirname'] . '/' . $pinfo['filename'];
         }
         if (!empty($query)) {
             $temp = [];
@@ -372,6 +376,13 @@ class Route
                 $key = $m[1];
                 return isset($query[$key]) ? urlencode($query[$key]) : '';
             }, $temp_url);
+            if (!empty($ext)) {
+                $data = parse_url($temp_url);
+                $temp_url = $data['path'] . '.' . $ext;
+                if (!empty($data['query'])) {
+                    $temp_url .= '?' . $data['query'];
+                }
+            }
             return $temp_url;
         }
 
@@ -448,6 +459,13 @@ class Route
             $key = $m[1];
             return isset($query[$key]) ? urlencode($query[$key]) : '';
         }, $temp_url);
+        if (!empty($ext)) {
+            $data = parse_url($temp_url);
+            $temp_url = $data['path'] . '.' . $ext;
+            if (!empty($data['query'])) {
+                $temp_url .= '?' . $data['query'];
+            }
+        }
         return $temp_url;
     }
 
@@ -505,12 +523,15 @@ class Route
             $path = substr($path, 1);
             return self::resolve($app, $path, $query);
         }
-        if (!preg_match('@^\^/(\w+)((?:/\w+){1,2})?$@', $path, $data)) {
+        if (!preg_match('@^\^/(\w+)((?:/\w+){1,2})?(\.\w+)?$@', $path, $data)) {
             return $url;
         }
         $app = isset($data[1]) ? $data[1] : self::get('app');
         $path = isset($data[2]) ? $data[2] : self::get('path');
         $path = empty($path) ? '/' : $path;
+        if (isset($data[3])) {
+            $path .= $data[3];
+        }
         return self::resolve($app, $path, $query);
     }
 
