@@ -342,7 +342,7 @@ class Route
         }
         $ext = null;
         $pos = strrpos($pathname, '.');
-        if ($pos !== null) {
+        if ($pos !== false) {
             $ext = substr($pathname, $pos + 1);
             $pathname = substr($pathname, 0, $pos);
         }
