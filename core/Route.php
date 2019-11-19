@@ -340,10 +340,11 @@ class Route
         if (empty($app)) {
             return '';
         }
-        $pinfo = pathinfo($pathname);
-        $ext = $pinfo['extension'];
-        if (!empty($ext)) {
-            $pathname = $pinfo['dirname'] . '/' . $pinfo['filename'];
+        $ext = null;
+        $pos = strrpos($pathname, '.');
+        if ($pos !== null) {
+            $ext = substr($pathname, $pos + 1);
+            $pathname = substr($pathname, 0, $pos);
         }
         if (!empty($query)) {
             $temp = [];
