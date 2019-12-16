@@ -767,7 +767,7 @@ class Mysql
     {
         $options = array_merge([
             'engine' => 'InnoDB',
-            'charset' => 'utf8',
+            'charset' => Config::get('db.db_charset', 'utf8'),
             'comment' => '',
         ], $options);
         if ($this->existsTable($tbname)) {
