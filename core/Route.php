@@ -32,15 +32,24 @@ class RouteError extends \Exception
 class Route
 {
 
+    const ADAPTER_TARGET = 'target';
+    const ADAPTER_ERROR = 'error';
+    const ADAPTER_PARAM = 'param';
+
     private static $cacheUris = null;
     private static $routeMap = [];
     private static $routePath = null;
     private static $cachePath = null;
     private static $route = null;
-
     private static $ctlPrefix = [];
     private static $rethrowFunc = null;
 
+    //接管适配器
+    private static $adapter = [
+        'target' => null,
+        'error' => [],
+        'param' => null,
+    ];
 
     /**
      * 设置路由配置文件路径
@@ -49,6 +58,26 @@ class Route
     public static function setRoutePath(string $path)
     {
         self::$routePath = Utils::path($path);
+    }
+
+    /**
+     * 接管器
+     * @param string $type
+     * @param callable $func
+     */
+    public static function adapter(string $type, callable $func)
+    {
+        switch ($type) {
+            case self::ADAPTER_ERROR:
+                array_unshift(self::$adapter[$type], $func);
+                break;
+            case self::ADAPTER_TARGET:
+            case self::ADAPTER_PARAM:
+                self::$adapter[$type] = $func;
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -101,7 +130,6 @@ class Route
                 return $url;
             }
         ];
-
         if ($route === null) {
             if (empty(self::$routePath)) {
                 self::$routePath = Utils::path(ROOT_DIR, 'config');
@@ -280,10 +308,8 @@ class Route
             $request_uri = $url;
             self::parseUrl($url);
         }
-
         return $request_uri;
     }
-
 
     /**
      * 获取当前应用目录
@@ -551,81 +577,88 @@ class Route
         if (!$method->isPublic()) {
             throw new RouteError('未公开方法:' . $method);
         }
-        //获取方法参数
+        //获取方法参数---
         $params = $method->getParameters();
         $args = [];
-        if (count($params) > 0) {
-            foreach ($params as $param) {
-                //获取变量名称
-                $name = $param->getName();
-                $type = 'any';
-                //如果可以获取类型
-                if (is_callable([$param, 'hasType'])) {
-                    if ($param->hasType()) {
-                        $refType = $param->getType();
-                        if ($refType != null) {
-                            if (is_callable([$refType, 'getName'])) {
-                                $type = $refType->getName();
-                            } else {
-                                $type = strval($refType);
+        if (isset(self::$adapter['param']) && is_callable(self::$adapter['param'])) {
+            $args = call_user_func(self::$adapter['param'], $params);
+        } else {
+            if (count($params) > 0) {
+                foreach ($params as $param) {
+                    //获取变量名称
+                    $name = $param->getName();
+                    $type = 'any';
+                    //如果可以获取类型
+                    if (is_callable([$param, 'hasType'])) {
+                        if ($param->hasType()) {
+                            $refType = $param->getType();
+                            if ($refType != null) {
+                                if (is_callable([$refType, 'getName'])) {
+                                    $type = $refType->getName();
+                                } else {
+                                    $type = strval($refType);
+                                }
+                                $type = empty($type) ? 'any' : $type;
                             }
-                            $type = empty($type) ? 'any' : $type;
                         }
                     }
-                }
-                //类型获取不到
-                if ($type == 'any') {
-                    if (is_callable([$param, 'getClass'])) {
-                        $refType = $param->getClass();
-                        if ($refType != null) {
-                            if (is_callable([$refType, 'getName'])) {
-                                $type = $refType->getName();
-                            } else {
-                                $type = strval($refType);
-                            }
-                            $type = empty($type) ? 'any' : $type;
-                        }
-                    }
-                }
-                //默认值
-                $def = null;
-                //如果有默认值,从默认值中获取类型
-                if ($param->isOptional()) {
-                    $def = $param->getDefaultValue();
+                    //类型获取不到
                     if ($type == 'any') {
-                        $type = gettype($def);
-                    }
-                }
-                switch ($type) {
-                    case 'bool':
-                    case 'boolean':
-                        $args[] = Request::param($name . ':b', $def);
-                        break;
-                    case 'int':
-                    case 'integer':
-                        $val = Request::param($name . ':s', $def);
-                        //如果默认值是整数,但是传递的值是浮点数
-                        if (preg_match('@[+-]?\d*\.\d+@', $val)) {
-                            $args[] = Request::param($name . ':f', $def);
-                        } else {
-                            $args[] = Request::param($name . ':i', $def);
+                        if (is_callable([$param, 'getClass'])) {
+                            $refType = $param->getClass();
+                            if ($refType != null) {
+                                if (is_callable([$refType, 'getName'])) {
+                                    $type = $refType->getName();
+                                } else {
+                                    $type = strval($refType);
+                                }
+                                $type = empty($type) ? 'any' : $type;
+                            }
                         }
-                        break;
-                    case 'double':
-                    case 'float':
-                        $args[] = Request::param($name . ':f', $def);
-                        break;
-                    case 'string':
-                        $args[] = Request::param($name . ':s', $def);
-                        break;
-                    case 'array':
-                        $args[] = Request::param($name . ':a', $def);
-                        break;
-                    default :
-                        $args[] = Request::param($name, $def);
-                        break;
+                    }
+                    //默认值
+                    $def = null;
+                    //如果有默认值,从默认值中获取类型
+                    if ($param->isOptional()) {
+                        $def = $param->getDefaultValue();
+                        if ($type == 'any') {
+                            $type = gettype($def);
+                        }
+                    }
+                    switch ($type) {
+                        case 'bool':
+                        case 'boolean':
+                            $args[] = Request::param($name . ':b', $def);
+                            break;
+                        case 'int':
+                        case 'integer':
+                            $val = Request::param($name . ':s', $def);
+                            //如果默认值是整数,但是传递的值是浮点数
+                            if (preg_match('@[+-]?\d*\.\d+@', $val)) {
+                                $args[] = Request::param($name . ':f', $def);
+                            } else {
+                                $args[] = Request::param($name . ':i', $def);
+                            }
+                            break;
+                        case 'double':
+                        case 'float':
+                            $args[] = Request::param($name . ':f', $def);
+                            break;
+                        case 'string':
+                            $args[] = Request::param($name . ':s', $def);
+                            break;
+                        case 'array':
+                            $args[] = Request::param($name . ':a', $def);
+                            break;
+                        default :
+                            $args[] = Request::param($name, $def);
+                            break;
+                    }
                 }
             }
+        }
+        if (!is_array($args)) {
+            $args = [];
         }
         $example = new $class();
         //如果有初始化方法
@@ -666,7 +699,6 @@ class Route
         if (empty(self::$route['act'])) {
             throw new RouteError('路由方法名称 act 为空,url:' . $url);
         }
-
         $ctl = Utils::toCamel(self::$route['ctl']);
         $act = Utils::toCamel(self::$route['act']);
         $act = lcfirst($act);
@@ -684,18 +716,23 @@ class Route
         }
         //开始进入入口---------------------
         $namespace = self::getNamespace();
-        return [
+        $data = [
             'namespace' => $namespace,
             'classFullName' => $namespace . '\\controller\\' . $ctl,
             'className' => $ctl,
             'method' => $act . 'Action'
         ];
+        if (!empty(self::$adapter['target']) && is_callable(self::$adapter['target'])) {
+            $data = call_user_func(self::$adapter['target'], $data, self::$route);
+        }
+        return $data;
     }
 
     /**
-     * 添加控制器路由前缀
      * @param string $app
      * @param string $prefix
+     * @deprecated
+     * 添加控制器路由前缀
      */
     public static function addCtlPrefix(string $app, string $prefix)
     {
@@ -758,13 +795,24 @@ class Route
      */
     public static function rethrow(\Throwable $exception)
     {
-
+        //TODO 未来要移除的部分,改成用 adapter 处理
         if (self::$rethrowFunc && is_callable(self::$rethrowFunc)) {
             $ret = call_user_func(self::$rethrowFunc, $exception);
             if ($ret === false) {
                 return;
             }
         }
+
+        $rethrow = self::$adapter['error'];
+        foreach ($rethrow as $func) {
+            if (is_callable($func)) {
+                $ret = call_user_func($func, $exception);
+                if ($ret === false) {
+                    return;
+                }
+            }
+        }
+
         $out = [];
         $out['status'] = false;
         $out['_code'] = 500;
@@ -807,7 +855,9 @@ class Route
     }
 
     /**
+     * 处理异常接口
      * @param \Closure $func
+     * @deprecated
      */
     public static function extendRethrow(\Closure $func)
     {
