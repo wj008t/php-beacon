@@ -34,6 +34,7 @@ class Container extends Hidden
             if ($field->mode == 'single') {
                 $child->boxId = $field->boxId . '_' . $child->boxId;
                 $child->boxName = $field->boxName . '[' . $child->boxName . ']';
+                $child->offEdit = $child->offEdit || $field->offEdit;
                 //如果存在拆分的时候
                 if ($child->names && is_array($child->names)) {
                     $names = $child->names;
@@ -72,6 +73,7 @@ class Container extends Hidden
             else if ($field->mode == 'multiple') {
                 $child->boxId = $field->boxId . '_' . $index . '_' . $child->boxId;
                 $child->boxName = $field->boxName . '[' . $index . '][' . $child->boxName . ']';
+                $child->offEdit = $child->offEdit || $field->offEdit;
                 //如果存在拆分的时候
                 if ($child->names && is_array($child->names)) {
                     $names = $child->names;
