@@ -412,7 +412,6 @@ class Route
             }
             return $temp_url;
         }
-
         $idata = isset(self::$routeMap[$app]) ? self::$routeMap[$app] : null;
         if ($idata == null) {
             return '';
@@ -507,23 +506,28 @@ class Route
     public static function url($url = null, array $query = [])
     {
         if (is_array($url)) {
-            $url['app'] = isset($url['app']) ? $url['app'] : self::get('app');
-            $url['ctl'] = isset($url['ctl']) ? $url['ctl'] : self::get('ctl');
-            $url['act'] = isset($url['act']) ? $url['act'] : self::get('act');
-            $temp = '^/' . $url['app'] . '/' . $url['ctl'] . '/' . $url['act'];
+            $app = isset($url['app']) ? $url['app'] : self::get('app');
+            $ctl = isset($url['ctl']) ? $url['ctl'] : self::get('ctl');
+            $act = isset($url['act']) ? $url['act'] : '';
+            $path = '/' . $url['ctl'];
+            if (!empty($url['act'])) {
+                $path .= '/' . $url['act'];
+            }
             unset($url['app']);
             unset($url['ctl']);
             unset($url['act']);
-            if (!empty($url) && is_array($query)) {
+            if (is_array($query)) {
                 $query = array_merge($url, $query);
+            } else {
+                $query = $url;
             }
-            $url = $temp;
+            return self::resolve($app, $path, $query);
         }
         if (!is_string($url)) {
             return $url;
         }
-        $innerUri = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
-        if (!$innerUri) {
+        $isInnerUrl = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
+        if (!$isInnerUrl) {
             if ($query == null || count($query) == 0) {
                 return $url;
             }
@@ -534,7 +538,6 @@ class Route
         $query = is_array($query) ? $query : [];
         //合并参数
         if (!empty($str_query)) {
-            $temp = [];
             parse_str($str_query, $temp);
             $query = array_merge($temp, $query);
         }
