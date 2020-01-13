@@ -526,7 +526,7 @@ class Route
         if (!is_string($url)) {
             return $url;
         }
-        $isInnerUrl = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
+        $isInner = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
         if (!$isInner) {
             if ($query == null || count($query) == 0) {
                 return $url;
