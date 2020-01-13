@@ -527,7 +527,7 @@ class Route
             return $url;
         }
         $isInnerUrl = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
-        if (!$isInnerUrl) {
+        if (!$isInner) {
             if ($query == null || count($query) == 0) {
                 return $url;
             }
@@ -541,7 +541,7 @@ class Route
             parse_str($str_query, $temp);
             $query = array_merge($temp, $query);
         }
-        if (!$innerUri) {
+        if (!$isInner) {
             $str_query = http_build_query($query);
             if (!empty($str_query)) {
                 return $path . '?' . $str_query;
