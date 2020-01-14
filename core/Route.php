@@ -509,9 +509,9 @@ class Route
             $app = isset($url['app']) ? $url['app'] : self::get('app');
             $ctl = isset($url['ctl']) ? $url['ctl'] : self::get('ctl');
             $act = isset($url['act']) ? $url['act'] : '';
-            $path = '/' . $url['ctl'];
-            if (!empty($url['act'])) {
-                $path .= '/' . $url['act'];
+            $path = '/' . $ctl;
+            if (!empty($act)) {
+                $path .= '/' . $act;
             }
             unset($url['app']);
             unset($url['ctl']);
