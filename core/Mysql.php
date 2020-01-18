@@ -698,9 +698,10 @@ class Mysql
             }
         }
         $sql = 'update ' . $tbname . ' set ' . join(',', $maps);
-        if (!empty($where)) {
-            $sql .= ' where ' . $where;
+        if (empty($where)) {
+            throw new MysqlException('编辑数据必须带有条件');
         }
+        $sql .= ' where ' . $where;
         if (is_array($args)) {
             foreach ($args as $it) {
                 $temp[] = $it;
@@ -727,9 +728,10 @@ class Mysql
             $where = 'id=?';
         }
         $sql = 'DELETE FROM ' . $tbname;
-        if (!empty($where)) {
-            $sql .= ' where ' . $where;
+        if (empty($where)) {
+            throw new MysqlException('删除数据必须带有条件');
         }
+        $sql .= ' where ' . $where;
         $Stm = $this->execute($sql, $args);
         $Stm->closeCursor();
     }
