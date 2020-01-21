@@ -206,10 +206,10 @@ class Request
             return setcookie($name, $value, $options);
         }
         $expire = isset($options['expire']) ? intval($options['expire']) : 0;
-        $path = isset($options['path']) ? intval($options['path']) : '';
-        $domain = isset($options['domain']) ? intval($options['domain']) : '';
-        $secure = isset($options['secure']) ? intval($options['secure']) : false;
-        $httponly = isset($options['httponly']) ? intval($options['httponly']) : false;
+        $path = isset($options['path']) ? $options['path'] : '';
+        $domain = isset($options['domain']) ? $options['domain'] : '';
+        $secure = isset($options['secure']) ? boolval($options['secure']) : false;
+        $httponly = isset($options['httponly']) ? boolval($options['httponly']) : false;
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
 
