@@ -228,7 +228,7 @@ class Mysql
         $this->user = $user;
         $this->pass = $pass;
         $this->charset = $charset;
-        $this->charset = $timeout;
+        $this->timeout = $timeout;
         try {
             if ($timeout == 0) {
                 $this->pdo = new PDO($link, $user, $pass, [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
