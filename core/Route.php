@@ -44,6 +44,9 @@ class Route
     private static $ctlPrefix = [];
     private static $rethrowFunc = null;
 
+    private static $registerCache = [];
+
+
     //接管适配器
     private static $adapter = [
         'target' => null,
@@ -96,28 +99,11 @@ class Route
             'namespace' => 'app\\' . $name,
             'base' => '/' . ($name == 'home' ? '' : $name),
             'rules' => [
-                '@^/(\w+)/(\w+)/(\d+)$@i' => [
-                    'ctl' => '$1',
-                    'act' => '$2',
-                    'id' => '$3',
-                ],
-                '@^/(\w+)/(\d+)$@i' => [
-                    'ctl' => '$1',
-                    'act' => 'index',
-                    'id' => '$2',
-                ],
-                '@^/(\w+)/(\w+)$@i' => [
-                    'ctl' => '$1',
-                    'act' => '$2',
-                ],
-                '@^/(\w+)/?$@i' => [
-                    'ctl' => '$1',
-                    'act' => 'index',
-                ],
-                '@^/$@' => [
-                    'ctl' => 'index',
-                    'act' => 'index',
-                ],
+                '@^/(\w+)/(\w+)/(\d+)$@i' => ['ctl' => '$1', 'act' => '$2', 'id' => '$3'],
+                '@^/(\w+)/(\d+)$@i' => ['ctl' => '$1', 'act' => 'index', 'id' => '$2'],
+                '@^/(\w+)/(\w+)$@i' => ['ctl' => '$1', 'act' => '$2'],
+                '@^/(\w+)/?$@i' => ['ctl' => '$1', 'act' => 'index'],
+                '@^/$@' => ['ctl' => 'index', 'act' => 'index'],
             ],
             'resolve' => function ($ctl, $act, $keys = []) {
                 $url = '/{ctl}';
@@ -135,7 +121,7 @@ class Route
                 self::$routePath = Utils::path(ROOT_DIR, 'config');
             }
             $filePath = Utils::path(self::$routePath, $name . '.route.php');
-            if (file_exists($filePath)) {
+            if (is_file($filePath)) {
                 $map = require $filePath;
             }
         } else if (is_array($route)) {
@@ -146,6 +132,14 @@ class Route
         $map['base_match'] = '@^' . preg_quote($map['base'], '@') . '(/.*)?$@i';
         $map['path'] = Utils::trimPath($map['path']);
         self::$routeMap[$name] = $map;
+        uasort(self::$routeMap, function ($a, $b) {
+            $la = strlen($a['base']);
+            $lb = strlen($b['base']);
+            if ($la == $lb) {
+                return 0;
+            }
+            return $la > $lb ? -1 : 1;
+        });
     }
 
     /**
@@ -155,12 +149,6 @@ class Route
      */
     private static function matchUrl(string $url)
     {
-        uasort(self::$routeMap, function ($a, $b) {
-            if (strlen($a['base']) == strlen($b['base'])) {
-                return 0;
-            }
-            return strlen($a['base']) > strlen($b['base']) ? -1 : 1;
-        });
         foreach (self::$routeMap as $name => $item) {
             if (preg_match($item['base_match'], $url, $m)) {
                 $item['uri'] = empty($m[1]) ? '' : $m[1];
@@ -209,22 +197,13 @@ class Route
             $url = preg_replace('@\.json$@i', '', $url);
         }
         $iData = self::matchUrl($url);
-
-        if ($iData == null) {
+        if ($iData == null || !isset($iData['rules']) || !is_array($iData['rules'])) {
             return null;
         }
         //路由路径
         $uri = empty($iData['uri']) ? '/' : $iData['uri'];
         $name = $iData['name'];
-        $arg = [
-            'app' => $name,
-            'base' => $iData['base'],
-            'ctl' => '',
-            'act' => '',
-        ];
-        if (!isset($iData['rules']) || !is_array($iData['rules'])) {
-            return null;
-        }
+        $arg = ['app' => $name, 'base' => $iData['base'], 'ctl' => '', 'act' => '',];
         foreach ($iData['rules'] as $preg => $item) {
             if (preg_match($preg, $uri, $m)) {
                 if (!is_array($item)) {
@@ -253,10 +232,12 @@ class Route
         }
         $arg['ctl'] = strtolower($arg['ctl']);
         $arg['act'] = strtolower($arg['act']);
+        self::$route = $arg;
+        unset($arg['act']);
+        unset($arg['ctl']);
+        unset($arg['app']);
+        unset($arg['base']);
         foreach ($arg as $key => $val) {
-            if (in_array($key, ['act', 'ctl', 'base', 'app'])) {
-                continue;
-            }
             if (!isset($_GET[$key])) {
                 $_GET[$key] = $val;
             }
@@ -264,8 +245,7 @@ class Route
                 $_REQUEST[$key] = $val;
             }
         }
-        self::$route = $arg;
-        return $arg;
+        return self::$route;
     }
 
     /**
@@ -475,7 +455,7 @@ class Route
             array_push($queryStr, $key . '={' . $key . '}');
         }
         $temp_url = $base . $out_url;
-        if (count($queryStr) > 0) {
+        if (isset($queryStr[0])) {
             $temp_url .= '?' . join('&', $queryStr);
         }
         self::$cacheUris[$app][$hash] = $temp_url;
@@ -528,7 +508,7 @@ class Route
         }
         $isInner = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
         if (!$isInner) {
-            if ($query == null || count($query) == 0) {
+            if ($query == null || !isset($query[0])) {
                 return $url;
             }
         }
@@ -586,37 +566,17 @@ class Route
         if (isset(self::$adapter['param']) && is_callable(self::$adapter['param'])) {
             $args = call_user_func(self::$adapter['param'], $params);
         } else {
-            if (count($params) > 0) {
+            if (isset($params[0])) {
                 foreach ($params as $param) {
                     //获取变量名称
                     $name = $param->getName();
                     $type = 'any';
                     //如果可以获取类型
-                    if (is_callable([$param, 'hasType'])) {
-                        if ($param->hasType()) {
-                            $refType = $param->getType();
-                            if ($refType != null) {
-                                if (is_callable([$refType, 'getName'])) {
-                                    $type = $refType->getName();
-                                } else {
-                                    $type = strval($refType);
-                                }
-                                $type = empty($type) ? 'any' : $type;
-                            }
-                        }
-                    }
-                    //类型获取不到
-                    if ($type == 'any') {
-                        if (is_callable([$param, 'getClass'])) {
-                            $refType = $param->getClass();
-                            if ($refType != null) {
-                                if (is_callable([$refType, 'getName'])) {
-                                    $type = $refType->getName();
-                                } else {
-                                    $type = strval($refType);
-                                }
-                                $type = empty($type) ? 'any' : $type;
-                            }
+                    if ($param->hasType()) {
+                        $refType = $param->getType();
+                        if ($refType != null) {
+                            $type = strval($refType);
+                            $type = empty($type) ? 'any' : $type;
                         }
                     }
                     //默认值
@@ -668,7 +628,6 @@ class Route
         if (method_exists($example, 'initialize')) {
             $example->initialize();
         }
-        //调用方法
         $out = $method->invokeArgs($example, $args);
         if (Request::getContentType() == 'application/json' || Request::getContentType() == 'text/json') {
             die(json_encode($out, JSON_UNESCAPED_UNICODE));
@@ -711,7 +670,7 @@ class Route
         }
         //设置当前应用下的配置文件
         $config = Utils::path($appPath, 'config.php');
-        if (file_exists($config)) {
+        if (is_file($config)) {
             $cfgData = Config::loadFile($config);
             foreach ($cfgData as $key => $val) {
                 Config::set($key, $val);
@@ -773,7 +732,7 @@ class Route
         try {
             $data = self::getMapping($url);
             $app = self::$route['app'];
-            if (!class_exists($data['classFullName']) && isset(self::$ctlPrefix[$app])) {
+            if (isset(self::$ctlPrefix[$app]) && !class_exists($data['classFullName'])) {
                 foreach (self::$ctlPrefix[$app] as $prefix) {
                     $classFullName = $data['namespace'] . '\\' . $prefix . $data['className'];
                     if (class_exists($classFullName)) {

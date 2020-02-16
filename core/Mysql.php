@@ -10,7 +10,7 @@ namespace beacon;
  */
 
 
-use PDO as PDO;
+use \PDO as PDO;
 
 /**
  * sql 语句片段,用于更新插入时使用
@@ -80,8 +80,10 @@ class Mysql
             $pass = Config::get('db.db_pwd', '');
             $prefix = Config::get('db.db_prefix', 'sl_');
             $charset = Config::get('db.db_charset', 'utf8');
+            $timeout = Config::get('db.timeout', 120);
+
             try {
-                self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset);
+                self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
             } catch (\PDOException $e) {
                 self::$instance = null;
                 throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
@@ -200,6 +202,7 @@ class Mysql
     private $user = null;
     private $pass = null;
     private $charset = 'utf8';
+    private $timeout = 120;
 
     /**
      * 构造函数
@@ -211,8 +214,9 @@ class Mysql
      * @param string $pass
      * @param string $prefix
      * @param string $charset
+     * @param int $timeout
      */
-    public function __construct($host, $port = 3306, $name = '', $user = '', $pass = '', $prefix = '', $charset = 'utf8')
+    public function __construct($host, $port = 3306, $name = '', $user = '', $pass = '', $prefix = '', $charset = 'utf8', int $timeout = 120)
     {
         $this->prefix = $prefix;
         if (!empty($name)) {
@@ -224,8 +228,13 @@ class Mysql
         $this->user = $user;
         $this->pass = $pass;
         $this->charset = $charset;
+        $this->charset = $timeout;
         try {
-            $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            if ($timeout == 0) {
+                $this->pdo = new PDO($link, $user, $pass, [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            } else {
+                $this->pdo = new PDO($link, $user, $pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => $timeout, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            }
         } catch (\PDOException $exc) {
             throw $exc;
         }
@@ -234,7 +243,11 @@ class Mysql
     public function reconnection()
     {
         try {
-            $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => 120, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            if ($this->timeout == 0) {
+                $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            } else {
+                $this->pdo = new PDO($this->link, $this->user, $this->pass, [PDO::ATTR_PERSISTENT => true, PDO::ATTR_TIMEOUT => $this->timeout, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            }
         } catch (\PDOException $exc) {
             throw $exc;
         }
