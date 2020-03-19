@@ -72,7 +72,10 @@ class SqlSelector
      * @var bool
      */
     private $optimize = false;
-
+    /**
+     * @var bool
+     */
+    private $rawTable = false;
 
     /**
      * 获取类实例
@@ -95,6 +98,9 @@ class SqlSelector
     {
         $this->table = $table;
         $this->alias = $alias;
+        if (preg_match('@\s@', $table)) {
+            $this->rawTable = true;
+        }
         $this->condition = new SqlCondition();
     }
 
@@ -626,7 +632,11 @@ class SqlSelector
                     $argItems = array_merge($argItems, $this->fieldItem->args);
                 }
             }
-            $sqlItems[] = "select {$findSql} from `{$this->table}` {$alias},(select id from `{$this->table}`";
+            if ($this->rawTable) {
+                $sqlItems[] = "select {$findSql} from {$this->table} {$alias},(select id from {$this->table}";
+            } else {
+                $sqlItems[] = "select {$findSql} from `{$this->table}` {$alias},(select id from `{$this->table}`";
+            }
             if (!empty($this->alias)) {
                 $sqlItems[] = ' ' . $this->alias;
             }
@@ -638,7 +648,11 @@ class SqlSelector
                     $argItems = array_merge($argItems, $this->fieldItem->args);
                 }
             }
-            $sqlItems[] = "select {$findSql} from `{$this->table}`";
+            if ($this->rawTable) {
+                $sqlItems[] = "select {$findSql} from {$this->table}";
+            } else {
+                $sqlItems[] = "select {$findSql} from `{$this->table}`";
+            }
             if (!empty($this->alias)) {
                 $sqlItems[] = ' ' . $this->alias;
             }
@@ -743,6 +757,16 @@ class SqlSelector
             }
         }
         return ['sql' => join(' ', $sqlItems), 'args' => $argItems];
+    }
+
+    /**
+     * 获取完整的sql语句
+     * @return string|string[]|null
+     */
+    public function getCompleteSql()
+    {
+        $sqlItem = $this->createSql();
+        return Mysql::format($sqlItem['sql'], $sqlItem['args']);
     }
 
     public function getCount()
