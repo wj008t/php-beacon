@@ -764,7 +764,9 @@ class Route
                 return;
             }
         }
-
+        if (is_callable([$exception, 'display'])) {
+            return $exception->display();
+        }
         $rethrow = self::$adapter['error'];
         foreach ($rethrow as $func) {
             if (is_callable($func)) {
