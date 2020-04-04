@@ -492,4 +492,50 @@ class Request
         }
         return $referer;
     }
+
+    /**
+     * 判断是否ssl环境
+     */
+    public static function isSsl()
+    {
+        if ($_SERVER['SERVER_PORT'] == '443') {
+            return true;
+        }
+        if ($_SERVER['REQUEST_SCHEME'] ?? '' == 'https') {
+            return true;
+        }
+        if ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '' == 'https') {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 获取scheme参数
+     */
+    public static function scheme()
+    {
+        return self::isSsl() ? 'https' : 'http';
+    }
+
+    /**
+     * 当前请求的host
+     * @return string
+     */
+    public static function host()
+    {
+        $host = $_SERVER['HTTP_X_REAL_HOST'] ?? $_SERVER['HTTP_HOST'];
+        return $host;
+    }
+
+    /**
+     * 获取当前请求域名
+     * @param bool $port
+     * @return string
+     */
+    public static function domain(bool $port = true)
+    {
+        $host = self::host();
+        return $port == true ? sprintf("%s://%s", self::scheme(), $host) : $host;
+    }
 }
