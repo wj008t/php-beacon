@@ -50,7 +50,11 @@ class Datetime extends Hidden
     {
         if ($field->varType == 'int' || $field->varType == 'integer') {
             $time = isset($values[$field->name]) ? $values[$field->name] : 0;
-            $field->value = date('Y-m-d H:i:s', $time);
+            if ($time == 0) {
+                $field->value = '';
+            } else {
+                $field->value = date('Y-m-d H:i:s', $time);
+            }
             return;
         }
         $field->value = isset($values[$field->name]) ? $values[$field->name] : null;

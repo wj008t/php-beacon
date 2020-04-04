@@ -203,7 +203,7 @@ class Validate
      */
     public static function test_mobile($val)
     {
-        return !!preg_match('/^1[34578]\d{9}$/', $val);
+        return !!preg_match('/^1[3456789]\d{9}$/', $val);
     }
 
     /**
