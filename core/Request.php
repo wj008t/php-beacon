@@ -501,10 +501,12 @@ class Request
         if ($_SERVER['SERVER_PORT'] == '443') {
             return true;
         }
-        if ($_SERVER['REQUEST_SCHEME'] ?? '' == 'https') {
+        $sheme = $_SERVER['REQUEST_SCHEME'] ?? '';
+        if ($sheme == 'https') {
             return true;
         }
-        if ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '' == 'https') {
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+        if ($proto == 'https') {
             return true;
         }
         return false;
