@@ -10,7 +10,7 @@ namespace beacon;
  */
 
 
-use \PDO as PDO;
+use PDO as PDO;
 
 /**
  * sql 语句片段,用于更新插入时使用
@@ -834,7 +834,9 @@ class Mysql
                 $sql .= $type;
                 break;
         }
-        $sql .= ' DEFAULT ' . Mysql::escape($def);
+        if (!in_array(strtoupper($type), ['BLOB', 'TEXT', 'GEOMETRY', 'JSON'])) {
+            $sql .= ' DEFAULT ' . Mysql::escape($def);
+        }
         if ($comment) {
             $sql .= ' COMMENT ' . Mysql::escape($comment);
         }
