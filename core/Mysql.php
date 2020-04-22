@@ -10,7 +10,7 @@ namespace beacon;
  */
 
 
-use PDO as PDO;
+use \PDO as PDO;
 
 /**
  * sql 语句片段,用于更新插入时使用
