@@ -886,7 +886,9 @@ class Mysql
                 $sql .= $type;
                 break;
         }
-        $sql .= ' DEFAULT ' . Mysql::escape($def);
+        if (!in_array(strtoupper($type), ['BLOB', 'TEXT', 'GEOMETRY', 'JSON'])) {
+            $sql .= ' DEFAULT ' . Mysql::escape($def);
+        }
         if ($comment) {
             $sql .= ' COMMENT ' . Mysql::escape($comment);
         }
@@ -945,7 +947,9 @@ class Mysql
                 $sql .= $type;
                 break;
         }
-        $sql .= ' DEFAULT ' . Mysql::escape($def);
+        if (!in_array(strtoupper($type), ['BLOB', 'TEXT', 'GEOMETRY', 'JSON'])) {
+            $sql .= ' DEFAULT ' . Mysql::escape($def);
+        }
         if ($comment) {
             $sql .= ' COMMENT ' . Mysql::escape($comment);
         }
