@@ -490,6 +490,9 @@ class Request
         if (empty($referer)) {
             $referer = self::getHeader('referrer');
         }
+        if ($referer && !preg_match('@^(http|https)@i', $referer)) {
+            return '';
+        }
         return $referer;
     }
 
