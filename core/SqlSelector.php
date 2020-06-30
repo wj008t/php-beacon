@@ -606,7 +606,7 @@ class SqlSelector
         $argItems = [];
         //获取查询数量的sql语句
         if ($type == 2) {
-            if ($this->groupItem != null || $this->unionItem != null) {
+            if ($this->groupItem != null || $this->unionItem != null || $this->havingItem != null) {
                 $order = $this->orderItem;
                 $limit = $this->limit;
                 $this->orderItem = null;
