@@ -22,12 +22,27 @@ class DB
         if (self::$engine != null) {
             return self::$engine;
         }
-        $driver = Config::get('db.db_driver', 'Mysql');
-        if ($driver == 'Mysql') {
-            self::$engine = Mysql::instance();
-            return self::$engine;
+
+        $host = Config::get('db.db_host', '127.0.0.1');
+        $port = Config::get('db.db_port', 3306);
+        $name = Config::get('db.db_name', '');
+        $user = Config::get('db.db_user', '');
+        $pass = Config::get('db.db_pwd', '');
+        $prefix = Config::get('db.db_prefix', 'sl_');
+        $charset = Config::get('db.db_charset', 'utf8');
+        $timeout = Config::get('db.timeout', 120);
+
+        try {
+            self::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
+        } catch (\PDOException $e) {
+            self::$engine = null;
+            throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+        } catch (\Exception $e) {
+            self::$engine = null;
+            throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
         }
-        throw new \Exception('不支持的数据库驱动类型');
+
+        return self::$engine;
     }
 
     /**
