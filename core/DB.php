@@ -10,7 +10,7 @@ namespace beacon;
  */
 class DB
 {
-    private static $engine = null;
+    protected static $engine = null;
 
     /**
      * 获取数据库引擎实例
@@ -22,7 +22,6 @@ class DB
         if (self::$engine != null) {
             return self::$engine;
         }
-
         $host = Config::get('db.db_host', '127.0.0.1');
         $port = Config::get('db.db_port', 3306);
         $name = Config::get('db.db_name', '');
@@ -31,7 +30,6 @@ class DB
         $prefix = Config::get('db.db_prefix', 'sl_');
         $charset = Config::get('db.db_charset', 'utf8');
         $timeout = Config::get('db.timeout', 120);
-
         try {
             self::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
         } catch (\PDOException $e) {
@@ -41,7 +39,6 @@ class DB
             self::$engine = null;
             throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
         }
-
         return self::$engine;
     }
 
@@ -52,7 +49,7 @@ class DB
      */
     public static function beginTransaction()
     {
-        return self::engine()->beginTransaction();
+        return static::engine()->beginTransaction();
     }
 
     /**
@@ -62,7 +59,7 @@ class DB
      */
     public static function inTransaction()
     {
-        return self::engine()->inTransaction();
+        return static::engine()->inTransaction();
     }
 
     /**
@@ -73,11 +70,11 @@ class DB
     public static function transaction($func)
     {
         try {
-            DB::beginTransaction();
+            static::beginTransaction();
             $func();
-            DB::commit();
+            static::commit();
         } catch (\Exception $exception) {
-            DB::rollBack();
+            static::rollBack();
             throw $exception;
         }
     }
@@ -89,7 +86,7 @@ class DB
      */
     public static function commit()
     {
-        return self::engine()->commit();
+        return static::engine()->commit();
     }
 
     /**
@@ -99,7 +96,7 @@ class DB
      */
     public static function rollBack()
     {
-        return self::engine()->rollBack();
+        return static::engine()->rollBack();
     }
 
     /**
@@ -110,7 +107,7 @@ class DB
      */
     public static function exec(string $sql)
     {
-        return self::engine()->exec($sql);
+        return static::engine()->exec($sql);
     }
 
     /**
@@ -120,7 +117,7 @@ class DB
      */
     public static function lastSql()
     {
-        return self::engine()->lastSql();
+        return static::engine()->lastSql();
     }
 
     /**
@@ -131,7 +128,7 @@ class DB
      */
     public static function lastInsertId($name = null)
     {
-        return self::engine()->lastInsertId($name);
+        return static::engine()->lastInsertId($name);
     }
 
     /**
@@ -143,7 +140,7 @@ class DB
      */
     public static function execute(string $sql, $args = null)
     {
-        return self::engine()->execute($sql, $args);
+        return static::engine()->execute($sql, $args);
     }
 
     /**
@@ -158,7 +155,7 @@ class DB
      */
     public static function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
     {
-        return self::engine()->getList($sql, $args, $fetch_style, $fetch_argument, $ctor_args);
+        return static::engine()->getList($sql, $args, $fetch_style, $fetch_argument, $ctor_args);
     }
 
     /**
@@ -173,7 +170,7 @@ class DB
      */
     public static function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
     {
-        return self::engine()->getRow($sql, $args, $fetch_style, $cursor_orientation, $cursor_offset);
+        return static::engine()->getRow($sql, $args, $fetch_style, $cursor_orientation, $cursor_offset);
     }
 
     /**
@@ -186,7 +183,7 @@ class DB
      */
     public static function getOne(string $sql, $args = null, $field = null)
     {
-        return self::engine()->getOne($sql, $args, $field);
+        return static::engine()->getOne($sql, $args, $field);
     }
 
     /**
@@ -200,7 +197,7 @@ class DB
      */
     public static function getMax(string $tbname, string $field, $where = null, $args = null)
     {
-        return self::engine()->getMax($tbname, $field, $where, $args);
+        return static::engine()->getMax($tbname, $field, $where, $args);
     }
 
     /**
@@ -214,7 +211,7 @@ class DB
      */
     public static function getMin(string $tbname, string $field, $where = null, $args = null)
     {
-        return self::engine()->getMin($tbname, $field, $where, $args);
+        return static::engine()->getMin($tbname, $field, $where, $args);
     }
 
     /**
@@ -226,7 +223,7 @@ class DB
      */
     public static function raw(string $sql, $args = null)
     {
-        return self::engine()->raw($sql, $args);
+        return static::engine()->raw($sql, $args);
     }
 
     /**
@@ -237,7 +234,7 @@ class DB
      */
     public static function insert(string $tbname, array $values = [])
     {
-        return self::engine()->insert($tbname, $values);
+        return static::engine()->insert($tbname, $values);
     }
 
     /**
@@ -248,7 +245,7 @@ class DB
      */
     public static function replace(string $tbname, array $values = [])
     {
-        return self::engine()->replace($tbname, $values);
+        return static::engine()->replace($tbname, $values);
     }
 
     /**
@@ -261,7 +258,7 @@ class DB
      */
     public static function update(string $tbname, array $values, $where = null, $args = null)
     {
-        return self::engine()->update($tbname, $values, $where, $args);
+        return static::engine()->update($tbname, $values, $where, $args);
     }
 
     /**
@@ -273,7 +270,7 @@ class DB
      */
     public static function delete(string $tbname, $where = null, $args = null)
     {
-        return self::engine()->delete($tbname, $where, $args);
+        return static::engine()->delete($tbname, $where, $args);
     }
 
     /**
@@ -284,7 +281,7 @@ class DB
      */
     public static function getFields(string $tbname)
     {
-        return self::engine()->getFields($tbname);
+        return static::engine()->getFields($tbname);
     }
 
     /**
@@ -296,7 +293,7 @@ class DB
      */
     public static function fieldFilter(array $data, string $tbname)
     {
-        $fields = self::engine()->getFields($tbname);
+        $fields = static::engine()->getFields($tbname);
         $temp = [];
         foreach ($fields as $field) {
             $key = $field['Field'];
@@ -317,7 +314,7 @@ class DB
      */
     public static function existsField(string $tbname, string $field)
     {
-        return self::engine()->existsField($tbname, $field);
+        return static::engine()->existsField($tbname, $field);
     }
 
     /**
@@ -328,7 +325,7 @@ class DB
      */
     public static function createTable(string $tbname, array $options = [])
     {
-        return self::engine()->createTable($tbname, $options);
+        return static::engine()->createTable($tbname, $options);
     }
 
     /**
@@ -341,7 +338,7 @@ class DB
      */
     public static function addField(string $tbname, string $field, array $options = [])
     {
-        return self::engine()->addField($tbname, $field, $options);
+        return static::engine()->addField($tbname, $field, $options);
     }
 
     /**
@@ -354,7 +351,7 @@ class DB
      */
     public static function modifyField(string $tbname, string $field, array $options = [])
     {
-        return self::engine()->modifyField($tbname, $field, $options);
+        return static::engine()->modifyField($tbname, $field, $options);
     }
 
     /**
@@ -368,7 +365,7 @@ class DB
      */
     public static function updateField(string $tbname, string $oldfield, string $newfield, array $options = [])
     {
-        return self::engine()->updateField($tbname, $oldfield, $newfield, $options);
+        return static::engine()->updateField($tbname, $oldfield, $newfield, $options);
     }
 
     /**
@@ -380,7 +377,7 @@ class DB
      */
     public static function dropField(string $tbname, string $field)
     {
-        return self::engine()->dropField($tbname, $field);
+        return static::engine()->dropField($tbname, $field);
     }
 
     /**
@@ -391,7 +388,7 @@ class DB
      */
     public static function existsTable(string $tbname)
     {
-        return self::engine()->existsTable($tbname);
+        return static::engine()->existsTable($tbname);
     }
 
     /**
@@ -402,6 +399,6 @@ class DB
      */
     public static function dropTable(string $tbname)
     {
-        return self::engine()->dropTable($tbname);
+        return static::engine()->dropTable($tbname);
     }
 }
