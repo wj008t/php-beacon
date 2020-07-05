@@ -19,8 +19,8 @@ class DB
      */
     public static function engine()
     {
-        if (self::$engine != null) {
-            return self::$engine;
+        if (static::$engine != null) {
+            return static::$engine;
         }
         $host = Config::get('db.db_host', '127.0.0.1');
         $port = Config::get('db.db_port', 3306);
@@ -31,15 +31,15 @@ class DB
         $charset = Config::get('db.db_charset', 'utf8');
         $timeout = Config::get('db.timeout', 120);
         try {
-            self::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
+            static::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
         } catch (\PDOException $e) {
-            self::$engine = null;
+            static::$engine = null;
             throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
         } catch (\Exception $e) {
-            self::$engine = null;
+            static::$engine = null;
             throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
         }
-        return self::$engine;
+        return static::$engine;
     }
 
     /**
