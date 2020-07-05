@@ -12,19 +12,19 @@ use \PDO as PDO;
 class PageList
 {
 
-    private $sql;
-    private $page; //当前页面
-    private $recordsCount = -1;  //记录数
-    private $onlyCount = -1; //仅显示
-    private $pageSize; //页面大小
-    private $pageCount; //最大页数
-    private $key;
-    private $args;
-    private $info = null;
+    protected $sql;
+    protected $page; //当前页面
+    protected $recordsCount = -1;  //记录数
+    protected $onlyCount = -1; //仅显示
+    protected $pageSize; //页面大小
+    protected $pageCount; //最大页数
+    protected $key;
+    protected $args;
+    protected $info = null;
     /**
      * @var SqlSelector
      */
-    private $selector = null;
+    protected $selector = null;
 
     /**
      * 数据库分页类 <br/>
@@ -67,7 +67,7 @@ class PageList
         $this->onlyCount = $count;
     }
 
-    private function getPageCount($count, $size)
+    protected function getPageCount($count, $size)
     {
         if (($count % $size) == 0) {
             $pageCount = ($count / $size);

@@ -28,54 +28,54 @@ class SqlUnionItem
 class SqlSelector
 {
 
-    private $table = null;
-    private $alias = null;
+    protected $table = null;
+    protected $alias = null;
 
-    private $sqlTemplate = null;
-    private $param = null;
+    protected $sqlTemplate = null;
+    protected $param = null;
 
-    private $count = -1;
+    protected $count = -1;
     /**
      * @var SqlItem;
      */
-    private $orderItem = null;
+    protected $orderItem = null;
     /**
      * @var SqlItem;
      */
-    private $groupItem = null;
+    protected $groupItem = null;
     /**
      * @var SqlItem;
      */
-    private $fieldItem = null;
+    protected $fieldItem = null;
 
-    private $limit = '';
+    protected $limit = '';
     /**
      * @var SqlItem;
      */
-    private $joinItem = null;
+    protected $joinItem = null;
     /**
      * @var SqlCondition;
      */
-    private $havingItem = null;
+    protected $havingItem = null;
     /**
      * @var SqlCondition
      */
-    private $condition = null;
+    protected $condition = null;
 
     /**
      * @var SqlUnionItem[]
      */
-    private $unionItem = null;
+    protected $unionItem = null;
 
     /**
      * 优化查询
      * @var bool
      */
-    private $optimize = false;
+    protected $optimize = false;
     /**
      * @var bool
      */
-    private $rawTable = false;
+    protected $rawTable = false;
 
     /**
      * 获取类实例
