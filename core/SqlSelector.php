@@ -105,6 +105,24 @@ class SqlSelector
     }
 
     /**
+     * 获取表名
+     * @return string|null
+     */
+    public function getTable()
+    {
+        return $this->table;
+    }
+
+    /**
+     * 获取表别名
+     * @return string|null
+     */
+    public function getAlias()
+    {
+        return $this->alias;
+    }
+
+    /**
      * 使用SQL模板方式
      * @param string $template
      * @param array $param
@@ -204,6 +222,18 @@ class SqlSelector
     }
 
     /**
+     * 获取字段名
+     * @return array
+     */
+    public function getField()
+    {
+        if ($this->fieldItem == null) {
+            return ['sql' => '*', 'args' => null];
+        }
+        return ['sql' => $this->fieldItem->sql, 'args' => $this->fieldItem->args];
+    }
+
+    /**
      * 设置排序
      * @param string $order
      * @param null $args
@@ -226,6 +256,10 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 清空
+     * @return $this
+     */
     public function emptyOrder()
     {
         $this->orderItem = null;
@@ -278,6 +312,10 @@ class SqlSelector
         return $this;
     }
 
+    /**
+     * 清空条件
+     * @return $this
+     */
     public function emptyHaving()
     {
         $this->havingItem = null;
