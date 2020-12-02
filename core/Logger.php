@@ -15,14 +15,17 @@ namespace beacon;
  */
 class Logger
 {
-    private static $_logger = null;
+
+    private static  $log_udp_ip = "";
+    private static  $log_udp_port = 0;
 
     /**
      * UDP发送
-     * @param $type
-     * @param $args
+     * @param string $type
+     * @param array $args
+     * @param null $time
      */
-    private static function send($type, $args)
+    private static function send(string $type, array $args, $time = null)
     {
         if (!(defined('DEBUG_LOG') && DEBUG_LOG)) {
             return;
@@ -30,26 +33,39 @@ class Logger
         if (!get_extension_funcs('sockets')) {
             return;
         }
+        if (empty(self::$log_udp_ip) || empty(self::$log_udp_port)) {
+            self::$log_udp_ip = Config::get('beacon.log_udp_addr', '127.0.0.1');
+            self::$log_udp_port = Config::get('beacon.log_udp_port', 1024);
+        }
         $backtrace = debug_backtrace(false);
         $backtrace_message = 'unknown';
         if (isset($backtrace[1]) && isset($backtrace[1]['file']) && isset($backtrace[1]['line'])) {
-            $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'].')';
+            $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'] . ')';
         }
-        foreach ($args as &$arg) {
+        $temps = [];
+        foreach ($args as $arg) {
             try {
                 $arg = self::convert($arg);
             } catch (\ReflectionException $exception) {
             }
+            $temp = json_encode($arg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            if ($temp[0] != '{' && $temp[0] != '[') {
+                $temp = strval($arg);
+            }
+            $temps[] = $temp;
         }
         $data = [];
-        $data[0] = $args;
-        $data[1] = $backtrace_message;
-        $data[2] = $type;
+        $data['data'] = $temps;
+        $data['file'] = $backtrace_message;
+        $data['act'] = $type;
+        if ($time !== null) {
+            $data['time'] = $time;
+        }
         $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         $msg = json_encode($data);
         $len = strlen($msg);
         try {
-            socket_sendto($sock, $msg, $len, 0, Config::get('beacon.log_udp_addr', '127.0.0.1'), Config::get('beacon.log_udp_port', 1024));
+            socket_sendto($sock, $msg, $len, 0, self::$log_udp_ip, self::$log_udp_port);
             socket_close($sock);
         } catch (\Exception $e) {
 
@@ -123,33 +139,12 @@ class Logger
     }
 
     /**
-     * @return null
-     */
-    public static function logger()
-    {
-        if (self::$_logger) {
-            return self::$_logger;
-        }
-        $className = Config::get('beacon.log_class_name');
-        if (!empty($className) && class_exists($className)) {
-            self::$_logger = new $className();
-            return self::$_logger;
-        }
-        return null;
-    }
-
-    /**
      * 输出信息
      * @param mixed ...$args
      */
     public static function log(...$args)
     {
-        $logger = self::logger();
-        if ($logger) {
-            $logger->log(...$args);
-        } else {
-            self::send('log', $args);
-        }
+        self::send('log', $args);
     }
 
     /**
@@ -158,12 +153,7 @@ class Logger
      */
     public static function error(...$args)
     {
-        $logger = self::logger();
-        if ($logger) {
-            $logger->error(...$args);
-        } else {
-            self::send('error', $args);
-        }
+        self::send('error', $args);
     }
 
     /**
@@ -172,12 +162,7 @@ class Logger
      */
     public static function warn(...$args)
     {
-        $logger = self::logger();
-        if ($logger) {
-            $logger->warn(...$args);
-        } else {
-            self::send('warn', $args);
-        }
+        self::send('warn', $args);
     }
 
     /**
@@ -186,11 +171,15 @@ class Logger
      */
     public static function info(...$args)
     {
-        $logger = self::logger();
-        if ($logger) {
-            $logger->info(...$args);
-        } else {
-            self::send('info', $args);
-        }
+        self::send('info', $args);
+    }
+
+    /**
+     * @param string $sql
+     * @param float $time 执行时间
+     */
+    public static function sql(string $sql, float $time)
+    {
+        self::send('sql', [$sql], round($time, 6));
     }
 }

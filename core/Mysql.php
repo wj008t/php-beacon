@@ -35,12 +35,66 @@ class SqlRaw
 }
 
 /**
+ * 错误处理
+ * Class MysqlException
+ * @package beacon
+ */
+class MysqlException extends \Exception
+{
+
+    protected $detail = '';
+
+    public function __construct(string $message = '', $detail = '', int $code = 0, \Throwable $previous = null)
+    {
+        $this->detail = $detail;
+        parent::__construct($message, $code, $previous);
+    }
+
+    public function getDetail()
+    {
+        return $this->detail;
+    }
+}
+
+/**
  * mysql 数据操作类
  * Class Mysql
  * @package beacon
  */
 class Mysql
 {
+    private static $instance = null;
+
+    /**
+     * 获取一个单例
+     * @return Mysql|null
+     * @throws MysqlException
+     */
+    public static function instance()
+    {
+        if (self::$instance == null) {
+            $host = Config::get('db.db_host', '127.0.0.1');
+            $port = Config::get('db.db_port', 3306);
+            $name = Config::get('db.db_name', '');
+            $user = Config::get('db.db_user', '');
+            $pass = Config::get('db.db_pwd', '');
+            $prefix = Config::get('db.db_prefix', 'sl_');
+            $charset = Config::get('db.db_charset', 'utf8');
+            $timeout = Config::get('db.timeout', 120);
+
+            try {
+                self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
+            } catch (\PDOException $e) {
+                self::$instance = null;
+                throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            } catch (\Exception $e) {
+                self::$instance = null;
+                throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            }
+        }
+        return self::$instance;
+    }
+
     /**
      * 编码 sql 语句
      * @param $value
@@ -127,6 +181,7 @@ class Mysql
         return $sql;
     }
 
+
     /**
      * 前缀
      * @var string
@@ -142,6 +197,7 @@ class Mysql
      */
     private $transactionCounter = 0;
     private $_lastSql = '';
+
     private $link = null;
     private $user = null;
     private $pass = null;
@@ -326,13 +382,13 @@ class Mysql
             }
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
                 $this->_lastSql = Mysql::format($sql, $args);
-                Logger::info($this->_lastSql, microtime(true) - $time);
+                Logger::sql($this->_lastSql, microtime(true) - $time);
             }
             return $sth;
         } catch (\Exception $exception) {
             $this->_lastSql = Mysql::format($sql, $args);
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
-                Logger::info($this->_lastSql, microtime(true) - $time);
+                Logger::sql($this->_lastSql, microtime(true) - $time);
             }
             throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
         }

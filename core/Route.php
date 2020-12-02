@@ -575,7 +575,11 @@ class Route
                     if ($param->hasType()) {
                         $refType = $param->getType();
                         if ($refType != null) {
-                            $type = strval($refType);
+                            if (version_compare(PHP_VERSION, '7.4.0', '<')) {
+                                $type = strval($refType);
+                            }else{
+                                $type = $refType->getName();
+                            }
                             $type = empty($type) ? 'any' : $type;
                         }
                     }
