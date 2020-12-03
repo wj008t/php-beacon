@@ -16,8 +16,10 @@ namespace beacon;
 class Logger
 {
 
-    private static  $log_udp_ip = "";
-    private static  $log_udp_port = 0;
+    private static $log_udp_ip = "";
+    private static $log_udp_port = 0;
+
+    private static $sock = null;
 
     /**
      * UDP发送
@@ -61,12 +63,16 @@ class Logger
         if ($time !== null) {
             $data['time'] = $time;
         }
-        $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        $msg = json_encode($data);
-        $len = strlen($msg);
+
         try {
+            if (self::$sock === null) {
+                self::$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+            }
+            $sock = self::$sock;
+            $msg = json_encode($data);
+            $len = strlen($msg);
             socket_sendto($sock, $msg, $len, 0, self::$log_udp_ip, self::$log_udp_port);
-            socket_close($sock);
+            //socket_close($sock);
         } catch (\Exception $e) {
 
         } catch (\Error $e) {
