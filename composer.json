@@ -11,7 +11,7 @@
   ],
   "require": {
     "php": ">=8.0",
-    "wj008/sdopx": "^2.1"
+    "wj008/sdopx": ">=3.0.5"
   },
   "autoload": {
     "psr-4": {
