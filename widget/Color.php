@@ -1,29 +1,19 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/16
- * Time: 2:01
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Color extends Hidden
+#[\Attribute]
+class Color extends Field
 {
-    public function code(Field $field, $attr = [])
-    {
-        $attr['yee-module'] = 'color';
-        $attr['type'] = 'text';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
-    }
 
-    public function assign(Field $field, array $input)
+    protected function code(array $attrs = []): string
     {
-        $field->varType = 'string';
-        return parent::assign($field, $input);
+        $attrs['yee-module'] = $this->getYeeModule('color');
+        $attrs['type'] = 'text';
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 }

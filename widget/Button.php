@@ -1,41 +1,44 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Button implements WidgetInterface
+#[\Attribute]
+class Button extends Field
 {
-    public function code(Field $field, $attr = [])
+    public bool $offJoin = true;
+
+    public function setting(array $args)
     {
-        $attr['type'] = '';
-        $attr['name'] = '';
-        if (empty($attr['href'])) {
-            $attr['href'] = $field->boxHref == null ? 'javascript:;' : $field->boxHref;
+        parent::setting($args);
+        $this->offJoin = true;
+    }
+
+    protected function code(array $attrs = []): string
+    {
+        if (empty($attrs['href'])) {
+            $attrs['href'] = 'javascript:;';
         }
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<a ' . join(' ', $attr) . ' >' . htmlspecialchars($field->label) . '</a>';
+        unset($attrs['name']);
+        return static::makeTag('a', ['attrs' => $attrs, 'text' => $this->label]);
     }
 
-    public function assign(Field $field, array $input)
+    public function fromParam(array $param = []): mixed
+    {
+        return $this->getValue();
+    }
+
+    public function fromData(array $data = []): mixed
+    {
+        return $this->getValue();
+    }
+
+    public function joinData(array &$data = [])
     {
 
     }
 
-    public function fill(Field $field, array &$values)
-    {
-
-    }
-
-    public function init(Field $field, array $values)
-    {
-
-    }
 }

@@ -1,223 +1,280 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/15
- * Time: 21:34
- */
+
 
 namespace beacon\widget;
 
-use beacon\Field;
-use beacon\Request;
-use beacon\Utils;
 
-class CheckGroup implements WidgetInterface
+use beacon\core\DB;
+use beacon\core\DBException;
+use beacon\core\Field;
+use beacon\core\Request;
+use beacon\core\Util;
+
+
+#[\Attribute]
+class CheckGroup extends Field
 {
-    public function code(Field $field, $attr = [])
-    {
 
-        $values = isset($attr['value']) ? $attr['value'] : $field->value;
-        if (is_string($values) && Utils::isJson($values)) {
+    public array $options = [];
+    public string|array $optionFunc = '';
+    public string $optionSql = '';
+
+    public bool $bitComp = false;
+
+    public ?array $names = null;
+
+    public string $itemType = 'string';
+
+    private ?array $cacheOptions = null;
+
+    public function setting(array $args)
+    {
+        parent::setting($args);
+        if (isset($args['optionFunc']) && (is_string($args['optionFunc']) || is_array($args['optionFunc']))) {
+            $this->optionFunc = $args['optionFunc'];
+        }
+        if (isset($args['optionSql']) && is_array($args['optionSql'])) {
+            $this->optionSql = $args['optionSql'];
+        }
+        if (isset($args['options']) && is_array($args['options'])) {
+            $this->options = $args['options'];
+        }
+        if (isset($args['bitComp']) && is_bool($args['bitComp'])) {
+            $this->bitComp = $args['bitComp'];
+            if ($this->bitComp) {
+                $this->itemType = 'int';
+            }
+        }
+        if (isset($args['names']) && is_array($args['names'])) {
+            $this->names = $args['names'];
+        }
+        if (isset($args['itemType']) && is_string($args['itemType'])) {
+            $this->itemType = $args['itemType'];
+        }
+    }
+
+    private function getValues(bool $toStr = false): array
+    {
+        $values = $this->getValue();
+        if (is_string($values) && Util::isJson($values)) {
             $values = json_decode($values, true);
         }
         if (!is_array($values)) {
             $values = [];
         }
-        $values = array_map(function ($v) {
-            return strval($v);
-        }, $values);
-        $name = isset($attr['name']) ? $attr['name'] : $field->boxName;
-        $class = isset($attr['class']) ? $attr['class'] : $field->boxClass;
-        $style = isset($attr['style']) ? $attr['style'] : $field->boxStyle;
-        $options = isset($attr['@options']) ? $attr['@options'] : $field->options;
-        $options = $options == null ? [] : $options;
-        $attr['value'] = '';
-        $attr['style'] = '';
-        $attr['class'] = '';
-        $attr['name'] = '';
-        $attr['type'] = '';
-        $inpClass = isset($attr['inp-class']) ? $attr['inp-class'] : $field->boxInpClass;
-        $attr['inp-class'] = '';
-        $attributes = $field->getAttributes();
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
+        if ($toStr) {
+            $values = array_map(function ($v) {
+                return strval($v);
+            }, $values);
+        }
+        return $values;
+    }
 
-        $out = [];
+    /**
+     * 获取选项值
+     * @param array $values
+     * @return array
+     * @throws DBException
+     */
+    private function getOptions(array $values = []): array
+    {
+        if ($this->cacheOptions !== null) {
+            return $this->cacheOptions;
+        }
+
+        $options = $this->options;
+        if (!empty($this->optionFunc) && is_callable($this->optionFunc)) {
+            $options = array_merge($options, call_user_func($this->optionFunc));
+        }
+        if (!empty($this->optionSql)) {
+            $list = DB::getList($this->optionSql);
+            foreach ($list as $item) {
+                if (isset($item['value'])) {
+                    $options[] = $item;
+                } else {
+                    $options[] = array_values($item);
+                }
+            }
+        }
+        $this->cacheOptions = [];
+        foreach ($options as $item) {
+            if (is_array($item)) {
+                if (isset($item['value']) && isset($item['text'])) {
+                    $option = $item;
+                } else if (isset($item[0])) {
+                    $option = ['value' => $item[0], 'text' => $item[0]];
+                    if (isset($item[1])) {
+                        $option['text'] = $item[1];
+                    }
+                } else {
+                    continue;
+                }
+            } else {
+                $option = ['value' => $item, 'text' => $item];
+            }
+            $value = strval($option['value']);
+            if (in_array($value, $values)) {
+                $option['checked'] = 'checked';
+            }
+            $this->cacheOptions[] = $option;
+        }
+        return $this->cacheOptions;
+    }
+
+    /**
+     * @param array $attrs
+     * @return string
+     * @throws DBException
+     */
+    protected function code(array $attrs = []): string
+    {
+        $values = $this->getValues(true);
+        $name = $this->boxName;
+        $class = $attrs['class'] ?? '';
+        $style = $attrs['style'] ?? '';
+
+        $options = $this->getOptions($values);
+        $code = [];
         $keys = array_keys($options);
         $endKey = end($keys);
         foreach ($options as $key => $item) {
             if ($item == null) {
                 continue;
             }
-            if (!is_array($item)) {
-                $item = ['value' => $item, 'text' => $item];
+            $text = $item['text'];
+            $item['type'] = 'checkbox';
+            $item['name'] = $name . '[]';
+            if (!empty($attrs['inp-class'])) {
+                $item['class'] = $attrs['inp-class'];
             }
-            $val = isset($item['value']) ? $item['value'] : (isset($item[0]) ? $item[0] : null);
-            $text = isset($item['text']) ? $item['text'] : (isset($item[1]) ? $item[1] : (isset($item[0]) ? $item[0] : null));
-            $tips = isset($item['tips']) ? $item['tips'] : (isset($item[2]) ? $item[2] : null);
-            if ($val === null) {
-                $val = $text;
+            if (!empty($attrs['disabled'])) {
+                $item['disabled'] = $attrs['disabled'];
             }
-            $inpAttr = in_array(strval($val), $values) === true ? ' checked="checked"' : '';
-            $out[] = '<label';
-            if ($class !== null) {
-                $out[] = ' class="' . $class . '"';
+            if (!empty($attrs['readonly'])) {
+                $item['readonly'] = $attrs['readonly'];
             }
-            if ($style !== null) {
-                $out[] = ' style="' . $style . '"';
+            $code[] = '<label';
+            if (!empty($class)) {
+                $code[] = ' class="' . $class . '"';
             }
-            $out[] = '>';
+            if (!empty($style)) {
+                $code[] = ' style="' . $style . '"';
+            }
+            $code[] = '>';
             if ($endKey === $key) {
-                $inpAttr .= ' ' . join(' ', $attr);
-            }
-            if ($inpClass) {
-                $inpAttr .= ' class="' . $inpClass . '"';
-            }
-            if (!empty($attributes['disabled'])) {
-                $inpAttr .= ' disabled="' . $attributes['disabled'] . '"';
-            }
-            if (!empty($attributes['readonly'])) {
-                $inpAttr .= ' readonly="' . $attributes['readonly'] . '"';
-            }
-            $out[] = '<input type="checkbox" name="' . $name . '[]" value="' . htmlspecialchars($val) . '"' . $inpAttr;
-            foreach ($item as $k => $dval) {
-                if (preg_match('@^data-([a-z0-9_-]+)$@', $k)) {
-                    if (is_array($dval)) {
-                        $out[] = ' ' . $k . '="' . htmlspecialchars(json_encode($dval)) . '"';
-                    } else {
-                        $out[] = ' ' . $k . '="' . htmlspecialchars($dval) . '"';
+                foreach ($attrs as $aKey => $attr) {
+                    if (preg_match('@^(data-|yee-)@', $aKey)) {
+                        $item[$aKey] = $attr;
                     }
                 }
             }
-            $out[] = '/>';
-            $out[] = '<span>' . htmlspecialchars($text);
-            if (!empty(strval($tips))) {
-                $out[] = '<em>' . htmlspecialchars($tips) . '</em>';
+            $code[] = static::makeTag('input', ['attrs' => $item, 'exclude' => ['text', 'tips']]);
+            $code[] = '<span>' . htmlspecialchars($text);
+            if (!empty($item['tips'])) {
+                $code[] = '<em>' . htmlspecialchars($item['tips']) . '</em>';
             }
-            $out[] = '</span></label>' . "\n";
+            $code[] = '</span></label>' . "\n";
         }
-        return join('', $out);
+        return join('', $code);
+
     }
 
-    public function assign(Field $field, array $input)
+    /**
+     * 从表单拿值
+     * @param array $param
+     * @return array
+     */
+    public function fromParam(array $param = []): array
     {
-        $values = Request::input($input, $field->boxName . ':a', []);
-        $temp = [];
-        if (is_array($values)) {
-            foreach ($values as $item) {
-                $temp[] = WidgetHelper::convertType($item, $field->itemType);
-            }
-        }
-        $field->value = $temp;
-        return $field->value;
+        $name = $this->boxName;
+        $values = Request::lookType($param, $name, 'array');
+        return Util::mapItemType($values, $this->itemType);
     }
 
-    public function fill(Field $field, array &$values)
+    /**
+     * 加入到数据中
+     * @param array $data
+     * @throws DBException
+     */
+    public function joinData(array &$data = [])
     {
-        $field->value = $field->value == null ? [] : $field->value;
-        //处理按位填入数据库
-        if ($field->bitComp) {
+        if ($this->bitComp) {
+            $values = $this->getValues();
             $value = 0;
-            if (is_array($field->value)) {
-                foreach ($field->value as $item) {
-                    if ((is_string($item) || is_integer($item)) && preg_match('@^\d+$@', $item)) {
-                        $opt_value = intval($item);
-                        $value = $value | $opt_value;
-                    }
+            foreach ($values as $item) {
+                if ((is_string($item) || is_integer($item)) && preg_match('@^\d+$@', $item)) {
+                    $value = $value | intval($item);
                 }
             }
-            $values[$field->name] = $value;
+            $data[$this->name] = $value;
             return;
         }
-        //处理按字段拆分填入数据值
-        if (isset($field->names) && is_array($field->names)) {
-            foreach ($field->names as $item) {
-                $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $values[$name] = 0;
-            }
-            $options = $field->options == null ? [] : $field->options;
+
+        if (!empty($this->names)) {
+            $values = $this->getValues(true);
+            $options = $this->getOptions();
             $opts = [];
             foreach ($options as $item) {
-                if (!is_array($item)) {
-                    $opts[] = WidgetHelper::convertType($item, $field->itemType);
-                } else if (isset($item['value'])) {
-                    $opts[] = WidgetHelper::convertType($item['value'], $field->itemType);
-                } else if (isset($item['text'])) {
-                    $opts[] = WidgetHelper::convertType($item['text'], $field->itemType);
-                }
+                $opts[] = strval($item['value']);
             }
-            foreach ($field->names as $idx => $item) {
-                $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
+            foreach ($this->names as $idx => $name) {
+                $data[$name] = 0;
                 $val = isset($opts[$idx]) ? $opts[$idx] : null;
-                if ($val !== null && in_array($val, $field->value)) {
-                    $values[$name] = 1;
+                if ($val !== null && in_array($val, $values)) {
+                    $data[$name] = 1;
                 }
             }
             return;
         }
-        if ($field->value === null) {
-            $values[$field->name] = '';
-            return;
-        }
-        $values[$field->name] = json_encode($field->value, JSON_UNESCAPED_UNICODE);
+        $values = $this->getValues();
+        $data[$this->name] = Util::mapItemType($values, $this->itemType);
     }
 
-    public function init(Field $field, array $values)
+    /**
+     * @param array $data
+     * @return array
+     * @throws DBException
+     */
+    public function fromData(array $data = []): array
     {
-        //按位解析出选项值
-        if ($field->bitComp) {
-            $value = isset($values[$field->name]) ? intval($values[$field->name]) : 0;
-            $temps = [];
-            $options = $field->options == null ? [] : $field->options;
+        if ($this->bitComp) {
+            $value = isset($data[$this->name]) ? intval($data[$this->name]) : 0;
+            $values = [];
+            $options = $this->getOptions();
             foreach ($options as $item) {
-                $opt_value = null;
-                if (!is_array($item)) {
-                    $opt_value = WidgetHelper::convertType($item, $field->itemType);
-                } else if (isset($item['value'])) {
-                    $opt_value = WidgetHelper::convertType($item['value'], $field->itemType);
-                } else if (isset($item['text'])) {
-                    $opt_value = WidgetHelper::convertType($item['text'], $field->itemType);
-                }
-                if (empty($opt_value) || !preg_match('@^\d+$@', $opt_value)) {
-                    throw new Exception('使用位运算的选项值必须是数字形式。');
-                }
-                $temps[] = $value & intval($opt_value) > 0 ? 1 : 0;
+                $opt_value = intval($item['value']);
+                $values[] = $value & $opt_value > 0 ? 1 : 0;
             }
-            return $field->value = $temps;
+            return $values;
         }
-        //按字段内容解析出选项值
-        if (isset($field->names) && is_array($field->names)) {
-            $options = $field->options == null ? [] : $field->options;
-            $temp_values = [];
+        if (!empty($this->names)) {
+            $options = $this->getOptions();
+            $values = [];
             $opts = [];
             foreach ($options as $item) {
-                if (!is_array($item)) {
-                    $opts[] = WidgetHelper::convertType($item, $field->itemType);
-                } else if (isset($item['value'])) {
-                    $opts[] = WidgetHelper::convertType($item['value'], $field->itemType);
-                } else if (isset($item['text'])) {
-                    $opts[] = WidgetHelper::convertType($item['text'], $field->itemType);
-                }
+                $opts[] = $item['value'];
             }
-            foreach ($field->names as $idx => $item) {
-                $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
+            foreach ($this->names as $idx => $name) {
                 $opt_value = isset($opts[$idx]) ? $opts[$idx] : null;
-                if (isset($values[$name]) && intval($values[$name]) == 1) {
-                    $temp_values[] = $opt_value;
+                if ($opt_value !== null && isset($data[$name]) && intval($data[$name]) == 1) {
+                    if ($this->itemType == 'int') {
+                        $opt_value = intval($opt_value);
+                    } else {
+                        $opt_value = strval($opt_value);
+                    }
+                    $values[] = $opt_value;
                 }
             }
-            return $field->value = $temp_values;
+            return $values;
         }
-        $temps = isset($values[$field->name]) ? $values[$field->name] : '';
-        if (is_array($temps)) {
-            return $field->value = $temps;
+        $values = isset($data[$this->name]) ? $data[$this->name] : '';
+        if (is_string($values) && Util::isJson($values)) {
+            $values = json_decode($values, true);
         }
-        if (Utils::isJson($temps)) {
-            $temps = json_decode($temps, true);
-            if (is_array($temps)) {
-                return $field->value = $temps;
-            }
+        if (is_array($values)) {
+            return Util::mapItemType($values, $this->itemType);
         }
-        return $field->value = null;
+        return [];
     }
+
 }

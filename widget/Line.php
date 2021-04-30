@@ -1,33 +1,34 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 18-11-28
- * Time: 下午11:32
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Line implements WidgetInterface
+#[\Attribute]
+class Line extends Field
 {
+    public bool $offJoin = true;
 
-    public function code(Field $field, $attr = [])
+    public function setting(array $args)
+    {
+        parent::setting($args);
+        $this->offJoin = true;
+    }
+
+    protected function code(array $attrs = []): string
     {
         return '';
     }
 
-    public function assign(Field $field, array $input)
+    public function fromParam(array $param = []): mixed
     {
+        return '';
     }
 
-    public function fill(Field $field, array &$values)
+    public function joinData(array &$data = [])
     {
-    }
 
-    public function init(Field $field, array $values)
-    {
     }
 }

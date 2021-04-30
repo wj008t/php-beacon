@@ -1,5 +1,5 @@
 {
-  "name": "wj008/beacon",
+  "name": "wj008/beacon2",
   "description": "beacon  framework kernel of PHP",
   "type": "library",
   "license": "Apache-2.0",
@@ -10,12 +10,12 @@
     }
   ],
   "require": {
-    "php": ">=7.0",
+    "php": ">=8.0",
     "wj008/sdopx": "^2.1"
   },
   "autoload": {
     "psr-4": {
-      "beacon\\": "/core",
+      "beacon\\core\\": "/core",
       "beacon\\widget\\": "/widget"
     }
   }

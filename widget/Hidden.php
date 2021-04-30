@@ -1,38 +1,17 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
+
 
 namespace beacon\widget;
 
-use beacon\Field;
 
-class Hidden implements WidgetInterface
+use beacon\core\Field;
+#[\Attribute]
+class Hidden extends Field
 {
-    public function code(Field $field, $attr = [])
+    protected function code(array $attrs = []): string
     {
-        $attr['type'] = 'hidden';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        $attrs['type'] = 'hidden';
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 
-    public function assign(Field $field, array $input)
-    {
-        $boxName = $field->boxName;
-        $field->value = WidgetHelper::getValue($field->varType, $input, $boxName);
-        return $field->value;
-    }
-
-    public function fill(Field $field, array &$values)
-    {
-        $values[$field->name] = $field->value;
-    }
-
-    public function init(Field $field, array $values)
-    {
-        $field->value = isset($values[$field->name]) ? $values[$field->name] : null;
-    }
 }

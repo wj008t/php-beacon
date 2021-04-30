@@ -1,93 +1,142 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/15
- * Time: 14:06
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
-use beacon\Logger;
+use beacon\core\DB;
+use beacon\core\DBException;
+use beacon\core\Field;
 
-class RadioGroup extends Hidden
+#[\Attribute]
+class RadioGroup extends Field
 {
-    public function code(Field $field, $attr = [])
+
+    public array $options = [];
+    public string|array $optionFunc = '';
+    public string $optionSql = '';
+
+    private ?array $cacheOptions = null;
+
+    public function setting(array $args)
     {
-        $name = isset($attr['name']) ? $attr['name'] : $field->boxName;
-        $class = isset($attr['class']) ? $attr['class'] : $field->boxClass;
-        $style = isset($attr['style']) ? $attr['style'] : $field->boxStyle;
-        $options = isset($attr['@options']) ? $attr['@options'] : $field->options;
-        $options = $options == null ? [] : $options;
-        $value = isset($attr['value']) ? $attr['value'] : $field->value;
-        $attr['value'] = '';
-        $attr['style'] = '';
-        $attr['class'] = '';
-        $attr['name'] = '';
-        $attr['type'] = '';
-        $inpClass = isset($attr['inp-class']) ? $attr['inp-class'] : $field->boxInpClass;
-        $attr['inp-class'] = '';
-        $attributes = $field->getAttributes();
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        $out = [];
+        parent::setting($args);
+        if (isset($args['optionFunc']) && (is_string($args['optionFunc']) || is_array($args['optionFunc']))) {
+            $this->optionFunc = $args['optionFunc'];
+        }
+        if (isset($args['optionSql']) && is_array($args['optionSql'])) {
+            $this->optionSql = $args['optionSql'];
+        }
+        if (isset($args['options']) && is_array($args['options'])) {
+            $this->options = $args['options'];
+        }
+    }
+
+    /**
+     * 获取选项值
+     * @param string $value
+     * @return array
+     * @throws DBException
+     */
+    private function getOptions(string $value): array
+    {
+        if ($this->cacheOptions !== null) {
+            return $this->cacheOptions;
+        }
+        $options = $this->options;
+        if (!empty($this->optionFunc) && is_callable($this->optionFunc)) {
+            $options = array_merge($options, call_user_func($this->optionFunc));
+        }
+        if (!empty($this->optionSql)) {
+            $list = DB::getList($this->optionSql);
+            foreach ($list as $item) {
+                if (isset($item['value'])) {
+                    $options[] = $item;
+                } else {
+                    $options[] = array_values($item);
+                }
+            }
+        }
+
+        $this->cacheOptions = [];
+        foreach ($options as $item) {
+            if (is_array($item)) {
+                if (isset($item['value']) && isset($item['text'])) {
+                    $option = $item;
+                } else if (isset($item[0])) {
+                    $option = ['value' => $item[0], 'text' => $item[0]];
+                    if (isset($item[1])) {
+                        $option['text'] = $item[1];
+                    }
+                } else {
+                    continue;
+                }
+            } else {
+                $option = ['value' => $item, 'text' => $item];
+            }
+            if ($value == strval($option['value'])) {
+                $option['checked'] = 'checked';
+            }
+            $this->cacheOptions[] = $option;
+        }
+        return $this->cacheOptions;
+    }
+
+    /**
+     * @param array $attrs
+     * @return string
+     * @throws DBException
+     */
+    protected function code(array $attrs = []): string
+    {
+        $value = strval($attrs['value']);
+        $name = $this->boxName;
+        $class = $attrs['class'] ?? '';
+        $style = $attrs['style'] ?? '';
+        $options = $this->getOptions($value);
+        $code = [];
         $keys = array_keys($options);
         $endKey = end($keys);
         foreach ($options as $key => $item) {
             if ($item == null) {
                 continue;
             }
-            if (!is_array($item)) {
-                $item = ['value' => $item];
+            $text = $item['text'];
+            $item['type'] = 'radio';
+            $item['name'] = $name;
+            if (!empty($attrs['inp-class'])) {
+                $item['class'] = $attrs['inp-class'];
             }
-            $text = isset($item['text']) ? $item['text'] : (isset($item[1]) ? $item[1] : (isset($item[0]) ? $item[0] : null));
-            $tips = isset($item['tips']) ? $item['tips'] : (isset($item[2]) ? $item[2] : null);
-            $val = isset($item['value']) ? $item['value'] : (isset($item[0]) ? $item[0] : null);
-            if ($val === null) {
-                $val = $text;
+            if (!empty($attrs['disabled'])) {
+                $item['disabled'] = $attrs['disabled'];
             }
-            $inpAttr = strval($val) == strval($value) ? ' checked="checked"' : '';
-            $out[] = '<label';
-            if ($class !== null) {
-                $out[] = ' class="' . $class . '"';
+            if (!empty($attrs['readonly'])) {
+                $item['readonly'] = $attrs['readonly'];
             }
-            if ($style !== null) {
-                $out[] = ' style="' . $style . '"';
+            $code[] = '<label';
+            if (!empty($class)) {
+                $code[] = ' class="' . $class . '"';
             }
-            $out[] = '>';
+            if (!empty($style)) {
+                $code[] = ' style="' . $style . '"';
+            }
+            $code[] = '>';
             if ($endKey === $key) {
-                $inpAttr .= ' ' . join(' ', $attr);
-            }
-            if ($inpClass) {
-                $inpAttr .= ' class="' . $inpClass . '"';
-            }
-
-            if (!empty($attributes['disabled'])) {
-                $inpAttr .= ' disabled="' . $attributes['disabled'] . '"';
-            }
-            if (!empty($attributes['readonly'])) {
-                $inpAttr .= ' readonly="' . $attributes['readonly'] . '"';
-            }
-
-            $out[] = '<input type="radio" name="' . $name . '" value="' . htmlspecialchars($val) . '"' . $inpAttr;
-            foreach ($item as $k => $dval) {
-                if (preg_match('@^data-([a-z0-9_-]+)$@', $k)) {
-                    if (is_array($dval)) {
-                        $out[] = ' ' . $k . '="' . htmlspecialchars(json_encode($dval)) . '"';
-                    } else {
-                        $out[] = ' ' . $k . '="' . htmlspecialchars($dval) . '"';
+                foreach ($attrs as $aKey => $attr) {
+                    if (preg_match('@^(data-|yee-)@', $aKey)) {
+                        $item[$aKey] = $attr;
                     }
                 }
             }
-            $out[] = '/>';
-            $out[] = '<span>' . htmlspecialchars($text);
-            if (!empty(strval($tips))) {
-                $out[] = '<em>' . htmlspecialchars($tips) . '</em>';
-            }
-            $out[] = '</span></label>' . "\n";
-        }
-        return join('', $out);
-    }
+            $code[] = static::makeTag('input', ['attrs' => $item, 'exclude' => ['text', 'tips']]);
 
+            $code[] = '<span>' . htmlspecialchars($text);
+            if (!empty($item['tips'])) {
+                $code[] = '<em>' . htmlspecialchars($item['tips']) . '</em>';
+            }
+            $code[] = '</span></label>' . "\n";
+        }
+        return join('', $code);
+
+    }
 }

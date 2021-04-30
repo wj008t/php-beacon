@@ -1,53 +1,62 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Password extends Hidden
+#[\Attribute]
+class Password extends Field
 {
+    public string|array|null $encodeFunc = 'md5';
 
-    public function code(Field $field, $attr = [])
-    {
-        $attr['type'] = 'password';
-        $attr['value'] = null;
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
-    }
+    protected mixed $encodeValue = null;
 
-    public function assign(Field $field, array $input)
+    public function setting(array $args)
     {
-        $field->varType = 'string';
-        return parent::assign($field, $input);
-    }
-
-    public function fill(Field $field, array &$values)
-    {
-        $encodeFunc = $field->getFunc('encode');
-        if ($field->value !== null && $field->value !== '' && $field->encodeValue !== $field->value && $encodeFunc !== null) {
-            if (is_callable($encodeFunc)) {
-                $field->encodeValue = call_user_func($encodeFunc, $field->value);
-                $values[$field->name] = $field->encodeValue;
-                return;
-            }
+        parent::setting($args);
+        if (isset($args['encodeFunc']) && is_callable($args['encodeFunc'])) {
+            $this->encodeFunc = $args['encodeFunc'];
         }
-        if (($field->value == null || $field->value == '') && $field->encodeValue !== null && $field->encodeValue !== '') {
+    }
+
+    protected function code(array $attrs = []): string
+    {
+        $attrs['type'] = 'password';
+        $attrs['value'] = null;
+        return static::makeTag('input', ['attrs' => $attrs]);
+    }
+
+    /**
+     * 加入数据库时
+     * @param array $data
+     */
+    public function joinData(array &$data = [])
+    {
+        $encodeFunc = $this->encodeFunc;
+        $value = $this->getValue();
+        if (!empty($value) && $this->encodeValue !== $value && $encodeFunc !== null && is_callable($encodeFunc)) {
+            $this->encodeValue = call_user_func($encodeFunc, $value);
+            $data[$this->name] = $this->encodeValue;
             return;
         }
-        $values[$field->name] = $field->value;
+        if (empty($value) && !empty($this->encodeValue)) {
+            return;
+        }
+        $data[$this->name] = $value;
     }
 
-    public function init(Field $field, array $values)
+    /**
+     * 从数据库来的
+     * @param array $data
+     * @return mixed
+     */
+    public function fromData(array $data = []): mixed
     {
-        $field->value = isset($values[$field->name]) ? $values[$field->name] : null;
-        $field->encodeValue = $field->value;
+        $value = isset($data[$this->name]) ? $data[$this->name] : null;
+        $this->encodeValue = $value;
+        return $value;
     }
 
 }

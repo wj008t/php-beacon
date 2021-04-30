@@ -1,404 +1,791 @@
 <?php
 
-namespace beacon;
 
-use beacon\widget\WidgetInterface;
-
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 14:05
- */
-
+namespace beacon\core;
 
 /**
  * 字段类
- * @property $value
- * @property $boxName string
- * @property $boxId string
- *
- * @property $dataValRule array  验证规则
- * @property $dataValMessage array  验证提示
- * @property $dataValDefault string  验证默认信息
- * @property $dataValCorrect string  验证正确信息
- * @property $dataValError string  验证初始返回错误信息
- * @property $dataValDisabled bool  关闭验证
- * @property $dataValOutput string 输出html节点jq选择
- * @property $header
- * //容器中用到的字段
- * @property $plugName string 插件类名
- * @property $mode string 模式
- * @property $skin int 皮肤索引
- * @property $skinName string 皮肤
- * @property $childError array 子元素错误
- *
- * @property $names array 多个名称
- * @property $itemType string 子项数据类型
- * @property $hideBox bool  隐藏输入
- * @property $autoSave bool
- * @property $dataDynamic array
- * @property $encodeValue string 密码框需要的字段
- * @property $viewHide bool 隐藏行
- *
- *  @property $options array
+ * Class Field
+ * @package beacon\core
+ * @property string $boxId
+ * @property string $boxName
  */
-class Field
+abstract class Field
 {
-
-    private static $instance = [];
     /**
      * 所在表单
      * @var Form|null
      */
-    private $form = null;
+    public ?Form $form = null;
+    //报告错误
+    public string $error = '';
+
+    //用于链接字段
+    public ?Field $next = null;
+    public ?Field $prev = null;
+    protected bool $isInitAttr = false;
+
+    //从属性中取值
+    protected mixed $value = null;                         //值
+    public string $varType = '';                        //字段类型
+    public mixed $default = null;                       //默认值
+    public string|array|null $valFunc = null;           //处理值的函数
+    protected string|array|null $defaultFunc = null;
+    protected string $defaultFromParam = '';
+
+    //基础数据
+    public string $label = '';            //标题
+    public string $name;                //字段名
+    //设置项
+    public bool $close = false;             //关闭控件
+    public bool $viewClose = false;         //视图关闭
+    public int $viewMerge = 0;              //合并显示项
+    public bool $hidden = false;            //是否隐藏输入框,如果是，将放入表单输入框尾部
+    public bool $offEdit = false;           //禁止编辑
+    public bool $offJoin = false;           //禁止加入生成数组
+    public string $before = '';          //控件前内容
+    public string $after = '';           //控件后内容
+    public string $prompt = '';            //提示语言
+    public bool $star = false;             //是否标星
+    public string $tabIndex = '';          //所在标签
+
+
+    //用于验证的数据
+    public array $valid = [];       //验证内容
+    //元素属性
+    protected array $_attrs = [];   //控件属性
+    //用于生成js控制数据
+    public ?array $dynamic = null;                 //动态控制
+    protected array $yeeModule = [];           //插件数据
 
     /**
-     * 输入框属性
-     * @var array
+     * 创建字段
+     * Field constructor.
+     * @param mixed ...$args
      */
-    private $_attr = [
-        'id' => '',
-        'name' => ''
-    ];
-    /**
-     * 绑定数据
-     * @var array
-     */
-    private $_data = [];
-
-    /**
-     * 视图数据
-     * @var array
-     */
-    private $_view = [];
-
-    /**
-     * 扩展函数
-     * @var array
-     */
-    private $_func = [];
-
-    /**
-     * 字段属性扩展
-     * @var array
-     */
-    private $_extends = [];
-
-    //-----------------------------------------------------------
-    private $_value = null;         //值
-    public $default = null;         //默认值
-    public $forceDefault = false;   //如果值为空强制默认值
-    public $label = '';             //标题
-    public $name = '';              //字段名
-    public $error = null;           //错误信息
-    public $close = false;          //关闭控件
-    public $offEdit = false;        //禁止编辑
-    public $offSave = false;        //禁止保存
-    public $type = 'text';          //字段类型
-    public $varType = 'string';     //值类型
-    public $dynamic = null;         //动态控制数据
-    //视图属性
-    public $tabIndex = '';          //所在标签名称,如果为空,所有标签都会出现
-    public $viewClose = false;      //关闭视图
-    public $viewMerge = 0;      //关闭视图
-
-    /**
-     * @var Field
-     */
-    public $next = null;
-    /**
-     * @var Field
-     */
-    public $prev = null;
-    //----------------------------------------------------------------
-    private $_ref = null;
-
-    public function __construct(Form $form = null, array $field = [])
+    public function __construct(...$args)
     {
-        $this->_ref = new \ReflectionClass(get_class($this));
+        $this->setting($args);
+    }
+
+    public function __get(string $property)
+    {
+        if ($property == 'boxId') {
+            return $this->boxId();
+        } else if ($property == 'boxName') {
+            return $this->boxName();
+        }
+    }
+
+    /**
+     * @param $args
+     */
+    public function setting(array $args)
+    {
+        if (isset($args['label']) && is_string($args['label'])) {
+            $this->label = $args['label'];
+        }
+        if (isset($args['close']) && is_bool($args['close'])) {
+            $this->close = $args['close'];
+        }
+        if (isset($args['viewClose']) && is_bool($args['viewClose'])) {
+            $this->viewClose = $args['viewClose'];
+        }
+        if (isset($args['viewMerge']) && is_int($args['viewMerge'])) {
+            $this->viewMerge = $args['viewMerge'];
+        }
+        if (isset($args['hidden']) && is_bool($args['hidden'])) {
+            $this->hidden = $args['hidden'];
+        }
+        if (isset($args['offEdit']) && is_bool($args['offEdit'])) {
+            $this->offEdit = $args['offEdit'];
+        }
+        if (isset($args['offJoin']) && is_bool($args['offJoin'])) {
+            $this->offJoin = $args['offJoin'];
+        }
+        if (isset($args['before']) && is_string($args['offJoin'])) {
+            $this->before = $args['before'];
+        }
+        if (isset($args['after']) && is_string($args['after'])) {
+            $this->after = $args['after'];
+        }
+        if (isset($args['prompt']) && is_string($args['prompt'])) {
+            $this->prompt = $args['prompt'];
+        }
+        if (isset($args['star']) && is_bool($args['star'])) {
+            $this->star = $args['star'];
+        }
+        if (isset($args['tabIndex']) && is_string($args['tabIndex'])) {
+            $this->tabIndex = $args['tabIndex'];
+        }
+        if (isset($args['valFunc']) && is_callable($args['valFunc'])) {
+            $this->valFunc = $args['valFunc'];
+        }
+        if (isset($args['defaultFunc']) && is_callable($args['defaultFunc'])) {
+            $this->defaultFunc = $args['defaultFunc'];
+        }
+        if (isset($args['defaultFromParam']) && is_string($args['defaultFromParam'])) {
+            $this->defaultFromParam = $args['defaultFromParam'];
+        }
+        if (isset($args['valid']) && is_array($args['valid'])) {
+            foreach ($args['valid'] as $key => $val) {
+                $this->valid[$key] = $val;
+            }
+        }
+        //动态数据设置
+        if (isset($args['attrs']) && is_array($args['attrs'])) {
+            foreach ($args['attrs'] as $key => $val) {
+                $this->_attrs[$key] = $val;
+            }
+        }
+        foreach ($args as $key => $value) {
+            if (preg_match('@^valid([A-Z]\w*)$@', $key, $m)) {
+                $attrKey = Util::camelToAttr($m[1]);
+                $this->valid[$attrKey] = $value;
+            } elseif (preg_match('@^attr([A-Z]\w*)$@', $key, $m)) {
+                $attrKey = Util::camelToAttr($m[1]);
+                $this->_attrs[$attrKey] = $value;
+            }
+        }
+        //替换属性中的url
+        foreach ($this->_attrs as $key => $url) {
+            if (is_string($url) && preg_match('@(url|href)$@', $key)) {
+                $this->_attrs[$key] = App::url($url);
+            }
+        }
+        //动态数据设置
+        if (isset($args['dynamic']) && is_array($args['dynamic'])) {
+            $this->dynamic = $args['dynamic'];
+        }
+    }
+
+    /**
+     * 初始化
+     * @param ?Form $form
+     * @param string $name
+     * @param string $type
+     * @param mixed $default
+     */
+    public function init(?Form $form, string $name, string $type, mixed $default)
+    {
         $this->form = $form;
-        if ($field == null) {
-            $field = [];
-        }
-        foreach ($field as $key => $value) {
-            $key = Utils::attrToCamel($key);
-            if (empty($key)) {
-                continue;
-            }
-            if (preg_match('@^(.*)Func$@', $key, $m)) {
-                $this->regFunc($m[1], $value);
-                continue;
-            }
-            if ($value instanceof \Closure) {
-                $value = call_user_func($value, $this);
-            }
-            $this->set($key, $value, true);
-        }
-        //设置默认值
-        $config = Config::get('form.field_default', []);
-        foreach ($config as $key => $value) {
-            $key = Utils::attrToCamel($key);
-            if (empty($key)) {
-                continue;
-            }
-            if (preg_match('@Func$@', $key)) {
-                continue;
-            }
-            $cur_value = $this->get($key, true);
-            if (!($cur_value === null || $cur_value === '')) {
-                continue;
-            }
-            if ($value instanceof \Closure) {
-                $value = call_user_func($value, $this);
-            }
-            $this->set($key, $value, true);
-        }
-        if (empty($this->_attr['id'])) {
-            $this->_attr['id'] = $this->name;
-        }
-        if (empty($this->_attr['name'])) {
-            $this->_attr['name'] = $this->name;
-        }
+        $this->name = $name;
+        $this->varType = $type;
+        $this->default = $default;
     }
 
     /**
-     * 设置属性值
-     * @param string $name
-     * @param $value
-     * @param bool $p 包括原有属性
+     * 绑定值
+     * @param mixed $value
      */
-    private function set(string $name, $value, $p = false)
+    public function bindValue(mixed &$value)
     {
-        if (empty($name)) {
-            return;
-        }
-        if ($p && $this->_ref->hasProperty($name)) {
-            $prop = $this->_ref->getProperty($name);
-            if ($prop->isPublic()) {
-                $prop->setValue($this, $value);
-            }
-        } else if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
-            $name = Utils::camelToAttr($m[1]);
-            $this->_attr[$name] = $value;
-        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
-            $name = Utils::camelToAttr($name);
-            $this->_data[$name] = $value;
-        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
-            $this->_view[$name] = $value;
-        } else if ($name == 'value') {
-            $this->_value = $value;
-        } else {
-            $this->_extends[$name] = $value;
-        }
+        $this->value = &$value;
     }
 
     /**
-     * 获取属性值
-     * @param $name
-     * @param bool $p 包括原有属性
-     * @return mixed|null
+     * 设置表单
+     * @param Form $form
      */
-    private function get($name, $p = false)
+    public function setForm(Form $form)
     {
-        if ($p && $this->_ref->hasProperty($name)) {
-            $prop = $this->_ref->getProperty($name);
-            if ($prop->isPublic()) {
-                return $prop->getValue($this);
-            }
-        } else if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
-            $name = Utils::camelToAttr($m[1]);
-            return isset($this->_attr[$name]) ? $this->_attr[$name] : null;
-        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
-            $name = Utils::camelToAttr($name);
-            return isset($this->_data[$name]) ? $this->_data[$name] : null;
-        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
-            return isset($this->_view[$name]) ? $this->_view[$name] : null;
-        } else if ($name == 'value') {
-            if ($this->_value !== null || $this->form == null || $this->form->getType() != 'add' || $this->default === null || $this->default === '') {
-                return $this->_value;
-            } else {
-                return $this->default;
-            }
-        } else {
-            return isset($this->_extends[$name]) ? $this->_extends[$name] : null;
-        }
-    }
-
-    /**
-     * 注册函数
-     * @param string $name
-     * @param $func
-     */
-    public function regFunc(string $name, $func)
-    {
-        $this->_func[$name] = $func;
-    }
-
-    /**
-     * 获取函数
-     * @param string $name
-     * @return mixed|null
-     */
-    public function getFunc(string $name)
-    {
-        return isset($this->_func[$name]) ? $this->_func[$name] : null;
-    }
-
-    /**
-     * 属性赋值
-     * @param $name
-     * @param $value
-     */
-    public function __set($name, $value)
-    {
-        $this->set($name, $value);
-    }
-
-    /**
-     * 获取属性
-     * @param $name
-     * @return false|int|mixed|null|string
-     */
-    public function __get($name)
-    {
-        return $this->get($name);
-    }
-
-    /**
-     * 判断属性存在
-     * @param $name
-     * @return bool
-     */
-    public function __isset($name)
-    {
-        if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
-            $name = Utils::camelToAttr($m[1]);
-            return isset($this->_attr[$name]);
-        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
-            $name = Utils::camelToAttr($name);
-            return isset($this->_data[$name]);
-        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
-            return isset($this->_view[$name]);
-        } else if ($name == 'value') {
-            return true;
-        } else {
-            return isset($this->_extends[$name]);
-        }
-    }
-
-    /**
-     * 删除属性
-     * @param $name
-     * @return mixed
-     */
-    public function __unset($name)
-    {
-        if ($name[0] == 'b' && preg_match('@^box([A-Z].*)$@', $name, $m)) {
-            $name = Utils::camelToAttr($m[1]);
-            unset($this->_attr[$name]);
-        } else if ($name[0] == 'd' && preg_match('@^data([A-Z].*)$@', $name)) {
-            $name = Utils::camelToAttr($name);
-            unset($this->_data[$name]);
-        } else if ($name[0] == 'v' && preg_match('@^view([A-Z].*)$@', $name)) {
-            unset($this->_view[$name]);
-        } else if ($name == 'value') {
-            return;
-        } else {
-            unset($this->_extends[$name]);
-        }
+        $this->form = $form;
     }
 
     /**
      * 获取表单
      * @return Form|null
      */
-    public function getForm()
+    public function getForm(): ?Form
     {
         return $this->form;
     }
 
     /**
-     * 获取输入框属性
+     * 输入框名称
+     * @return string
      */
-    public function getAttributes()
+    protected function boxName(): string
     {
-        $attr = array_merge($this->_attr, $this->_data);
-        $attr = array_filter($attr, function ($v) {
-            return $v !== null && $v !== '';
-        });
-        if ($this->form != null && $this->form->getType() == 'edit') {
-            if ($this->offEdit) {
-                $attr['disabled'] = 'disabled';
-            }
-        }
-        if ($this->value !== null) {
-            $attr['value'] = $this->value;
-        }
-        return $attr;
+        return $this->_attrs['name'] ?? $this->name;
     }
 
     /**
-     * 获取插件显示的代码
-     * @param null $attr
-     * @return mixed|string|void
+     * 获取输入框Id
+     * @return string
+     */
+    protected function boxId(): string
+    {
+        return $this->_attrs['id'] ?? $this->name;
+    }
+
+
+    /**
+     * 添加控件数据
+     * @param string $module
+     */
+    public function addYeeModule(string $module)
+    {
+        $temp = explode(' ', $module);
+        foreach ($temp as $item) {
+            $item = trim($item);
+            if ($item != '') {
+                $this->yeeModule[$item] = $item;
+            }
+        }
+    }
+
+    /**
+     * 获取控制模块
+     * @param ?string $module
+     * @return string
+     */
+    public function getYeeModule(?string $module = null): string
+    {
+        if (!empty($module)) {
+            $this->addYeeModule($module);
+        }
+        if (count($this->yeeModule) == 0) {
+            return '';
+        }
+        return join(' ', $this->yeeModule);
+    }
+
+    /**
+     * 获取属性值
+     * @return array
+     * @throws DBException
+     */
+    protected function attrs(): array
+    {
+        if ($this->isInitAttr) {
+            return $this->_attrs;
+        }
+        $this->_attrs['id'] = $this->boxId();
+        $this->_attrs['name'] = $this->boxName();
+        if ($this->form !== null) {
+            if (!isset($this->_attrs['disabled']) && $this->offEdit && $this->form->isEdit()) {
+                $this->_attrs['disabled'] = 'disabled';
+            }
+        }
+        $this->_attrs['value'] = $this->getValue();
+        //处理验证数据
+        if ($this->valid !== null && is_array($this->valid)) {
+            foreach ($this->valid as $key => $item) {
+                if (in_array($key, ['rule', 'disabled', 'display', 'default', 'correct', 'error'])) {
+                    if (is_bool($item) || !empty($item)) {
+                        $this->_attrs['data-valid-' . $key] = $item;
+                    }
+                }
+            }
+        }
+        //处理控制模块
+        if (!empty($this->_attrs['yee-module'])) {
+            $this->addYeeModule($this->_attrs['yee-module']);
+        }
+        $module = $this->getYeeModule();
+        if (!empty($module)) {
+            $this->_attrs['yee-module'] = $this->getYeeModule();
+        }
+        $this->isInitAttr = true;
+        return $this->_attrs;
+    }
+
+    /**
+     * 设置属性
+     * @param string $name
+     * @param mixed $value
+     */
+    public function setAttr(string $name, mixed $value)
+    {
+        $this->_attrs[$name] = $value;
+    }
+
+    /**
+     * 获取属性
+     * @param string $name
+     * @return mixed
+     * @throws DBException
+     */
+    public function getAttr(string $name): mixed
+    {
+        $this->attrs();
+        return isset($this->_attrs[$name]) ? $this->_attrs[$name] : null;
+    }
+
+    /**
+     * 渲染数据
+     * @param array $attrs
+     * @return string
+     * @throws DBException
+     */
+    public function render(array $attrs = []): string
+    {
+        if ($this->form !== null) {
+            $this->createDynamic();
+        }
+        $attrs = array_merge($this->attrs(), $attrs);
+        $code = [];
+        if (!empty($this->before)) {
+            $code[] = '<span class="before"> ' . $this->before . '</span>';
+        }
+        $this->addDefaultAttr($attrs);
+        $code[] = $this->code($attrs);
+        if (!empty($this->after)) {
+            $code[] = '<span class="after"> ' . $this->after . '</span>';
+        }
+        return join('', $code);
+    }
+
+    /**
+     * 添加默认属性
+     * @param array $attrs
+     */
+    public function addDefaultAttr(array &$attrs)
+    {
+        $config = Config::get('form.field_default', []);
+        if (empty($config)) {
+            return;
+        }
+        $function = new \ReflectionClass($this);
+        $name = $function->getShortName();
+        foreach ($config as $key => $func) {
+            if (isset($attrs[$key])) {
+                continue;
+            }
+            if (is_callable($func)) {
+                $attrValue = call_user_func($func, $name);
+                if ($attrValue !== null) {
+                    $attrs[$key] = $attrValue;
+                }
+            }
+        }
+    }
+
+    /**
+     * 实现： 渲染输入框
+     * @param array $attrs
+     * @return string
+     */
+    protected function code(array $attrs = []): string
+    {
+        return static::makeTag('input', ['attrs' => $attrs]);
+    }
+
+    /**
+     * 是否被排除加入到数据中
+     * @return bool
+     */
+    public function isExclude(): bool
+    {
+        if ($this->close || $this->offJoin || ($this->form !== null && $this->form->isEdit() && $this->offEdit)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 是否前台可视
+     * @return bool
+     */
+    public function isView(): bool
+    {
+        if ($this->close || $this->viewClose || $this->hidden) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 实现：加入到数据中
+     * @param array $data
+     */
+    public function joinData(array &$data = [])
+    {
+        $data[$this->name] = $this->value;
+    }
+
+    /**
+     * @param array $data
+     * @return mixed
+     */
+    public function fromData(array $data = []): mixed
+    {
+        return $data[$this->name] ?? null;
+    }
+
+    /**
+     * 设置值
+     * @param mixed $value
+     */
+    public function setValue(mixed $value)
+    {
+        $this->value = Util::convertType($value, $this->varType);
+    }
+
+    /**
+     * 获取值
+     * @return mixed
+     * @throws DBException
+     */
+    public function getValue(): mixed
+    {
+        if ($this->form != null && $this->form->isAdd() && $this->value === null) {
+            if ($this->default === null) {
+                if (!empty($this->defaultFunc) && is_callable($this->defaultFunc)) {
+                    $this->default = call_user_func($this->defaultFunc);
+                } elseif (!empty($this->defaultFromParam)) {
+                    $this->default = Request::param($this->defaultFromParam);
+                }
+            }
+            $this->value = Util::convertType($this->default, $this->varType);
+        }
+        return $this->value;
+    }
+
+    /**
+     * 实现：从参数中获取
+     * @param array $param
+     * @return mixed
+     */
+    public function fromParam(array $param = []): mixed
+    {
+        $name = $this->boxName();
+        return Request::lookType($param, $name, $this->varType);
+    }
+
+
+    /**
+     * 验证控件
+     * @param array $errors
+     * @return bool
+     * @throws DBException
+     */
+    public function validate(array &$errors): bool
+    {
+        if (!empty($field->error)) {
+            $errors[$this->name] = $field->error;
+            return false;
+        }
+        if (empty($this->form) || $this->close || ($this->offEdit && $this->form->type == 'edit')) {
+            return true;
+        }
+        $ret = Validator::checkValue($this->getValue(), $this->valid, $error);
+        if (!$ret) {
+            $errors[$this->name] = $this->error = $error;
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 设置动态数据
+     */
+    public function createDynamic()
+    {
+
+        if ($this->form === null) {
+            return;
+        }
+        if ($this->dynamic === null || !is_array($this->dynamic)) {
+            return;
+        }
+        if (!empty($this->_attrs['data-dynamic'])) {
+            return;
+        }
+        $dynamic = [];
+        foreach ($this->dynamic as $item) {
+            $temp = [];
+            $hasCondition = false;
+            foreach (['eq', 'neq', 'in', 'nin'] as $key) {
+                if (!isset($item[$key])) {
+                    continue;
+                }
+                $hasCondition = true;
+                $temp[$key] = $item[$key];
+            }
+            if (!$hasCondition) {
+                continue;
+            }
+            $hasType = false;
+            foreach (['hide', 'show', 'off', 'on'] as $type) {
+                if (!isset($item[$type])) {
+                    continue;
+                }
+                if (!(is_string($item[$type]) || is_array($item[$type]))) {
+                    continue;
+                }
+                //获取ID数组值
+                $tempIds = [];
+                //转成数组
+                $typeItems = is_string($item[$type]) ? explode(',', $item[$type]) : $item[$type];
+                foreach ($typeItems as $name) {
+                    if (!is_string($name) || empty($name)) {
+                        continue;
+                    }
+                    $box = $this->form->getField($name);
+                    if ($box == null || empty($box->boxId())) {
+                        continue;
+                    }
+                    $tempIds[] = $box->boxId();
+                }
+                if (count($tempIds) > 0) {
+                    $temp[$type] = $tempIds;
+                    $hasType = true;
+                }
+            }
+            if (!$hasType) {
+                continue;
+            }
+            $dynamic[] = $temp;
+        }
+
+        //设置 yee-module 属性
+        if (count($dynamic) > 0) {
+
+            $this->_attrs['data-dynamic'] = $dynamic;
+            $this->addYeeModule('dynamic');
+        }
+    }
+
+    /**
+     * 验证动态数据
+     */
+    public function validDynamic()
+    {
+        if ($this->form === null) {
+            return;
+        }
+        if ($this->dynamic === null || !is_array($this->dynamic)) {
+            return;
+        }
+        //Logger::log('form empty', $this->dynamic);
+        $value = $this->value;
+        if (is_object($value)) {
+            return;
+        }
+        if (is_array($value)) {
+            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+        foreach ($this->dynamic as $item) {
+            if (!isset($item['eq']) && !isset($item['neq']) && !isset($item['in']) && !isset($item['nin'])) {
+                continue;
+            }
+            if (!isset($item['hide']) && !isset($item['show']) && !isset($item['off']) && !isset($item['on'])) {
+                continue;
+            }
+            //判断相等
+            if (isset($item['eq'])) {
+                $bVal = $item['eq'];
+                if (is_array($bVal)) {
+                    $bVal = json_encode($value, JSON_UNESCAPED_UNICODE);
+                }
+                if ($bVal != $value) {
+                    continue;
+                }
+            }
+            //判断不等
+            if (isset($item['neq'])) {
+                $bVal = $item['neq'];
+                if (is_array($bVal)) {
+                    $bVal = json_encode($value, JSON_UNESCAPED_UNICODE);
+                }
+                if ($bVal == $value) {
+                    continue;
+                }
+            }
+            //在集合里面
+            if (isset($item['in'])) {
+                $bVal = $item['in'];
+                if (!is_array($bVal)) {
+                    continue;
+                }
+                $in = false;
+                foreach ($bVal as $bItem) {
+                    if (strval($bItem) == strval($value)) {
+                        $in = true;
+                        break;
+                    }
+                }
+                if (!$in) {
+                    continue;
+                }
+            }
+            //不在集合里面
+            if (isset($item['nin'])) {
+                $bVal = $item['nin'];
+                if (!is_array($bVal)) {
+                    continue;
+                }
+                $in = false;
+                foreach ($bVal as $bItem) {
+                    if (strval($bItem) == strval($value)) {
+                        $in = true;
+                        break;
+                    }
+                }
+                if ($in) {
+                    continue;
+                }
+            }
+            //校验item
+            $temp = [];
+            foreach (['hide', 'off'] as $type) {
+                if (!isset($item[$type])) {
+                    continue;
+                }
+                if (!(is_string($item[$type]) || is_array($item[$type]))) {
+                    continue;
+                }
+                //转数组
+                $temp[$type] = is_string($item[$type]) ? explode(',', $item[$type]) : $item[$type];
+            }
+            if (isset($temp['hide'])) {
+                foreach ($temp['hide'] as $name) {
+
+                    if (!is_string($name) || empty($name)) {
+                        continue;
+                    }
+                    $box = $this->form->getField($name);
+                    if ($box == null || empty($box->boxId())) {
+                        continue;
+                    }
+                    $box->valid['disabled'] = true;
+                    $box->close = true;
+                }
+            }
+            if (isset($temp['off'])) {
+                foreach ($temp['off'] as $name) {
+                    if (!is_string($name) || empty($name)) {
+                        continue;
+                    }
+                    $box = $this->form->getField($name);
+                    if ($box == null || empty($box->boxId())) {
+                        continue;
+                    }
+                    $box->valid['disabled'] = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * 生成代码
+     * @param string $tag 标签 如 a
+     * @param array $data 数据，attrs:属性值，exclude 排除属性，filter 过滤空属性,默认为真，text 标签内文本，code 标签内代码
+     * @return string
+     */
+    public static function makeTag(string $tag = '', array $data = []): string
+    {
+        if ($tag == 'input' || $tag == 'img') {
+            $begin = '<' . $tag;
+            $end1 = '/>';
+            $end2 = '';
+        } else {
+            $begin = '<' . $tag;
+            $end1 = '>';
+            $end2 = '</' . $tag . '>';
+        }
+        $base = [];
+        $base[] = $begin;
+        if (isset($data['attrs'])) {
+            $filter = isset($data['filter']) ? $data['filter'] : true;
+            $exclude = isset($data['exclude']) && is_array($data['exclude']) ? $data['exclude'] : [];
+            foreach ($data['attrs'] as $key => $val) {
+                if ($val === null) {
+                    continue;
+                }
+                if ($filter && $val === '') {
+                    continue;
+                }
+                if (count($exclude) > 0 && in_array($key, $exclude)) {
+                    continue;
+                }
+                if (is_array($val) || is_object($val)) {
+                    $base[] = $key . '="' . htmlspecialchars(json_encode($val, JSON_UNESCAPED_UNICODE)) . '"';
+                } else if (is_bool($val)) {
+                    $base[] = $key . '="' . ($val ? 1 : 0) . '"';
+                } else if (is_string($val)) {
+                    $base[] = $key . '="' . htmlspecialchars($val) . '"';
+                } else {
+                    $base[] = $key . '="' . $val . '"';
+                }
+            }
+            $base = [join(' ', $base)];
+        }
+        $base[] = $end1;
+        if (!empty($data['text'])) {
+            $text = $data['text'];
+            if (is_array($text) || is_object($text)) {
+                $base[] = htmlspecialchars(json_encode($text, JSON_UNESCAPED_UNICODE));
+            } else if (is_bool($text)) {
+                $base[] = ($text ? 1 : 0);
+            } else if (is_string($text)) {
+                $base[] = htmlspecialchars($text);
+            } else {
+                $base[] = $text;
+            }
+        }
+        if (!empty($data['code'])) {
+            $base[] = $data['code'];
+        }
+        $base[] = $end2;
+        return join('', $base);
+    }
+
+
+    /**
+     * 使用参数创建字段
+     * @param array $param
+     * @return Field
      * @throws \Exception
      */
-    public function code($attr = null)
+    public static function create(array $param): Field
     {
-        if ($attr === null || !is_array($attr)) {
-            $attr = [];
+        if (empty($param['name'])) {
+            throw new \Exception('the field name is empty!');
         }
-        try {
-            if ($this->form != null) {
-                $this->form->createDynamic($this);
-            }
-            $box = self::getInstance($this->type);
-            if ($box === null) {
-                throw new \Exception('Unsupported input box type:' . $this->type);
-            }
-            if (!empty($this->viewTemplate)) {
-                $template = $this->viewTemplate;
-                $this->viewTemplate = null;
-                $view = new View();
-                $view->assign('form', $this->form);
-                $view->assign('field', $this);
-                $view->assign('attr', $attr);
-                $data = $view->fetch($template);
-                return $data;
-            }
-            return $box->code($this, $attr);
-        } catch (\Exception $exception) {
-            throw $exception;
+        $name = $param['name'];
+        $type = empty($param['type']) ? 'Text' : $param['type'];
+        $class = '\\beacon\widget\\' . $type;
+        unset($param['type']);
+        if (!class_exists($class)) {
+            throw new \Exception($class . ' is not found.');
         }
+        $args = static::getTagArgs($param);
+        $varType = isset($args['varType']) ? $args['varType'] : 'string';
+        unset($args['varType']);
+        $field = new $class(...$args);
+        $field->init(null, $name, $varType, null);
+        if (isset($args['value'])) {
+            $field->bindValue($args['value']);
+        }
+        return $field;
     }
 
     /**
-     * 获取插件实例
-     * @param string $type
-     * @return WidgetInterface
-     * @throws \ReflectionException
+     * 从模板标签中获取参数
+     * @param array $param
+     * @return array
      */
-    public static function getInstance(string $type)
+    public static function getTagArgs(array $param): array
     {
-        if (empty($type)) {
-            return null;
+        $args = [];
+        foreach ($param as $key => $item) {
+            if ($key[0] == '@') {
+                $key = substr($key, 1);
+                $args[$key] = $item;
+            }
         }
-        if (isset(self::$instance[$type])) {
-            return self::$instance[$type];
+        foreach ($param as $key => $item) {
+            if ($key[0] != '@') {
+                if (!isset($args['attrs'])) {
+                    $args['attrs'] = [];
+                }
+                $key = Util::camelToAttr($key);
+                $args['attrs'][$key] = $item;
+            }
         }
-        $class = '\\beacon\\widget\\' . Utils::toCamel($type);
-        //  Logger::log($class);
-        if (!class_exists($class)) {
-            return null;
-        }
-        $reflect = new \ReflectionClass($class);
-        if (!$reflect->implementsInterface(WidgetInterface::class)) {
-            return null;
-        }
-        self::$instance[$type] = new $class();
-        return self::$instance[$type];
+        return $args;
     }
-
-
 }

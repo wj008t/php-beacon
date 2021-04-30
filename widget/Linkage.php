@@ -1,124 +1,154 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/15
- * Time: 17:22
- */
+
 
 namespace beacon\widget;
 
-use beacon\Field;
-use beacon\Request;
-use beacon\Utils;
 
-class Linkage implements WidgetInterface
+use beacon\core\App;
+use beacon\core\Field;
+use beacon\core\Logger;
+use beacon\core\Request;
+use beacon\core\Util;
+
+#[\Attribute]
+class Linkage extends Field
 {
 
-    public function code(Field $field, $attr = [])
+    public ?array $names = null;
+    public array $headers = [];
+    public string $source = '';
+    public string $method = 'get';
+    public string $itemType = 'string';
+    public int $level = 0;
+
+    public function setting(array $args)
     {
-        $values = isset($attr['value']) ? $attr['value'] : $field->value;
-        if (is_string($values) && Utils::isJson($values)) {
+        parent::setting($args);
+        if (isset($args['source']) && is_string($args['source'])) {
+            $this->source = $args['source'];
+        }
+        if (isset($args['method']) && is_string($args['method'])) {
+            $this->method = $args['method'];
+        }
+        if (isset($args['headers']) && is_array($args['headers'])) {
+            $this->headers = $args['headers'];
+        }
+        if (isset($args['names']) && is_array($args['names'])) {
+            $this->names = $args['names'];
+        }
+        if (isset($args['itemType']) && is_string($args['itemType'])) {
+            $this->itemType = $args['itemType'];
+        }
+        if (isset($args['level']) && is_int($args['level'])) {
+            $this->level = $args['level'];
+        }
+    }
+
+    private function getValues(bool $toStr = false): array
+    {
+        $values = $this->getValue();
+        if (is_string($values) && Util::isJson($values)) {
             $values = json_decode($values, true);
         }
         if (!is_array($values)) {
             $values = [];
         }
-        $values = array_map(function ($v) {
-            return strval($v);
-        }, $values);
-        $attr['value'] = '';
+        if ($toStr) {
+            $values = array_map(function ($v) {
+                return strval($v);
+            }, $values);
+        }
+        return $values;
+    }
+
+    protected function code(array $attrs = []): string
+    {
+        $values = $this->getValues(true);
+        $attrs['type'] = 'hidden';
+        $attrs['value'] = '';
         if (count($values) > 0) {
-            $attr['value'] = $values;
+            $attrs['value'] = $values;
         }
-        if ($field->names !== null && is_array($field->names)) {
-            foreach ($field->names as $idx => $item) {
-                $pname = is_string($item) ? $item : (isset($item['field']) ? $item['field'] : '');
+        $validGroup = $this->valid['group'] ?? [];
+        if (!empty($this->names)) {
+            foreach ($this->names as $idx => $name) {
                 $level = $idx + 1;
-                $attr['data-name' . $level] = $pname;
+                $attrs['data-name' . $level] = $name;
+                if (isset($this->headers[$idx])) {
+                    $attrs['data-header' . $level] = $this->headers[$idx];
+                }
+                if (isset($validGroup[$idx])) {
+                    $attrs['data-valid-rule' . $level] = $validGroup[$idx];
+                }
             }
         }
-        $attr['yee-module'] = 'linkage';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        $attrs['data-source'] = App::url($this->source);
+        $attrs['data-method'] = $this->method;
+        $attrs['yee-module'] = $this->getYeeModule('linkage');
+        if ($this->level > 0) {
+            $attrs['data-level'] = $this->level;
+        }
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 
-
-    public function assign(Field $field, array $input)
+    public function fromParam(array $param = []): array
     {
-        if ($field->names !== null && is_array($field->names)) {
+        if (!empty($this->names)) {
             $values = [];
-            foreach ($field->names as $idx => $item) {
-                $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['type']);
+            foreach ($this->names as $idx => $name) {
                 if (empty($name)) {
                     continue;
                 }
-                $values[] = WidgetHelper::getValue($type, $input, $name);
+                $values[] = Request::lookType($param, $name, $this->itemType);
             }
-            return $field->value = $values;
+            return $values;
         }
-        $boxName = $field->boxName;
-        $values = Request::input($input, $boxName, null);
+        $boxName = $this->boxName;
+        $values = Request::lookType($param, $boxName, 'array');
+        return Util::mapItemType($values, $this->itemType);
+    }
+
+    public function joinData(array &$data = [])
+    {
+        if (!empty($this->names)) {
+            $values = $this->getValues();
+
+            foreach ($this->names as $idx => $name) {
+                if (empty($name)) {
+                    continue;
+                }
+                $data[$name] = 0;
+                $value = isset($values[$idx]) ? $values[$idx] : null;
+                $data[$name] = Util::convertType($value, $this->itemType);
+            }
+            return;
+        }
+        $values = $this->getValues();
+        $data[$this->name] = Util::mapItemType($values, $this->itemType);;
+    }
+
+    public function fromData(array $data = []): array
+    {
+        if (!empty($this->names)) {
+            $values = [];
+            foreach ($this->names as $idx => $name) {
+                if (empty($name)) {
+                    continue;
+                }
+                $value = isset($data[$name]) ? $data[$name] : null;
+                $values[] = Util::convertType($value, $this->itemType);
+            }
+            return $values;
+        }
+        $values = isset($data[$this->name]) ? $data[$this->name] : '';
+        if (is_string($values) && Util::isJson($values)) {
+            $values = json_decode($values, true);
+        }
         if (is_array($values)) {
-            return $field->value = $values;
+            return Util::mapItemType($values, $this->itemType);
         }
-        if (Utils::isJson($values)) {
-            $values = json_decode($values);
-            if (is_array($values)) {
-                return $field->value = $values;
-            }
-        }
-        return $field->value = null;
+        return [];
     }
 
-    public function fill(Field $field, array &$values)
-    {
-        if ($field->names !== null && is_array($field->names)) {
-            if ($field->value === null || count($field->value) > count($field->names)) {
-                return;
-            }
-            foreach ($field->names as $idx => $item) {
-                $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['type']);
-                if (empty($name)) {
-                    continue;
-                }
-                $values[$name] = WidgetHelper::convertType(isset($field->value[$idx]) ? $field->value[$idx] : '', $type);
-            }
-            return;
-        }
-        if ($field->value === null) {
-            $values[$field->name] = '';
-            return;
-        }
-        $values[$field->name] = json_encode($field->value, JSON_UNESCAPED_UNICODE);
-    }
 
-    public function init(Field $field, array $values)
-    {
-        if ($field->names !== null && is_array($field->names)) {
-            $temps = [];
-            foreach ($field->names as $idx => $item) {
-                $name = is_string($item) ? $item : (empty($item['field']) ? null : $item['field']);
-                $type = is_string($item) ? 'string' : (empty($item['type']) ? 'string' : $item['type']);
-                if (empty($name)) {
-                    continue;
-                }
-                $temps[] = WidgetHelper::convertType(isset($values[$name]) ? $values[$name] : '', $type);
-            }
-            return $field->value = $temps;
-        }
-        $temps = isset($values[$field->name]) ? $values[$field->name] : '';
-        if (is_array($temps)) {
-            return $field->value = $temps;
-        }
-        if (Utils::isJson($temps)) {
-            $temps = json_decode($temps);
-            if (is_array($temps)) {
-                return $field->value = $temps;
-            }
-        }
-        return $field->value = null;
-    }
 }

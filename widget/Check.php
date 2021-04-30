@@ -1,41 +1,41 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/15
- * Time: 3:36
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Check extends Hidden
+#[\Attribute]
+class Check extends Field
 {
-
-    public function code(Field $field, $attr = [])
+    protected function code(array $attrs = []): string
     {
-        $attr['checked'] = $field->value ? 'checked' : '';
-        $attr['type'] = 'checkbox';
-        $attr['value'] = 1;
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        $attrs['checked'] = $attrs['value'] ? 'checked' : '';
+        unset($attrs['placeholder']);
+        $attrs['type'] = 'checkbox';
+        $attrs['value'] = 1;
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 
-    public function assign(Field $field, array $input)
+    public function render(array $attrs = []): string
     {
-        $field->varType = 'boolean';
-        return parent::assign($field, $input);
+        if ($this->form !== null) {
+            $this->createDynamic();
+        }
+        $attrs = array_merge($this->attrs(), $attrs);
+        $code = [];
+        if (!empty($this->before)) {
+            $code[] = '<span class="before"> ' . $this->before . '</span>';
+        }
+        $code[] = '<label>';
+        $this->addDefaultAttr($attrs);
+        $code[] = $this->code($attrs);
+        if (!empty($this->after)) {
+            $code[] = '<span class="after"> ' . $this->after . '</span>';
+        }
+        $code[] = '</label>';
+        return join('', $code);
     }
 
-    public function fill(Field $field, array &$values)
-    {
-        $values[$field->name] = $field->value ? 1 : 0;
-    }
-
-    public function init(Field $field, array $values)
-    {
-        $field->value = isset($values[$field->name]) ? ($values[$field->name] == 1) : null;
-    }
 }

@@ -1,340 +1,152 @@
 <?php
 
-namespace beacon;
 
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 15:41
- */
+namespace beacon\core;
+
+use \ReflectionClass;
+
+#[\Attribute]
 class Form
 {
+    const ADD = 'add';
+    const EDIT = 'edit';
 
     /**
-     * @var $fields Field[];
+     * @var Field[]
      */
-    public $fields = [];
-
-    /**
-     * 维护的数据库id
-     * @var int
-     */
-    public $id = 0;
-    /**
-     * 当前维护的数据表名
-     * @var string
-     */
-    public $tbName = '';
-
-    /**
-     * 指定模板文件
-     * @var string
-     */
-    public $template = '';
-
-    /**
-     * 表单标题
-     * @var string
-     */
-    public $title = '';
-    /**
-     * 提交类型
-     * @var string
-     */
-    private $type = '';
-
-    /**
-     * @var Validate
-     */
-    private $validate = null;
-
+    public array $fields = [];
+    public string $type = '';
+    public object|string $object;
+    public string $title = '';
+    public string $table = '';
+    public string $template = '';
+    public string $tabIndex = '';
+    protected array $tabFields = [];
 
     /**
      * 隐藏输入框
      * @var array
      */
-    protected $hideBox = [];
+    protected array $hideBox = [];
+    protected ?array $values = null;
+
 
     /**
-     * 自动获取的值
-     * @var null
+     * 解析类别
+     * @param object|string $object
+     * @param string $type
+     * @param string $tabIndex
+     * @return static|null
      */
-    private $values = null;
-
-    /**
-     * 指定显示的tab
-     * @var string|null;
-     */
-    public $tabIndex = null;
-    /**
-     * 当前使用字段
-     * @var array
-     */
-    private $tabFields = [];
-
-
-    public function __construct(string $type = '', $tabIndex = null)
+    public static function create(object|string $object, string $type = '', string $tabIndex = ''): ?static
     {
-        $this->type = empty($type) ? 'add' : $type;
-        $this->tabIndex = $tabIndex;
-        //加载数据
-        $load = $this->load();
-        if (is_array($load)) {
-            foreach ($load as $name => $field) {
-                if (!is_array($field)) {
-                    continue;
+        try {
+            $refClass = new ReflectionClass($object);
+            $temp = $refClass->getAttributes(static::class);
+            if (isset($temp[0])) {
+                $form = $temp[0]->newInstance();
+                if ($form instanceof Form) {
+                    $form->init($object, $type, $tabIndex);
+                    return $form;
                 }
-                $this->addField($name, $field);
+            }
+            return null;
+        } catch (\ReflectionException) {
+            return null;
+        }
+    }
+
+    /**
+     * 表单构造函数.
+     * @param string $title
+     * @param string $table
+     * @param string $template
+     */
+    public function __construct(string $title = '', string $table = '', string $template = '')
+    {
+        $this->title = $title;
+        $this->table = $table;
+        $this->template = $template;
+    }
+
+    /**
+     * 初始化绑定数据
+     * @param object|string $object
+     * @param string $type
+     * @param string $tabIndex
+     * @throws \ReflectionException
+     */
+    public function init(object|string $object, string $type = '', string $tabIndex = '')
+    {
+        $this->type = $type;
+        $this->object = $object;
+        $this->tabIndex = $tabIndex;
+        $refClass = new ReflectionClass($object);
+        $parameters = $refClass->getProperties(\ReflectionProperty::IS_PUBLIC);
+        foreach ($parameters as $parameter) {
+            if (!$parameter->isStatic()) {
+                $attributes = $parameter->getAttributes();
+                if (count($attributes) > 0) {
+                    $field = $attributes[0]->newInstance();
+                    $name = $parameter->getName();
+                    $type = strval($parameter->getType());
+                    $default = null;
+                    if ($parameter->hasDefaultValue()) {
+                        $default = $parameter->getDefaultValue();
+                    }
+                    $field->init($this, $name, $type, $default);
+                    if (is_object($object)) {
+                        $field->bindValue($object->$name);
+                    }
+                    $this->fields[$name] = $field;
+                }
             }
         }
     }
 
     /**
-     * 需要继承的
-     * @return array
+     * 获取表单类型
+     * @return string
      */
-    protected function load()
-    {
-        return [];
-    }
-
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
 
-    public function isEdit()
+    /**
+     * 是否编辑状态
+     * @return bool
+     */
+    public function isEdit(): bool
     {
         return $this->type == 'edit';
     }
 
-    public function isAdd()
+    /**
+     * 是否添加状态
+     * @return bool
+     */
+    public function isAdd(): bool
     {
         return $this->type == 'add';
     }
 
     /**
-     * 添加字段
-     * @param string $name
-     * @param $field
-     * @param string|null $before
-     * @return $this
-     */
-    public function addField(string $name, $field, string $before = null)
-    {
-        if ($field instanceof Field) {
-            $field->name = $name;
-        } else if (is_array($field)) {
-            $field['name'] = $name;
-            $field = new Field($this, $field);
-        } else {
-            return $this;
-        }
-        if (empty($field->boxName)) {
-            $field->boxName = $field->name;
-        }
-        if (empty($field->boxId)) {
-            $field->boxId = $field->boxName;
-        }
-        if (!empty($before) && isset($this->fields[$before])) {
-            $temps = [];
-            foreach ($this->fields as $key => $item) {
-                if ($key == $before) {
-                    $temps[$name] = $field;
-                }
-                $temps[$key] = $item;
-            }
-            $this->fields = $temps;
-        } else {
-            $this->fields[$name] = $field;
-        }
-
-        return $this;
-    }
-
-    /**
-     * 获取字段
+     * 获取字段信息
      * @param string $name
      * @return Field|null
      */
-    public function getField(string $name, bool $isView = false)
+    public function getField(string $name): ?Field
     {
-        $field = isset($this->fields[$name]) ? $this->fields[$name] : null;
-        if ($field && $isView) {
-            $this->createDynamic($field);
-        }
-        return $field;
-    }
-
-    /**
-     * 删除字段
-     * @param string $name
-     * @return Field|null
-     */
-    public function removeField(string $name)
-    {
-        $field = isset($this->fields[$name]) ? $this->fields[$name] : null;
-        if ($field !== null) {
-            unset($this->fields[$name]);
-        }
-        return $field;
-    }
-
-    /**
-     * 获取错误
-     * @param string $name
-     * @return null|string
-     */
-    public function getError(string $name)
-    {
-        return isset($this->fields[$name]) ? $this->fields[$name]->error : '';
-    }
-
-    /**
-     * 设置错误
-     * @param $name
-     * @param $error
-     */
-    public function setError($name, $error)
-    {
-        if (isset($this->fields[$name])) {
-            $this->fields[$name]->error = $error;
-        }
-    }
-
-    /**
-     * 删除错误
-     * @param $name
-     */
-    public function removeError($name)
-    {
-        if (isset($this->fields[$name])) {
-            $this->fields[$name]->error = null;
-        }
-    }
-
-    /**
-     * 获取第一条错误
-     * @return null
-     */
-    public function getFirstError()
-    {
-        $fields = $this->getFields();
-        foreach ($fields as $field) {
-            if (!empty($field->error)) {
-                return $field->error;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 获取最后一个错误
-     * @return null
-     */
-    public function getLastError()
-    {
-        $fields = $this->getFields();
-        $error = null;
-        foreach ($fields as $field) {
-            if (!empty($field->error)) {
-                $error = $field->error;
-            }
-        }
-        return $error;
-    }
-
-    /**
-     * 获取所有错误
-     * @return array
-     */
-    public function getAllError()
-    {
-        $errors = [];
-        $fields = $this->getFields();
-        foreach ($fields as $name => $field) {
-            if (!empty($field->error)) {
-                $errors[$name] = $field->error;
-            }
-            if ($field->dataValDisabled == false) {
-                if (!empty($field->childError) && is_array($field->childError)) {
-                    foreach ($field->childError as $key => $err) {
-                        $errors[$key] = $err;
-                    }
-                }
-            }
-        }
-        return $errors;
-    }
-
-    /**
-     * 清除所有错误
-     */
-    public function clearAllErrors()
-    {
-        $fields = $this->getFields();
-        foreach ($fields as $name => $field) {
-            if (!empty($field->error)) {
-                $field->error = null;
-            }
-        }
-    }
-
-    /**
-     * 添加一个隐藏输入框
-     * @param string $name
-     * @param $value
-     */
-    public function addHideBox(string $name, $value)
-    {
-        $this->hideBox[$name] = $value;
-    }
-
-    /**
-     * 获取一个隐藏输入框的值
-     * @param string|null $name
-     * @return array|mixed
-     */
-    public function getHideBox(string $name = null)
-    {
-        if (empty($name)) {
-            return $this->hideBox;
-        }
-        if (isset($this->hideBox[$name])) {
-            return $this->hideBox[$name];
-        }
-        return null;
-    }
-
-    /**
-     * 输出隐藏输入框
-     * @param null $tabIndex
-     * @return string
-     */
-    public function fetchHideBox($tabIndex = null)
-    {
-        $fields = $this->getFields($tabIndex);
-        foreach ($fields as $field) {
-            if ($field->hideBox) {
-                $field->viewClose = true;
-                $this->addHideBox($field->boxName, $field->value);
-                continue;
-            }
-        }
-        $box = [];
-        foreach ($this->hideBox as $name => $val) {
-            $box[] = '<input type="hidden" name="' . htmlspecialchars($name, ENT_QUOTES) . '" value="' . htmlspecialchars($val, ENT_QUOTES) . '">';
-        }
-        return join('', $box);
+        return isset($this->fields[$name]) ? $this->fields[$name] : null;
     }
 
     /**
      * 获取当前tab 下的字段
-     * @param string|null $tabIndex
+     * @param string $tabIndex
      * @return Field[]
      */
-    public function getFields(string $tabIndex = null)
+    public function getFields(string $tabIndex = ''): array
     {
         $tabIndex = empty($tabIndex) ? $this->tabIndex : $tabIndex;
         if (empty($tabIndex)) {
@@ -354,92 +166,158 @@ class Form
     }
 
     /**
-     * 获取表单值
-     * @param bool $force 是否强制重新获取
-     * @return array|null
-     * @throws \Exception
+     * 获取第一条错误
+     * @return string
      */
-    public function getValues(bool $force = false)
+    public function getFirstError(): string
     {
-        if (!$force && $this->values !== null) {
+        $fields = $this->getFields();
+        foreach ($fields as $field) {
+            if (property_exists($field, 'childError') && isset($field->childError) && is_array($field->childError)) {
+                foreach ($field->childError as $error) {
+                    if (!empty($error)) {
+                        return $error;
+                    }
+                }
+            }
+            if (!empty($field->error)) {
+                return $field->error;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * 获取所有错误
+     * @return string[]
+     */
+    public function getErrors(): array
+    {
+        $errors = [];
+        $fields = $this->getFields();
+        foreach ($fields as $name => $field) {
+            if (property_exists($field, 'childError') && isset($field->childError) && is_array($field->childError)) {
+                foreach ($field->childError as $childName => $error) {
+                    if (!empty($error)) {
+                        $errors[$childName] = $error;
+                    }
+                }
+            }
+            if (!empty($field->error)) {
+                $errors[$name] = $field->error;
+            }
+        }
+        return $errors;
+    }
+
+    /**
+     *清除所有错误
+     */
+    public function clearErrors()
+    {
+        $fields = $this->getFields();
+        foreach ($fields as $name => $field) {
+            if (property_exists($field, 'childError') && isset($field->childError) && is_array($field->childError)) {
+                $field->childError = [];
+            }
+            if (!empty($field->error)) {
+                $field->error = '';
+            }
+        }
+    }
+
+    /**
+     * @param string $name
+     * @param mixed $value
+     */
+    public function setHideBox(string $name, mixed $value)
+    {
+        $this->hideBox[$name] = $value;
+    }
+
+    /**
+     * 输出隐藏输入框
+     * @param string $tabIndex
+     * @return string
+     */
+    public function fetchHideBox(string $tabIndex = ''): string
+    {
+        $fields = $this->getFields($tabIndex);
+        foreach ($fields as $field) {
+            if (isset($field->hidden) && $field->hidden == true) {
+                $this->setHideBox($field->boxName, $field->getValue());
+                continue;
+            }
+        }
+        $box = [];
+        foreach ($this->hideBox as $name => $val) {
+            $box[] = '<input type="hidden" name="' . htmlspecialchars($name, ENT_QUOTES) . '" value="' . htmlspecialchars($val, ENT_QUOTES) . '">';
+        }
+        return join('', $box);
+    }
+
+    /**
+     * 获取值
+     * @param bool $anew 是否重新获取
+     * @return array
+     */
+    public function getData(bool $anew = false): array
+    {
+        if (!$anew && $this->values !== null) {
             return $this->values;
         }
         $values = [];
         $fields = $this->getFields();
         foreach ($fields as $name => $field) {
-            if ($field->offSave) {
+            if ($field->isExclude()) {
                 continue;
             }
-            if ($field->close || ($field->offEdit && $this->type == 'edit')) {
-                continue;
-            }
-            $box = Field::getInstance($field->type);
-            if ($box != null) {
-                $box->fill($field, $values);
-            } else {
-                $values[$name] = $field->value;
-            }
+            $field->joinData($values);
         }
         $this->values = $values;
         return $values;
     }
 
     /**
-     * 设置表单值
-     * @param array|null $values
-     * @param bool $force
-     * @throws \Exception
+     * 设置值
+     * @param array|int|null $data
      */
-    public function setValues(array $values = null, bool $force = false)
+    public function setData(array|int|null $data = null)
     {
-        if ($values == null) {
+        if (is_int($data)) {
+            $data = DB::getItem($this->table, $data);
+        }
+        if ($data == null) {
             return;
         }
         $fields = $this->getFields();
-        if (method_exists($this, 'beforeSetValues')) {
-            $this->beforeSetValues($fields, $values);
-        }
-        if (isset($values['id'])) {
-            $this->id = intval($values['id']);
-        }
-        foreach ($fields as $name => $field) {
+        foreach ($fields as  $field) {
             if ($field->close) {
                 continue;
             }
-            if (!$force && $field->value !== null) {
-                continue;
-            }
-            $box = Field::getInstance($field->type);
-            if ($box != null) {
-                $box->init($field, $values);
-            } else {
-                $field->value = isset($values[$name]) ? $values[$name] : null;
-            }
-        }
-        if (method_exists($this, 'afterSetValues')) {
-            $this->afterSetValues($fields, $values);
+            $value = $field->fromData($data);
+            $field->setValue($value);
         }
     }
 
     /**
-     * 清空表单值
+     * 清除数据
      */
-    public function clearValues()
+    public function clearData()
     {
         $this->values = null;
         $fields = $this->fields;
         foreach ($fields as $name => $field) {
-            $field->value = null;
+            $field->setValue(null);
         }
     }
 
     /**
-     * 自动完成表单提取
+     * 自动完成表单
      * @param string $method
      * @return array
-     * @throws \Exception
      */
-    public function autoComplete(string $method = 'post')
+    public function autoComplete(string $method = 'post'): array
     {
         $method = strtolower($method);
         $data = $_REQUEST;
@@ -448,325 +326,75 @@ class Form
         } elseif ($method == 'post') {
             $data = $_POST;
         }
-        return $this->fillComplete($data);
+        $this->fillComplete($data);
+        return $this->getData();
     }
 
+
     /**
-     * 使用 数组填充
-     * @param $data
-     * @return array
-     * @throws \Exception
+     * @param array $data
      */
     public function fillComplete(array $data)
     {
         $fields = $this->getFields();
-        $valueFuncFields = [];
+        $valFnField = [];
         foreach ($fields as $name => $field) {
             if ($field->close || ($field->offEdit && $this->type == 'edit')) {
                 continue;
             }
-            $valFunc = $field->getFunc('value');
+            $valFunc = $field->valFunc;
             if (!empty($valFunc) && is_callable($valFunc)) {
                 $valueFuncFields[] = $field;
-            }
-            if ($field->viewClose) {
-                $field->value = $field->default;
                 continue;
             }
-            $box = Field::getInstance($field->type);
-            if ($box == null) {
-                $box = Field::getInstance('hidden');
-            }
-            $box->assign($field, $data);
-            if ($field->forceDefault && !empty($field->default) && (is_string($field->value) || is_int($field->value) || is_double($field->value) || is_float($field->value) || is_array($field->value) || $field->value === null) && empty($field->value)) {
-                $field->value = $field->default;
-            }
+            $value = $field->fromParam($data);
+            $field->setValue($value);
         }
-        foreach ($valueFuncFields as $field) {
-            $valFunc = $field->getFunc('value');
-            $field->value = call_user_func($valFunc, $this);
+        //变量函数计算值
+        foreach ($valFnField as $field) {
+            $value = call_user_func($field->valFunc, $this);
+            $field->setValue($value);
         }
-        return $this->getValues();
     }
 
     /**
-     * 验证表单
-     * @param null $errors
+     * 验证函数
+     * @param ?array $errors
      * @return bool
      */
-    public function validation(&$errors = null)
+    public function validate(?array &$errors = []): bool
     {
         $fields = $this->getFields();
-        if (method_exists($this, 'beforeValid')) {
-            $this->beforeValid($fields);
+        foreach ($fields as $field) {
+            $field->validDynamic();
         }
         $result = true;
-        foreach ($fields as $field) {
-            $this->validDynamic($field);
+        if ($errors === null) {
+            $errors = [];
         }
         foreach ($fields as $name => $field) {
-            if (!empty($field->error)) {
-                $result = false;
-                continue;
-            }
-            if ($field->close || ($field->offEdit && $this->type == 'edit')) {
-                continue;
-            }
-            $ret = $this->getValidate()->checkField($field);
-            if (!$ret) {
+            if (!$field->validate($errors)) {
                 $result = false;
             }
-        }
-        if (method_exists($this, 'afterValid')) {
-            $this->afterValid($fields);
-        }
-        $errors = $this->getAllError();
-        if (count($errors) > 0) {
-            return false;
         }
         return $result;
     }
 
     /**
-     * 获取表单验证器
-     * @return Validate
-     */
-    public function getValidate()
-    {
-        if ($this->validate == null) {
-            $this->validate = new Validate();
-        }
-        return $this->validate;
-    }
-
-    /**
-     * 创建动态字段数据
-     * @param Field $field
-     */
-    public function createDynamic(Field $field)
-    {
-        if ($field->dynamic === null || !is_array($field->dynamic)) {
-            return;
-        }
-        if (!isset($field->dataDynamic) || empty($field->dataDynamic)) {
-            $dynamic = [];
-            foreach ($field->dynamic as $item) {
-                $temp = [];
-                $hasCondition = false;
-                foreach (['eq', 'neq', 'in', 'nin'] as $qkey) {
-                    if (!isset($item[$qkey])) {
-                        continue;
-                    }
-                    $hasCondition = true;
-                    $temp[$qkey] = $item[$qkey];
-                }
-                if (!$hasCondition) {
-                    continue;
-                }
-                $hasType = false;
-                foreach (['hide', 'show', 'off', 'on'] as $type) {
-                    if (!isset($item[$type])) {
-                        continue;
-                    }
-                    if (!(is_string($item[$type]) || is_array($item[$type]))) {
-                        continue;
-                    }
-                    //获取ID数组值
-                    $tempIds = [];
-                    //转成数组
-                    $typeitems = is_string($item[$type]) ? explode(',', $item[$type]) : $item[$type];
-                    foreach ($typeitems as $name) {
-                        if (!is_string($name) || empty($name)) {
-                            continue;
-                        }
-                        $box = $this->getField($name);
-                        if ($box == null || empty($box->boxId)) {
-                            continue;
-                        }
-                        $tempIds[] = $box->boxId;
-                    }
-                    if (count($tempIds) > 0) {
-                        $temp[$type] = $tempIds;
-                        $hasType = true;
-                    }
-                }
-                if (!$hasType) {
-                    continue;
-                }
-                $dynamic[] = $temp;
-            }
-            //设置 yee-module 属性
-            if (count($dynamic) > 0) {
-                $field->dataDynamic = $dynamic;
-            }
-        }
-        if (isset($field->dataDynamic) && count($field->dataDynamic) > 0) {
-            if (isset($field->boxYeeModule)) {
-                $module = explode(' ', $field->boxYeeModule);
-                $module = array_filter($module, 'strlen');
-                if (!in_array('dynamic', $module)) {
-                    $module[] = 'dynamic';
-                }
-                $field->boxYeeModule = join(' ', $module);
-            } else {
-                $field->boxYeeModule = 'dynamic';
-            }
-        }
-    }
-
-    /**
-     * 验证动态字段数据
-     * @param Field $field
-     */
-    private function validDynamic(Field $field)
-    {
-        if ($field->dynamic === null || !is_array($field->dynamic)) {
-            return;
-        }
-        $value = $field->value;
-        if (is_object($value)) {
-            return;
-        }
-        if (is_array($value)) {
-            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
-        }
-        foreach ($field->dynamic as $item) {
-            if (!isset($item['eq']) && !isset($item['neq']) && !isset($item['in']) && !isset($item['nin'])) {
-                continue;
-            }
-            if (!isset($item['hide']) && !isset($item['show']) && !isset($item['off']) && !isset($item['on'])) {
-                continue;
-            }
-            //判断相等
-            if (isset($item['eq'])) {
-                $bval = $item['eq'];
-                if (is_array($bval)) {
-                    $bval = json_encode($value, JSON_UNESCAPED_UNICODE);
-                }
-                if ($bval != $value) {
-                    continue;
-                }
-            }
-            //判断不等
-            if (isset($item['neq'])) {
-                $bval = $item['neq'];
-                if (is_array($bval)) {
-                    $bval = json_encode($value, JSON_UNESCAPED_UNICODE);
-                }
-                if ($bval == $value) {
-                    continue;
-                }
-            }
-            //在集合里面
-            if (isset($item['in'])) {
-                $bval = $item['in'];
-                if (!is_array($bval)) {
-                    continue;
-                }
-                $in = false;
-                foreach ($bval as $bitem) {
-                    if (strval($bitem) == strval($value)) {
-                        $in = true;
-                        break;
-                    }
-                }
-                if (!$in) {
-                    continue;
-                }
-            }
-            //不在集合里面
-            if (isset($item['nin'])) {
-                $bval = $item['nin'];
-                if (!is_array($bval)) {
-                    continue;
-                }
-                $in = false;
-                foreach ($bval as $bitem) {
-                    if (strval($bitem) == strval($value)) {
-                        $in = true;
-                        break;
-                    }
-                }
-                if ($in) {
-                    continue;
-                }
-            }
-
-            //校验item
-            $temp = [];
-
-            foreach (['hide', 'off'] as $type) {
-                if (!isset($item[$type])) {
-                    continue;
-                }
-                if (!(is_string($item[$type]) || is_array($item[$type]))) {
-                    continue;
-                }
-                //转数组
-                $temp[$type] = is_string($item[$type]) ? explode(',', $item[$type]) : $item[$type];
-            }
-
-            if (isset($temp['hide'])) {
-                foreach ($temp['hide'] as $name) {
-                    if (!is_string($name) || empty($name)) {
-                        continue;
-                    }
-                    $box = $this->getField($name);
-                    if ($box == null || empty($box->boxId)) {
-                        continue;
-                    }
-                    $box->dataValDisabled = true;
-                    $box->close = true;
-                }
-            }
-            if (isset($temp['off'])) {
-                foreach ($temp['off'] as $name) {
-                    if (!is_string($name) || empty($name)) {
-                        continue;
-                    }
-                    $box = $this->getField($name);
-                    if ($box == null || empty($box->boxId)) {
-                        continue;
-                    }
-                    $box->dataValDisabled = true;
-                }
-            }
-        }
-
-    }
-
-    /**
      * 获取要显示的字段
-     * @param null $tabIndex
-     * @return array
+     * @param string $tabIndex
+     * @return Field[]
      */
-    public function getViewFields($tabIndex = null)
+    public function getViewFields(string $tabIndex = ''): array
     {
         $fields = $this->getFields($tabIndex);
-        $temp = [];
         //修正显示
-        foreach ($fields as $field) {
-            //处理视图的开关默认值
-            if ($field->viewClose === null) {
-                if ($field->close) {
-                    $field->viewClose = true;
-                    continue;
-                } else {
-                    $field->viewClose = false;
-                }
-            }
-            //隐藏字段
-            if ($field->hideBox) {
-                $field->viewClose = true;
-                continue;
-            }
-        }
         $keys = array_keys($fields);
         $temp = [];
         for ($idx = 0, $len = count($keys); $idx < $len; $idx++) {
             $key = $keys[$idx];
             $field = $fields[$key];
-            if ($field->close || $field->viewClose) {
+            if (!$field->isView()) {
                 continue;
             }
             if ($idx == 0) {
@@ -791,137 +419,11 @@ class Form
                 }
             }
             //不合并
-            if ($field->viewMerge == 0 && !$field->viewClose) {
+            if ($field->viewMerge == 0) {
                 $temp[$key] = $field;
             }
         }
         return $temp;
-    }
-
-    /**
-     * 获取一个输入框
-     * @param $name
-     * @param null $type
-     * @param array|null $attr
-     * @return mixed|string|void
-     * @throws \Exception
-     */
-    public function fieldCode($name, $type = null, array $attr = null)
-    {
-        if ($name === null) {
-            throw new \Exception('必须指定名称，或者字段');
-        }
-        if ($attr === null && is_array($type)) {
-            $attr = $type;
-            $type = null;
-        }
-        if (is_string($name)) {
-            $field = $this->getField($name);
-        } elseif ($name instanceof Field) {
-            $field = $name;
-        } else {
-            throw new \Exception('错误的参数');
-        }
-        if ($attr === null && !is_array($attr)) {
-            $attr = [];
-        }
-        if ($field == null) {
-            $field = new Field($this);
-            if (is_string($name)) {
-                $field->name = $name;
-                $field->boxName = $name;
-                $field->boxId = $name;
-            }
-        }
-        if ($type !== null) {
-            $field->type = $type;
-        }
-        return $field->code($attr);
-    }
-
-    //添加值
-    public function insert($replace = [])
-    {
-        if (empty($this->tbName)) {
-            return;
-        }
-        $values = $this->getValues(true);
-        $values = array_merge($values, $replace);
-        DB::insert($this->tbName, $values);
-        $id = DB::lastInsertId();
-        $this->id = $id;
-        return $id;
-    }
-
-    //替换值
-    public function replace($replace = [])
-    {
-        if (empty($this->tbName)) {
-            return;
-        }
-        $values = $this->getValues(true);
-        $values = array_merge($values, $replace);
-        if (!isset($values['id']) || empty($values['id'])) {
-            DB::insert($this->tbName, $values);
-            $id = DB::lastInsertId();
-            $this->id = $id;
-            return $id;
-        }
-        DB::replace($this->tbName, $values);
-        $id = $values['id'];
-        $this->id = $id;
-        return $id;
-    }
-
-    //编辑值
-    public function update($id = 0, $replace = [])
-    {
-        if (empty($this->tbName)) {
-            return;
-        }
-        $this->id = $id;
-        $values = $this->getValues(true);
-        $values = array_merge($values, $replace);
-        DB::update($this->tbName, $values, $id);
-        return $id;
-    }
-
-    //获取单行数据
-    public function getRow($id = 0)
-    {
-        if (empty($this->tbName)) {
-            return null;
-        }
-        $this->id = $id;
-        $row = DB::getRow('select * from `' . $this->tbName . '` where id=?', $id);
-        if (empty($plugins)) {
-            return $row;
-        }
-    }
-
-    //删除值
-    public function delete($id)
-    {
-        if (empty($this->tbName)) {
-            return;
-        }
-        $this->id = $id;
-        DB::delete($this->tbName, $id);
-        return $id;
-    }
-
-
-    /**
-     * @param string $className
-     * @param string $type
-     * @return Form
-     */
-    public static function instance(string $className, string $type = '')
-    {
-        if (!class_exists($className)) {
-            return null;
-        }
-        return new $className($type);
     }
 
 }

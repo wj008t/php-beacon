@@ -1,62 +1,105 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 18-12-3
- * Time: 下午1:42
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
-use beacon\Request;
-use beacon\Validate;
+use beacon\core\Field;
+use beacon\core\Request;
+use beacon\core\Util;
+use beacon\core\Validator;
 
-class Datetime extends Hidden
+#[\Attribute]
+class Datetime extends Field
 {
-    public function code(Field $field, $attr = [])
-    {
-        $attr['yee-module'] = 'picker';
-        $attr['data-use-time'] = true;
-        $attr['type'] = 'text';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
-    }
+    protected string $origValue = '';
 
-    public function assign(Field $field, array $input)
+    /**
+     * 生成代码
+     * @param array $attrs
+     * @return string
+     */
+    protected function code(array $attrs = []): string
     {
-        $val = Request::input($input, $field->boxName . ':s', '');
-        if (!Validate::test_date($val)) {
-            $field->value = null;
-        }
-        $field->value = $val;
-    }
-
-    public function fill(Field $field, array &$values)
-    {
-        if ($field->varType == 'int' || $field->varType == 'integer') {
-            $values[$field->name] = strtotime($field->value);
-            return;
-        }
-        if (empty($field->value)) {
-            $values[$field->name] = null;
-        } else {
-            $values[$field->name] = $field->value;
-        }
-    }
-
-    public function init(Field $field, array $values)
-    {
-        if ($field->varType == 'int' || $field->varType == 'integer') {
-            $time = isset($values[$field->name]) ? $values[$field->name] : 0;
-            if ($time == 0) {
-                $field->value = '';
+        $attrs['yee-module'] = $this->getYeeModule('picker');
+        $attrs['data-use-time'] = true;
+        $attrs['type'] = 'text';
+        $typeMap = Util::typeMap($this->varType);
+        if (isset($typeMap['int']) && is_numeric($attrs['value'])) {
+            if (isset($attrs['value']) && $attrs['value'] > 0) {
+                $attrs['value'] = date('Y-m-d H:i:s', $attrs['value']);
             } else {
-                $field->value = date('Y-m-d H:i:s', $time);
+                unset($attrs['value']);
             }
-            return;
         }
-        $field->value = isset($values[$field->name]) ? $values[$field->name] : null;
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
+
+    /**
+     * 从参数获取
+     * @param array $param
+     * @return int|string
+     */
+    public function fromParam(array $param = []): int|string
+    {
+        $value = Request::lookType($param, $this->boxName, 'string', '');
+        $this->origValue = $value;
+        $typeMap = Util::typeMap($this->varType);
+        if (empty($value) || !Validator::testDate($value)) {
+            if (isset($typeMap['int'])) {
+                return 0;
+            }
+            return '';
+        }
+        if (isset($typeMap['int'])) {
+            return strtotime($value);
+        }
+        return $value;
+    }
+
+    /**
+     * 加入数据
+     * @param array $data
+     */
+    public function joinData(array &$data = [])
+    {
+        if ($this->value === '') {
+            $data[$this->name] = null;
+        } else {
+            $data[$this->name] = $this->value;
+        }
+    }
+
+    /**
+     * 验证控件
+     * @param array $errors
+     * @return bool
+     */
+    public function validate(array &$errors): bool
+    {
+        if (!empty($field->error)) {
+            $errors[$this->name] = $field->error;
+            return false;
+        }
+        if (empty($this->form) || $this->close || ($this->offEdit && $this->form->type == 'edit')) {
+            return true;
+        }
+        //判断类型
+        $typeMap = Util::typeMap($this->varType);
+        if (isset($typeMap['int'])) {
+            $ret = Validator::checkValue($this->origValue, $this->valid, $error);
+            if (!$ret) {
+                $errors[$this->name] = $this->error = $error;
+                return false;
+            }
+            return true;
+        }
+        $ret = Validator::checkValue($this->getValue(), $this->valid, $error);
+        if (!$ret) {
+            $errors[$this->name] = $this->error = $error;
+            return false;
+        }
+        return true;
+    }
+
 }

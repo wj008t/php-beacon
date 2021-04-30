@@ -1,31 +1,80 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 18-12-3
- * Time: 上午3:35
- */
 
 namespace beacon\widget;
 
+use beacon\core\App;
+use beacon\core\Field;
 
-use beacon\Field;
-
-class UpImage extends Hidden
+#[\Attribute]
+class UpImage extends Field
 {
-    public function code(Field $field, $attr = [])
+    public string $url = '/service/upload';
+    public string $mode = 'image';
+    public string $extensions = 'jpg,jpeg,bmp,gif,png';
+    public string $fieldName = 'filedata';
+
+    public int $imgWidth = 0;
+    public int $imgHeight = 0;
+    public int $size = 0;
+
+
+    public function setting(array $args)
     {
-        $attr['yee-module'] = 'upload';
-        $attr['type'] = 'text';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        parent::setting($args);
+        if (isset($args['url']) && is_string($args['url'])) {
+            $this->url = $args['url'];
+        }
+        if (isset($args['mode']) && is_string($args['mode'])) {
+            $this->mode = $args['mode'];
+        }
+        if (isset($args['extensions']) && is_string($args['extensions'])) {
+            $this->extensions = $args['extensions'];
+        }
+        if (isset($args['fieldName']) && is_string($args['fieldName'])) {
+            $this->fieldName = $args['fieldName'];
+        }
+        if (isset($args['size']) && is_int($args['size'])) {
+            $this->size = $args['size'];
+        }
     }
 
-    public function assign(Field $field, array $input)
+    protected function code(array $attrs = []): string
     {
-        if ($field->varType != 'array') {
-            $field->varType = 'string';
+        $attrs['yee-module'] = $this->getYeeModule('upload');
+        $attrs['type'] = 'text';
+        if (!empty($this->mode)) {
+            $attrs['data-mode'] = $this->mode;
+            if ($this->mode == 'imgGroup' && $this->size > 0) {
+                $attrs['data-size'] = $this->size;
+            }
         }
-        return parent::assign($field, $input);
+        if (!empty($this->extensions)) {
+            $attrs['data-extensions'] = $this->extensions;
+        }
+        if (!empty($this->fieldName)) {
+            $attrs['data-field-name'] = $this->fieldName;
+        }
+        if (!empty($this->imgWidth)) {
+            $attrs['data-img-width'] = $this->imgWidth;
+        }
+        if (!empty($this->imgHeight)) {
+            $attrs['data-img-height'] = $this->imgHeight;
+        }
+        if ($attrs['data-mode'] == 'image') {
+            if (empty($attrs['data-img-width'])) {
+                $attrs['data-img-width'] = 300;
+            }
+            if (empty($attrs['data-img-height'])) {
+                $attrs['data-img-height'] = 200;
+            }
+        } else {
+            if (empty($attrs['data-img-width'])) {
+                $attrs['data-img-width'] = 100;
+            }
+            if (empty($attrs['data-img-height'])) {
+                $attrs['data-img-height'] = 100;
+            }
+        }
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 }

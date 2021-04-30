@@ -1,23 +1,18 @@
 <?php
 
-namespace beacon;
 
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/13
- * Time: 16:51
- */
+namespace beacon\core;
+
+
 class DB
 {
-    protected static $engine = null;
+    protected static ?Mysql $engine = null;
 
     /**
-     * 获取数据库引擎实例
-     * @return Mysql|null
-     * @throws MysqlException
+     * @return Mysql
+     * @throws DBException
      */
-    public static function engine()
+    public static function engine(): Mysql
     {
         if (static::$engine != null) {
             return static::$engine;
@@ -32,42 +27,44 @@ class DB
         $timeout = Config::get('db.timeout', 120);
         try {
             static::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
-        } catch (\PDOException $e) {
+        } catch (\PDOException | \Exception $e) {
             static::$engine = null;
-            throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
-        } catch (\Exception $e) {
-            static::$engine = null;
-            throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            $code = $e->getCode();
+            if (!is_int($code)) {
+                $code = 0;
+            }
+            throw new DBException($e->getMessage(), $code, $e);
         }
         return static::$engine;
     }
 
+
     /**
      * 开启事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function beginTransaction()
+    public static function beginTransaction(): bool
     {
         return static::engine()->beginTransaction();
     }
 
     /**
-     * 是否在事物里面
+     * 是否在事务中
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function inTransaction()
+    public static function inTransaction(): bool
     {
         return static::engine()->inTransaction();
     }
 
     /**
      * 事务闭包
-     * @param $func
+     * @param callable $func
      * @throws \Exception
      */
-    public static function transaction($func)
+    public static function transaction(callable $func)
     {
         try {
             static::beginTransaction();
@@ -79,33 +76,35 @@ class DB
         }
     }
 
+
     /**
      * 提交事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function commit()
+    public static function commit(): bool
     {
         return static::engine()->commit();
     }
 
+
     /**
      * 回滚事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function rollBack()
+    public static function rollBack(): bool
     {
         return static::engine()->rollBack();
     }
 
     /**
-     * 执行sql 语句
+     *  执行sql 语句
      * @param string $sql
-     * @return int
-     * @throws MysqlException
+     * @return false|int
+     * @throws DBException
      */
-    public static function exec(string $sql)
+    public static function exec(string $sql): false|int
     {
         return static::engine()->exec($sql);
     }
@@ -113,20 +112,20 @@ class DB
     /**
      * 获取最后一条sql 语句,需要开启 DEBUG_MYSQL_LOG
      * @return string
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function lastSql()
+    public static function lastSql(): string
     {
         return static::engine()->lastSql();
     }
 
     /**
      * 获取最后的插入的id
-     * @param null $name
+     * @param ?string $name
      * @return string
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function lastInsertId($name = null)
+    public static function lastInsertId(?string $name = null): string
     {
         return static::engine()->lastInsertId($name);
     }
@@ -135,10 +134,10 @@ class DB
      * 执行sql 语句
      * @param string $sql
      * @param null $args
-     * @return bool|\PDOStatement
-     * @throws MysqlException
+     * @return false|\PDOStatement
+     * @throws DBException
      */
-    public static function execute(string $sql, $args = null)
+    public static function execute(string $sql, $args = null): false|\PDOStatement
     {
         return static::engine()->execute($sql, $args);
     }
@@ -146,70 +145,78 @@ class DB
     /**
      * 获取多行记录
      * @param string $sql
-     * @param null $args
-     * @param null $fetch_style
-     * @param null $fetch_argument
-     * @param array|null $ctor_args
+     * @param mixed $args
+     * @param int $fetch_style
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
+    public static function getList(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        return static::engine()->getList($sql, $args, $fetch_style, $fetch_argument, $ctor_args);
+        return static::engine()->getList($sql, $args, $fetch_style);
     }
 
     /**
      * 获取单条数据
      * @param string $sql
      * @param null $args
-     * @param null $fetch_style
-     * @param null $cursor_orientation
-     * @param int $cursor_offset
-     * @return mixed|null
-     * @throws MysqlException
+     * @param int $fetch_style
+     * @return mixed
+     * @throws DBException
      */
-    public static function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
+    public static function getRow(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): mixed
     {
-        return static::engine()->getRow($sql, $args, $fetch_style, $cursor_orientation, $cursor_offset);
+        return static::engine()->getRow($sql, $args, $fetch_style);
+    }
+
+    /**
+     * 按ID获取一行记录
+     * @param string $table
+     * @param int $id
+     * @return ?array
+     * @throws DBException
+     */
+    public static function getItem(string $table, int $id): ?array
+    {
+        return static::engine()->getItem($table, $id);
     }
 
     /**
      * 获取单个字段值
      * @param string $sql
-     * @param null $args
-     * @param null $field
-     * @return mixed|null
-     * @throws MysqlException
+     * @param mixed $args
+     * @param ?string $field
+     * @return mixed
+     * @throws DBException
      */
-    public static function getOne(string $sql, $args = null, $field = null)
+    public static function getOne(string $sql, mixed $args = null, ?string $field = null): mixed
     {
         return static::engine()->getOne($sql, $args, $field);
     }
 
     /**
-     * 获取某个字段的最大值
+     * 获得最大值
      * @param string $tbname
      * @param string $field
-     * @param null $where
-     * @param null $args
-     * @return null
-     * @throws MysqlException
+     * @param string|int|null $where
+     * @param mixed $args
+     * @return mixed
+     * @throws DBException
      */
-    public static function getMax(string $tbname, string $field, $where = null, $args = null)
+    public static function getMax(string $tbname, string $field, string|int|null $where = null, mixed $args = null): mixed
     {
         return static::engine()->getMax($tbname, $field, $where, $args);
     }
 
     /**
-     * 获取某个字段的最小值
+     * 获得最小值
      * @param string $tbname
      * @param string $field
-     * @param null $where
-     * @param null $args
-     * @return null
-     * @throws MysqlException
+     * @param string|int|null $where
+     * @param mixed|null $args
+     * @return mixed
+     * @throws DBException
      */
-    public static function getMin(string $tbname, string $field, $where = null, $args = null)
+    public static function getMin(string $tbname, string $field, string|int|null $where = null, mixed $args = null): mixed
     {
         return static::engine()->getMin($tbname, $field, $where, $args);
     }
@@ -219,9 +226,9 @@ class DB
      * @param string $sql
      * @param null $args
      * @return SqlRaw
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function raw(string $sql, $args = null)
+    public static function raw(string $sql, mixed $args = null): SqlRaw
     {
         return static::engine()->raw($sql, $args);
     }
@@ -230,56 +237,56 @@ class DB
      * 插入记录
      * @param string $tbname
      * @param array $values
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function insert(string $tbname, array $values = [])
     {
-        return static::engine()->insert($tbname, $values);
+        static::engine()->insert($tbname, $values);
     }
 
     /**
      * 替换记录集
      * @param string $tbname
      * @param array $values
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function replace(string $tbname, array $values = [])
     {
-        return static::engine()->replace($tbname, $values);
+        static::engine()->replace($tbname, $values);
     }
 
     /**
      * 更新记录集
      * @param string $tbname
      * @param array $values
-     * @param null $where
-     * @param null $args
-     * @throws MysqlException
+     * @param string|int|null $where
+     * @param mixed $args
+     * @throws DBException
      */
-    public static function update(string $tbname, array $values, $where = null, $args = null)
+    public static function update(string $tbname, array $values, string|int|null $where = null, mixed $args = null)
     {
-        return static::engine()->update($tbname, $values, $where, $args);
+        static::engine()->update($tbname, $values, $where, $args);
     }
 
     /**
      * 删除记录集
      * @param string $tbname
-     * @param null $where
-     * @param null $args
-     * @throws MysqlException
+     * @param string|int|null $where
+     * @param mixed $args
+     * @throws DBException
      */
-    public static function delete(string $tbname, $where = null, $args = null)
+    public static function delete(string $tbname, string|int|null $where = null, mixed $args = null)
     {
-        return static::engine()->delete($tbname, $where, $args);
+        static::engine()->delete($tbname, $where, $args);
     }
 
     /**
-     * 获取表字段 判断字段是否存在
+     * 获得表的所有字段
      * @param string $tbname
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function getFields(string $tbname)
+    public static function getFields(string $tbname): array
     {
         return static::engine()->getFields($tbname);
     }
@@ -289,9 +296,9 @@ class DB
      * @param array $data
      * @param string $tbname
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function fieldFilter(array $data, string $tbname)
+    public static function fieldFilter(array $data, string $tbname): array
     {
         $fields = static::engine()->getFields($tbname);
         $temp = [];
@@ -310,9 +317,9 @@ class DB
      * @param string $tbname
      * @param string $field
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function existsField(string $tbname, string $field)
+    public static function existsField(string $tbname, string $field): bool
     {
         return static::engine()->existsField($tbname, $field);
     }
@@ -321,11 +328,11 @@ class DB
      * 创建数据库表
      * @param string $tbname
      * @param array $options
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function createTable(string $tbname, array $options = [])
     {
-        return static::engine()->createTable($tbname, $options);
+        static::engine()->createTable($tbname, $options);
     }
 
     /**
@@ -333,10 +340,10 @@ class DB
      * @param string $tbname
      * @param string $field
      * @param array $options
-     * @return int
-     * @throws MysqlException
+     * @return false|int
+     * @throws DBException
      */
-    public static function addField(string $tbname, string $field, array $options = [])
+    public static function addField(string $tbname, string $field, array $options = []): false|int
     {
         return static::engine()->addField($tbname, $field, $options);
     }
@@ -346,10 +353,10 @@ class DB
      * @param string $tbname
      * @param string $field
      * @param array $options
-     * @return int
-     * @throws MysqlException
+     * @return false|int
+     * @throws DBException
      */
-    public static function modifyField(string $tbname, string $field, array $options = [])
+    public static function modifyField(string $tbname, string $field, array $options = []): false|int
     {
         return static::engine()->modifyField($tbname, $field, $options);
     }
@@ -357,36 +364,36 @@ class DB
     /**
      * 更新字段
      * @param string $tbname
-     * @param string $oldfield
-     * @param string $newfield
+     * @param string $oldField
+     * @param string $newField
      * @param array $options
-     * @return int
-     * @throws MysqlException
+     * @return false|int
+     * @throws DBException
      */
-    public static function updateField(string $tbname, string $oldfield, string $newfield, array $options = [])
+    public static function updateField(string $tbname, string $oldField, string $newField, array $options = []): false|int
     {
-        return static::engine()->updateField($tbname, $oldfield, $newfield, $options);
+        return static::engine()->updateField($tbname, $oldField, $newField, $options);
     }
 
     /**
      * 删除字段
      * @param string $tbname
      * @param string $field
-     * @return int|null
-     * @throws MysqlException
+     * @return false|int
+     * @throws DBException
      */
-    public static function dropField(string $tbname, string $field)
+    public static function dropField(string $tbname, string $field): false|int
     {
         return static::engine()->dropField($tbname, $field);
     }
 
     /**
-     * 检查表是否存在
+     * 检查表存在
      * @param string $tbname
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
-    public static function existsTable(string $tbname)
+    public static function existsTable(string $tbname): bool
     {
         return static::engine()->existsTable($tbname);
     }
@@ -394,11 +401,12 @@ class DB
     /**
      * 删除表
      * @param string $tbname
-     * @return int
-     * @throws MysqlException
+     * @return false|int
+     * @throws DBException
      */
-    public static function dropTable(string $tbname)
+    public static function dropTable(string $tbname): false|int
     {
         return static::engine()->dropTable($tbname);
     }
+
 }

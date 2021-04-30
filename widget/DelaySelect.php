@@ -1,60 +1,55 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\App;
+use beacon\core\Field;
 
-/**
- * 选项是延迟js设置的
- * Class DelaySelect
- * @package beacon\widget
- */
-class DelaySelect extends Hidden
+#[\Attribute]
+class DelaySelect extends Field
 {
+    public string|array $header = '';
+    public string|array $source = '';
+    public string $method = 'get';
 
-    public function code(Field $field, $attr = [])
+    public function setting(array $args)
     {
-        $value = isset($attr['value']) ? $attr['value'] : $field->value;
-        $attr['value'] = '';
-        $attr['type'] = '';
-        $attr['yee-module'] = 'delay-select';
-        $attr['data-value'] = $value;
-        //选项头
-        if ($field->header !== null) {
-            $attr['data-header'] = $field->header;
+        parent::setting($args);
+        if (isset($args['header']) && (is_string($args['header']) || is_array($args['header']))) {
+            $this->header = $args['header'];
         }
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        $out = [];
-        $out[] = '<select ' . join(' ', $attr) . '>';
-        if ($field->header !== null) {
-            $attr['data-header'] = $field->header;
-            if (is_string($field->header)) {
-                $out[] = '<option value="">';
-                $out[] = htmlspecialchars($field->header);
-                $out[] = '</option>';
-            } else if (is_array($field->header) && isset($field->header['text'])) {
-                if (isset($field->header['value'])) {
-                    $out[] = '<option value="' . htmlspecialchars($field->header['value']) . '">';
-                } else {
-                    $out[] = '<option value="">';
-                }
-                $out[] = htmlspecialchars($field->header['text']);
-                $out[] = '</option>';
-            } else if (is_array($field->header) && isset($field->header[1])) {
-                $out[] = '<option value="' . htmlspecialchars($field->header[0]) . '">';
-                $out[] = htmlspecialchars($field->header[1]);
-                $out[] = '</option>';
-            }
+        if (isset($args['source']) && (is_string($args['source']) || is_array($args['source']))) {
+            $this->source = $args['source'];
         }
-        $out[] = '</select>';
-        return join('', $out);
+        if (isset($args['method']) && is_string($args['method'])) {
+            $this->method = $args['method'];
+        }
     }
 
+    protected function code(array $attrs = []): string
+    {
+        $attrs['yee-module'] = $this->getYeeModule('delay-select');
+        $options = [];
+        $attr['data-value'] = $attrs['value'];
+        $attr['data-source'] = is_string($this->source) ? App::url($this->source) : $this->source;
+        $attr['data-method'] = $this->method;
+        unset($attrs['value']);
+        if (!empty($this->header)) {
+            if (is_string($this->header)) {
+                $options[] = ['value' => '', 'text' => $this->header];
+            } else if (isset($this->header['text'])) {
+                $options[] = ['value' => isset($this->header['value']) ? $this->header['value'] : $this->header['text'], 'text' => $this->header['text']];
+            } else if (isset($this->header[0])) {
+                $options[] = ['value' => $this->header[0], 'text' => isset($this->header[1]) ? $this->header[1] : $this->header[0]];
+            }
+        }
+        $code = [];
+        foreach ($options as $item) {
+            $code[] = static::makeTag('option', ['attrs' => $item, 'exclude' => ['text'], 'text' => $item['text'], 'filter' => false]);
+        }
+        $optCode = "\n" . join("\n", $code) . "\n";
+        return static::makeTag('select', ['attrs' => $attrs, 'exclude' => ['value'], 'code' => $optCode]);
+    }
 }

@@ -1,20 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2018/2/25
- * Time: 5:54
- */
 
-namespace beacon;
 
+namespace beacon\core;
 
 class SqlItem
 {
-    public $sql = '';
-    public $args = null;
+    public string $sql = '';
+    public array $args = [];
 
-    public function __construct(string $sql, $args = null)
+    public function __construct(string $sql, array|string|int|float|bool|null $args = null)
     {
         $this->sql = trim($sql);
         if ($args === null || (is_array($args) && count($args) == 0)) {
@@ -27,23 +21,35 @@ class SqlItem
         }
     }
 
-    public function add(string $sql, $args = null)
+    /**
+     * @param string $sql
+     * @param array|string|int|float|bool|null $args
+     * @return $this
+     */
+    public function add(string $sql, array|string|int|float|bool|null $args = null): SqlItem
     {
-        $this->sql .= ' ' . $sql;
+        $this->sql .= ' ' . trim($sql);
         if ($args === null || (is_array($args) && count($args) == 0)) {
             return $this;
         }
         if (!is_array($args)) {
             $args = [$args];
         }
-        if ($this->args == null) {
-            $this->args = $args;
-        } else {
-            $this->args = array_merge($this->args, $args);
-        }
+        $this->args = array_merge($this->args, $args);
         return $this;
     }
 
+}
+
+class SqlFrame
+{
+    public function __construct(
+        public string $sql = '',
+        public array $args = [],
+        public string $type = '',
+    )
+    {
+    }
 }
 
 class SqlCondition
@@ -52,33 +58,31 @@ class SqlCondition
     const WITHOUT_NULL = 1;
     const WITHOUT_ZERO_LENGTH = 2;
     const WITHOUT_ZERO = 3;
+
     /**
      * @var SqlItem[]
      */
-    private $items = [];
-    public $type = 'and';
+    protected array $items = [];
+    public string $type = 'and';
 
     public function __construct(string $type = 'and')
     {
-        $this->type = 'and';
+        $this->type = $type;
     }
 
     /**
      * 查询条件
-     * @param null $sql
-     * @param null $args
+     * @param string|SqlCondition $sql
+     * @param mixed $args
      * @return $this
      */
-    public function where($sql = null, $args = null)
+    public function where(string|SqlCondition $sql = '', array|string|int|float|bool|null $args = null): static
     {
-        if ($sql === null) {
-            return $this;
-        }
         if ($sql instanceof SqlCondition) {
             $frame = $sql->getFrame();
             if (!empty($frame['sql'])) {
-                if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
-                    $frame['sql'] = preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+                if (preg_match('@^(and|or)\s+@i', $frame['sql'])) {
+                    $frame['sql'] = preg_replace('@^(and|or)\s+@i', '', $frame['sql']);
                 }
                 if ($frame['type'] !== '') {
                     $this->items[] = new SqlItem($frame['type'] . ' (' . $frame['sql'] . ')', $frame['args']);
@@ -87,21 +91,9 @@ class SqlCondition
                 }
             }
             return $this;
-        } elseif (is_array($sql) && $args === null) {
-            foreach ($sql as $key => $value) {
-                if (strpos($key, '?') === false) {
-                    $this->where($key . '=?', $value);
-                } else {
-                    $this->where($key, $value);
-                }
-            }
-            return $this;
-        }
-        if (!is_string($sql)) {
-            return $this;
         }
         $sql = trim($sql);
-        if (!isset($sql[0])) {
+        if (empty($sql)) {
             return $this;
         }
         $item = new SqlItem($sql, $args);
@@ -110,14 +102,12 @@ class SqlCondition
     }
 
     /**
-     * 检索条件,如果值为空 不加入筛选
      * @param string $sql
-     * @param $value
+     * @param array|string|int|float|bool|null $value
      * @param int $type
-     * @param string|null $format
      * @return $this
      */
-    public function search(string $sql, $value, $type = self::WITHOUT_EMPTY, string $format = null)
+    public function search(string $sql, array|string|int|float|bool|null $value, $type = self::WITHOUT_EMPTY): static
     {
         switch ($type) {
             case self::WITHOUT_EMPTY:
@@ -143,9 +133,19 @@ class SqlCondition
             default:
                 break;
         }
-        if ($format !== null) {
-            $value = preg_replace('@\{0\}@', $value);
+        //用于 in not in
+        if (substr_count($sql, '[?]') == 1 && is_array($value)) {
+            if (count($value) > 0) {
+                $temp = [];
+                foreach ($value as $item) {
+                    $temp[] = '?';
+                }
+                $sql = str_replace('[?]', join(',', $temp), $sql);
+                $this->where($sql, $value);
+            }
+            return $this;
         }
+        //解析多个?
         $maxCount = substr_count($sql, '?');
         if ($maxCount > 1) {
             $temp = [];
@@ -159,23 +159,19 @@ class SqlCondition
     }
 
     /**
-     * 获取代码帧
-     * @return array
+     * 获取查询帧数据
+     * @return SqlFrame
      */
-    public function getFrame()
+    public function getFrame(): SqlFrame
     {
         $sqlItems = [];
         $argItems = [];
         foreach ($this->items as $item) {
             $tempSql = $item->sql;
             $tempArgs = $item->args;
-            if (preg_match('@^or\s+@i', $tempSql)) {
+            if (preg_match('@^(or|and)\s+@i', $tempSql)) {
                 if (count($sqlItems) == 0) {
-                    $tempSql = preg_replace('@^or\s+@i', '', $tempSql);
-                }
-            } else if (preg_match('@^and\s+@i', $tempSql)) {
-                if (count($sqlItems) == 0) {
-                    $tempSql = preg_replace('@^and\s+@i', '', $tempSql);
+                    $tempSql = preg_replace('@^(or|and)\s+@i', '', $tempSql);
                 }
             } else {
                 if (count($sqlItems) >= 0) {
@@ -183,19 +179,20 @@ class SqlCondition
                 }
             }
             $sqlItems[] = $tempSql;
-            if (is_array($tempArgs)) {
+            if (count($tempArgs) > 0) {
                 $argItems = array_merge($argItems, $tempArgs);
-            } else if ($tempArgs !== null) {
-                $argItems[] = $tempArgs;
             }
-
         }
-        return ['sql' => join(' ', $sqlItems), 'args' => $argItems, 'type' => $this->type];
+        return new SqlFrame(join(' ', $sqlItems), $argItems, $this->type);
     }
 
-    public function empty()
+    /**
+     * 清空查询条件
+     */
+    public function empty(): static
     {
         $this->items = [];
+        return $this;
     }
 
 }

@@ -6,7 +6,7 @@
  * Time: 下午12:39
  */
 
-namespace beacon;
+namespace beacon\core;
 
 /**
  * 日志管理类
@@ -16,10 +16,9 @@ namespace beacon;
 class Logger
 {
 
-    private static $log_udp_ip = "";
-    private static $log_udp_port = 0;
-
-    private static $sock = null;
+    private static string $log_udp_ip = "";
+    private static int $log_udp_port = 0;
+    private static \Socket|null $sock = null;
 
     /**
      * UDP发送
@@ -39,43 +38,36 @@ class Logger
             self::$log_udp_ip = Config::get('beacon.log_udp_addr', '127.0.0.1');
             self::$log_udp_port = Config::get('beacon.log_udp_port', 1024);
         }
-        $backtrace = debug_backtrace(false);
-        $backtrace_message = 'unknown';
-        if (isset($backtrace[1]) && isset($backtrace[1]['file']) && isset($backtrace[1]['line'])) {
-            $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'] . ')';
-        }
-        $temps = [];
-        foreach ($args as $arg) {
-            try {
-                $arg = self::convert($arg);
-            } catch (\ReflectionException $exception) {
-            }
-            $temp = json_encode($arg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-            if ($temp[0] != '{' && $temp[0] != '[') {
-                $temp = strval($arg);
-            }
-            $temps[] = $temp;
-        }
-        $data = [];
-        $data['data'] = $temps;
-        $data['file'] = $backtrace_message;
-        $data['act'] = $type;
-        if ($time !== null) {
-            $data['time'] = $time;
-        }
-
         try {
+            $backtrace = debug_backtrace(false);
+            $backtrace_message = 'unknown';
+            if (isset($backtrace[1]) && isset($backtrace[1]['file']) && isset($backtrace[1]['line'])) {
+                $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'] . ')';
+            }
+            $temps = [];
+            foreach ($args as $arg) {
+                $arg = self::convert($arg);
+                $temp = json_encode($arg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                if ($temp[0] != '{' && $temp[0] != '[') {
+                    $temp = strval($arg);
+                }
+                $temps[] = $temp;
+            }
+            $data = [];
+            $data['data'] = $temps;
+            $data['file'] = $backtrace_message;
+            $data['act'] = $type;
+            if ($time !== null) {
+                $data['time'] = $time;
+            }
             if (self::$sock === null) {
                 self::$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
             }
             $sock = self::$sock;
             $msg = json_encode($data);
             $len = strlen($msg);
-            socket_sendto($sock, $msg, $len, 0, self::$log_udp_ip, self::$log_udp_port);
-            //socket_close($sock);
-        } catch (\Exception $e) {
-
-        } catch (\Error $e) {
+            @socket_sendto($sock, $msg, $len, 0, self::$log_udp_ip, self::$log_udp_port);
+        } catch (\Exception) {
 
         }
     }
@@ -85,7 +77,7 @@ class Logger
      * @param \ReflectionProperty $property
      * @return string
      */
-    private static function getPropertyKey(\ReflectionProperty $property)
+    private static function getPropertyKey(\ReflectionProperty $property): string
     {
         $static = $property->isStatic() ? ' static' : '';
         if ($property->isPublic()) {
@@ -97,15 +89,16 @@ class Logger
         if ($property->isPrivate()) {
             return 'private' . $static . ' ' . $property->getName();
         }
+        return '';
     }
 
     /**
      * 对象解析出来以便可以json输出
      * @param $object
-     * @return array
-     * @throws \ReflectionException
+     * @return array|string|object|null
+     * @throws \Exception
      */
-    private static function convert($object)
+    private static function convert($object): array|string|object|null
     {
         if (!is_object($object)) {
             return $object;
@@ -128,14 +121,8 @@ class Logger
                 continue;
             }
             $type = self::getPropertyKey($property);
-            if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
-                $property->setAccessible(true);
-            }
-            try {
-                $value = $property->getValue($object);
-            } catch (\ReflectionException $e) {
-                $value = 'only PHP 5.3 can access private/protected properties';
-            }
+            $property->setAccessible(true);
+            $value = $property->getValue($object);
             if ($value === $object || in_array($value, $_processed, true)) {
                 $value = 'recursion - parent object [' . get_class($value) . ']';
             }

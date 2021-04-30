@@ -1,34 +1,48 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
 
 namespace beacon\widget;
 
+use beacon\core\App;
+use beacon\core\Field;
 
-use beacon\Field;
-
-class Tinymce extends Hidden
+#[\Attribute]
+class Tinymce extends Field
 {
 
-    public function code(Field $field, $attr = [])
+    public string $imagesUploadUrl = '';
+    public string $typeMode = 'basic';
+    public bool $statusbar = false;
+    public bool $elementPath = false;
+
+    public function setting(array $args)
     {
-        $attr['yee-module'] = 'tinymce';
-        if (isset($attr['value'])) {
-            $field->value = $attr['value'];
+        parent::setting($args);
+        if (isset($args['imagesUploadUrl']) && is_string($args['imagesUploadUrl'])) {
+            $this->imagesUploadUrl = $args['imagesUploadUrl'];
         }
-        $attr['type'] = '';
-        $attr['value'] = '';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</textarea>';
+        if (isset($args['typeMode']) && is_string($args['typeMode'])) {
+            $this->typeMode = $args['typeMode'];
+        }
+        if (isset($args['statusbar']) && is_bool($args['statusbar'])) {
+            $this->statusbar = $args['statusbar'];
+        }
+        if (isset($args['elementPath']) && is_bool($args['elementPath'])) {
+            $this->elementPath = $args['elementPath'];
+        }
     }
 
-    public function assign(Field $field, array $input)
+    protected function code(array $attrs = []): string
     {
-        $field->varType = 'string';
-        return parent::assign($field, $input);
+        if (!empty($this->imagesUploadUrl)) {
+            $attrs['data-images-upload-url'] = App::url($this->imagesUploadUrl);
+        }
+        if (!empty($this->typeMode)) {
+            $attrs['data-type-mode'] = $this->typeMode;
+        }
+        $attrs['data-statusbar'] = $this->statusbar;
+        $attrs['data-elementpath'] = $this->elementPath;
+
+        $attrs['yee-module'] = $this->getYeeModule('tinymce');
+        return static::makeTag('textarea', ['attrs' => $attrs, 'exclude' => ['value'], 'text' => $attrs['value']]);
     }
 }

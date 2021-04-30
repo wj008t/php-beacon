@@ -1,29 +1,15 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
 
 namespace beacon\widget;
 
+use beacon\core\Field;
 
-use beacon\Field;
-
-class Text extends Hidden
+#[\Attribute]
+class Text extends Field
 {
-
-    public function code(Field $field, $attr = [])
+    protected function code(array $attrs = []): string
     {
-        $attr['type'] = 'text';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
-    }
-
-    public function assign(Field $field, array $input)
-    {
-        $field->varType = 'string';
-        return parent::assign($field, $input);
+        $attrs['type'] = 'text';
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 }

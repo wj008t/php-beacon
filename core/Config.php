@@ -1,6 +1,6 @@
 <?php
 
-namespace beacon;
+namespace beacon\core;
 
 /**
  * Created by PhpStorm.
@@ -11,17 +11,17 @@ namespace beacon;
 class Config
 {
 
-    private static $configPath = null;
-    private static $global = []; //全局的
-    private static $loaded = []; //已经加载过的
+    private static string|null $configPath = null;
+    private static array $global = []; //全局的
+    private static array $loaded = []; //已经加载过的
 
     /**
      * 从配置文件目录中加载
      * @param $name
      * @param bool $overwrite
-     * @return mixed|null
+     * @return array
      */
-    public static function load($name, $overwrite = false)
+    public static function load($name, $overwrite = false): array
     {
         if (is_array($name)) {
             $data = [];
@@ -31,33 +31,11 @@ class Config
             }
             return $data;
         }
-
-        //如果应用目录下存在配置文件夹使用应用目录下面的配置文件
-        $appPath = Route::getPath();
-        if (!empty($appPath)) {
-            $filePath = Utils::path($appPath, 'config', $name . '.config.php');
-            if (file_exists($filePath)) {
-                $loadData = require($filePath);
-                if (is_array($loadData)) {
-                    foreach ($loadData as $key => $val) {
-                        if ($overwrite) {
-                            self::$global[$name . '.' . $key] = $val;
-                        } else {
-                            if (!isset(self::$global[$name . '.' . $key])) {
-                                self::$global[$name . '.' . $key] = $val;
-                            }
-                        }
-                    }
-                }
-                self::$loaded[$name] = 1;
-                return $loadData;
-            }
-        }
         //使用根目录下的配置文件
         if (empty(self::$configPath)) {
-            self::$configPath = Utils::path(ROOT_DIR, 'config');
+            self::$configPath = Util::path(ROOT_DIR, 'config');
         }
-        $filePath = Utils::path(self::$configPath, $name . '.config.php');
+        $filePath = Util::path(self::$configPath, $name . '.config.php');
         if (file_exists($filePath)) {
             $loadData = require($filePath);
             if (is_array($loadData)) {
@@ -80,11 +58,11 @@ class Config
     /**
      * 指定绝对路径加载
      * @param $file
-     * @return mixed|null
+     * @return array
      */
-    public static function loadFile(string $file)
+    public static function loadFile(string $file): array
     {
-        $path = Utils::path($file);
+        $path = Util::path($file);
         if (is_file($path)) {
             return require($path);
         }
@@ -102,12 +80,23 @@ class Config
     }
 
     /**
-     * 获取配置项
-     * @param string $key
-     * @param string $def 默认值
-     * @return mixed|string
+     * 追加配置
+     * @param array $value
      */
-    public static function get(string $key = null, $def = null)
+    public static function append(array $value)
+    {
+        foreach ($value as $key => $val) {
+            self::$global[$key] = $val;
+        }
+    }
+
+    /**
+     * 获取配置项
+     * @param string|null $key
+     * @param null $default
+     * @return array|string|null|int|callable|float|bool
+     */
+    public static function get(string $key = null, $default = null): array|string|null|int|callable|float|bool
     {
         if ($key == null) {
             return self::$global;
@@ -121,7 +110,7 @@ class Config
                 return self::getSection($name);
             }
         }
-        return isset(self::$global[$key]) ? self::$global[$key] : $def;
+        return isset(self::$global[$key]) ? self::$global[$key] : $default;
     }
 
     /**
@@ -129,7 +118,7 @@ class Config
      * @param string $name
      * @return array
      */
-    public static function getSection(string $name)
+    public static function getSection(string $name): array
     {
         $section = [];
         if (!isset(self::$loaded[$name])) {

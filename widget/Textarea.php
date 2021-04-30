@@ -1,33 +1,14 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
 
 namespace beacon\widget;
 
+use beacon\core\Field;
 
-use beacon\Field;
-
-class Textarea extends Hidden
+#[\Attribute]
+class Textarea extends Field
 {
-
-    public function code(Field $field, $attr = [])
+    protected function code(array $attrs = []): string
     {
-        $attr['type'] = '';
-        if (isset($attr['value'])) {
-            $field->value = $attr['value'];
-        }
-        $args['value'] = '';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<textarea ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</textarea>';
-    }
-
-    public function assign(Field $field, array $input)
-    {
-        $field->varType = 'string';
-        return parent::assign($field, $input);
+        return static::makeTag('textarea', ['attrs' => $attrs, 'exclude' => ['value'], 'text' => $attrs['value']]);
     }
 }

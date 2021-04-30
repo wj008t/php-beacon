@@ -1,2 +1,3 @@
-# beacon
-php 快速开发框架
+PHP beacon 第2版
+
+使用 PHP注解的 php-fpm 框架。

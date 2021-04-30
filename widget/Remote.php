@@ -1,34 +1,40 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 18-11-24
- * Time: 下午5:26
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\App;
+use beacon\core\Field;
 
-/**
- * 需要远程校验的文本输入框
- * Class Remote
- * @package beacon\widget
- */
-class Remote extends Hidden
+#[\Attribute]
+class Remote extends Field
 {
-    public function code(Field $field, $attr = [])
+    public string $url = '';
+    public string $method = 'get';
+    public string $carry = '';
+
+    public function setting(array $args)
     {
-        $attr['type'] = 'text';
-        $attr['yee-module'] = 'remote';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        parent::setting($args);
+        if (isset($args['url']) && is_string($args['url'])) {
+            $this->url = $args['url'];
+        }
+        if (isset($args['method']) && is_string($args['method'])) {
+            $this->method = $args['method'];
+        }
+        if (isset($args['carry']) && is_string($args['carry'])) {
+            $this->carry = $args['carry'];
+        }
     }
 
-    public function assign(Field $field, array $input)
+    protected function code(array $attrs = []): string
     {
-        $field->varType = 'string';
-        return parent::assign($field, $input);
+        $attrs['yee-module'] = $this->getYeeModule('remote');
+        $attrs['data-url'] = App::url($this->url);
+        $attrs['data-method'] = $this->method;
+        $attrs['data-carry'] = $this->carry;
+        $attrs['type'] = 'text';
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
 }

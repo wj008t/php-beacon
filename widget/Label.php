@@ -1,36 +1,26 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 18-11-28
- * Time: 下午11:32
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Label implements WidgetInterface
+#[\Attribute]
+class Label extends Field
 {
-
-    public function code(Field $field, $attr = [])
+    protected function code(array $attrs = []): string
     {
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<span ' . join(' ', $attr) . '>' . htmlspecialchars($field->value) . '</span>';
+        return static::makeTag('span', ['attrs' => $attrs, 'exclude' => ['value'], 'text' => $attrs['value']]);
     }
 
-    public function assign(Field $field, array $input)
+    public function fromParam(array $param = []): mixed
     {
+        return $this->getValue();
     }
 
-    public function fill(Field $field, array &$values)
+    public function joinData(array &$data = [])
     {
-    }
 
-    public function init(Field $field, array $values)
-    {
-        $name = $field->name;
-        $field->value = isset($values[$name]) ? $values[$name] : null;
     }
 }

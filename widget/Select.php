@@ -1,119 +1,117 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/14
- * Time: 18:02
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\DB;
+use beacon\core\DBException;
+use beacon\core\Field;
 
-class Select extends Hidden
+#[\Attribute]
+class Select extends Field
 {
+    public string|array $header = '';
+    public array $options = [];
+    public string|array $optionFunc = '';
+    public string $optionSql = '';
+    private ?array $cacheOptions = null;
 
-    public function code(Field $field, $attr = [])
+
+    public function setting(array $args)
     {
-        $value = isset($attr['value']) ? $attr['value'] : $field->value;
-        $options = isset($attr['@options']) ? $attr['@options'] : $field->options;
-        $header = isset($attr['@header']) ? $attr['@header'] : $field->header;
-
-        $options = $options == null ? [] : $options;
-        $attr['value'] = '';
-        $attr['type'] = '';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        $out = [];
-        $out[] = '<select ' . join(' ', $attr) . '>' . "\n";
-        //选项头
-        if ($header !== null) {
-            if (is_string($header)) {
-                $out[] = '<option value="">';
-                $out[] = htmlspecialchars($header);
-                $out[] = '</option>';
-            } else if (is_array($header) && isset($header['text'])) {
-                if (isset($header['value'])) {
-                    $out[] = '<option value="' . htmlspecialchars($header['value']) . '">';
-                } else {
-                    $out[] = '<option value="">';
-                }
-                $out[] = htmlspecialchars($header['text']);
-                $out[] = '</option>';
-            } else if (is_array($header) && isset($header[1])) {
-                $out[] = '<option value="' . htmlspecialchars($header[0]) . '">';
-                $out[] = htmlspecialchars($header[1]);
-                $out[] = '</option>';
-            }
+        parent::setting($args);
+        if (isset($args['header']) && (is_string($args['header']) || is_array($args['header']))) {
+            $this->header = $args['header'];
         }
-        //选项值
-        foreach ($options as $item) {
-            if ($item == null) {
-                continue;
-            }
-            if (!is_array($item)) {
-                $item = ['value' => $item];
-            }
-            $text = isset($item['text']) ? $item['text'] : (isset($item[1]) ? $item[1] : (isset($item[0]) ? $item[0] : null));
-            $tips = isset($item['tips']) ? $item['tips'] : (isset($item[2]) ? $item[2] : null);
-            $val = isset($item['value']) ? $item['value'] : (isset($item[0]) ? $item[0] : null);
-            $style = isset($item['style']) ? $item['style'] : null;
-            $disabled = isset($item['disabled']) ? $item['disabled'] : false;
-            $group = isset($item['group']) ? $item['group'] : null;
-            if ($val === null) {
-                $val = $text;
-            }
-            if ($group !== null && is_array($group)) {
-                $out[] = '<optgroup';
-                if ($text !== null) {
-                    $out[] = ' label="' . htmlspecialchars($text) . '"';
-                }
-                $out[] = '>' . "\n";
-                foreach ($group as $gitem) {
-                    if (!is_array($item)) {
-                        $gitem = ['value' => $gitem];
-                    }
-                    $gtext = isset($gitem['text']) ? $gitem['text'] : (isset($gitem[1]) ? $gitem[1] : (isset($gitem[0]) ? $gitem[0] : null));
-                    $gtips = isset($gitem['tips']) ? $gitem['tips'] : (isset($gitem[2]) ? $gitem[2] : null);
-                    $gval = isset($gitem['value']) ? $gitem['value'] : (isset($gitem[0]) ? $gitem[0] : null);
-                    $gstyle = isset($gitem['style']) ? $gitem['style'] : null;
-                    $gdisabled = isset($gitem['disabled']) ? $gitem['disabled'] : false;
-                    if ($gval === null) {
-                        $gval = $gtext;
-                    }
-                    $selected = strval($gval) == strval($value) ? ' selected="selected"' : '';
-                    if (!empty($gstyle)) {
-                        $selected .= ' style="' . $gstyle . '"';
-                    }
-                    if ($gdisabled) {
-                        $selected .= ' disabled="disabled"';
-                    }
-                    $out[] = '  <option value="' . htmlspecialchars($gval) . '"' . $selected . '>';
-                    $out[] = htmlspecialchars($gtext);
-                    if (!empty($gtips)) {
-                        $out[] = ' | ' . htmlspecialchars($gtips);
-                    }
-                    $out[] = '</option>' . "\n";
-                }
-                $out[] = '</optgroup>' . "\n";
-                continue;
-            }
-            $selected = strval($val) == strval($value) ? ' selected="selected"' : '';
-            if (!empty($style)) {
-                $selected .= ' style="' . $style . '"';
-            }
-            if ($disabled) {
-                $selected .= ' disabled="disabled"';
-            }
-            $out[] = '<option value="' . htmlspecialchars($val) . '"' . $selected . '>';
-            $out[] = htmlspecialchars($text);
-            if (!empty($tips)) {
-                $out[] = ' | ' . htmlspecialchars($tips);
-            }
-            $out[] = '</option>' . "\n";
+        if (isset($args['optionFunc']) && (is_string($args['optionFunc']) || is_array($args['optionFunc']))) {
+            $this->optionFunc = $args['optionFunc'];
         }
-        $out[] = '</select>';
-        return join('', $out);
+        if (isset($args['optionSql']) && is_array($args['optionSql'])) {
+            $this->optionSql = $args['optionSql'];
+        }
+        if (isset($args['options']) && is_array($args['options'])) {
+            $this->options = $args['options'];
+        }
     }
+
+    /**
+     * 获取选项值
+     * @param string $value
+     * @return array
+     * @throws DBException
+     */
+    private function getOptions(string $value): array
+    {
+        if ($this->cacheOptions !== null) {
+            return $this->cacheOptions;
+        }
+        $options = $this->options;
+        if (!empty($this->optionFunc) && is_callable($this->optionFunc)) {
+            $options = array_merge($options, call_user_func($this->optionFunc));
+        }
+        if (!empty($this->optionSql)) {
+            $list = DB::getList($this->optionSql);
+            foreach ($list as $item) {
+                if (isset($item['value'])) {
+                    $options[] = $item;
+                } else {
+                    $options[] = array_values($item);
+                }
+            }
+        }
+
+        $this->cacheOptions = [];
+        if (!empty($this->header)) {
+            if (is_string($this->header)) {
+                $this->cacheOptions[] = ['value' => '', 'text' => $this->header];
+            } else if (isset($this->header['text'])) {
+                $this->cacheOptions[] = ['value' => isset($this->header['value']) ? $this->header['value'] : $this->header['text'], 'text' => $this->header['text']];
+            } else if (isset($this->header[0])) {
+                $this->cacheOptions[] = ['value' => $this->header[0], 'text' => isset($this->header[1]) ? $this->header[1] : $this->header[0]];
+            }
+        }
+        foreach ($options as $item) {
+            if (is_array($item)) {
+                if (isset($item['value']) && isset($item['text'])) {
+                    $option = $item;
+                } else if (isset($item[0])) {
+                    $option = ['value' => $item[0], 'text' => $item[0]];
+                    if (isset($item[1])) {
+                        $option['text'] = $item[1];
+                    }
+                } else {
+                    continue;
+                }
+            } else {
+                $option = ['value' => $item, 'text' => $item];
+            }
+            if ($value == strval($option['value'])) {
+                $option['selected'] = 'selected';
+            }
+            $this->cacheOptions[] = $option;
+        }
+        return $this->cacheOptions;
+    }
+
+    /**
+     * 获取代码
+     * @param array $attrs
+     * @return string
+     * @throws DBException
+     */
+    protected function code(array $attrs = []): string
+    {
+        $value = strval($attrs['value']);
+        $options = $this->getOptions($value);
+        $code = [];
+        foreach ($options as $item) {
+            $code[] = static::makeTag('option', ['attrs' => $item, 'exclude' => ['text'], 'text' => $item['text'], 'filter' => false]);
+        }
+        $optCode = "\n" . join("\n", $code) . "\n";
+        return static::makeTag('select', ['attrs' => $attrs, 'exclude' => ['value'], 'code' => $optCode]);
+
+    }
+
 
 }

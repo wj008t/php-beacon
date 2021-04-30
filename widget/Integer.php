@@ -1,30 +1,17 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/15
- * Time: 4:01
- */
+
 
 namespace beacon\widget;
 
 
-use beacon\Field;
+use beacon\core\Field;
 
-class Integer extends Hidden
+#[\Attribute]
+class Integer extends Field
 {
-    public function code(Field $field, $attr = [])
+    protected function code(array $attrs = []): string
     {
-        $attr['yee-module'] = 'integer';
-        $attr['type'] = 'text';
-        $attr = WidgetHelper::mergeAttributes($field, $attr);
-        return '<input ' . join(' ', $attr) . ' />';
+        $attrs['type'] = 'number';
+        return static::makeTag('input', ['attrs' => $attrs]);
     }
-
-    public function assign(Field $field, array $input)
-    {
-        $field->varType = 'int';
-        return parent::assign($field, $input);
-    }
-
 }

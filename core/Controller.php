@@ -1,23 +1,19 @@
 <?php
 
-namespace beacon;
 
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2017/12/11
- * Time: 20:40
- */
+namespace beacon\core;
+
+
 abstract class Controller
 {
+    protected ?View $_view = null;
 
-    /**
-     * 获取视图
-     * @return View|\sdopx\Sdopx
-     */
-    protected function view()
+    protected function view(): View
     {
-        return View::instance();
+        if ($this->_view == null) {
+            $this->_view = new View();
+        }
+        return $this->_view;
     }
 
     /**
@@ -32,9 +28,9 @@ abstract class Controller
 
     /**
      * 获取已注册参数
-     * @return array|mixed|null
+     * @return array
      */
-    protected function getAssign()
+    protected function getAssign(): array
     {
         $data = $this->view()->getAssign();
         unset($data['this']);
@@ -45,25 +41,25 @@ abstract class Controller
      * 输出显示
      * @param string $tplName
      * @param string|null $parent
-     * @return string|null;
      */
-    protected function display(string $tplName, string $parent = null)
+    protected function display(string $tplName, ?string $parent = null)
     {
         $this->view()->context($this);
-        $this->setContentType('html');
+        Request::setContentType('html');
         if ($parent !== null) {
-            return $this->view()->display($this, 'extends:' . $parent . '|' . $tplName);
+            $this->view()->display('extends:' . $parent . '|' . $tplName);
+            return;
         }
-        return $this->view()->display($tplName);
+        $this->view()->display($tplName);
     }
 
     /**
      * 获取内容
      * @param string $tplname
      * @param string|null $parent
-     * @return mixed|string|void
+     * @return string
      */
-    protected function fetch(string $tplname, string $parent = null)
+    protected function fetch(string $tplname, ?string $parent = null): string
     {
         $this->view()->context($this);
         if ($parent !== null) {
@@ -73,24 +69,24 @@ abstract class Controller
     }
 
     /**
-     * 设置跳转
      * @param string $url
      * @param array $query
      */
     protected function redirect(string $url, array $query = [])
     {
         $url = empty($url) ? '/' : $url;
-        $url = Route::url($url, $query);
+        $url = App::url($url, $query);
         Request::setHeader('Location', $url);
         exit;
     }
 
     /**
+     * 输出错误
      * @param $error string|array
-     * @param $option array :data code back template 等
-     * 如 ['data'=>$mydata,'back'=>'/index','code'=>33,'template'=>'myerror.tpl']
+     * @param $option ?array :data code back template 等
+     * 如 ['data'=>$myData,'back'=>'/index','code'=>33,'template'=>'myError.tpl']
      */
-    public function error($error, array $option = [])
+    protected function error(string|array $error, ?array $option = [])
     {
         $option['status'] = false;
         if (is_array($error)) {
@@ -101,12 +97,13 @@ abstract class Controller
         } else {
             $option['msg'] = $error;
         }
-        if ($this->isAjax() || $this->getContentType() == 'application/json' || $this->getContentType() == 'text/json') {
+        if (Request::isAjax()) {
+            Request::setContentType('json');
             echo json_encode($option, JSON_UNESCAPED_UNICODE);
             exit;
         }
         if (empty($option['back'])) {
-            $option['back'] = $this->getReferrer();
+            $option['back'] = Request::referrer();
         }
         $this->assign('info', $option);
         if (!empty($option['template'])) {
@@ -118,26 +115,28 @@ abstract class Controller
         exit;
     }
 
+
     /**
      * 显示正确信息
      * @param null $message
      * @param array $option :data code back template 等
-     * 如 ['data'=>$mydata,'back'=>'/index','code'=>33,'template'=>'myerror.tpl']
+     * 如 ['data'=>$myData,'back'=>'/index','code'=>33,'template'=>'myError.tpl']
      */
-    public function success($message = null, array $option = [])
+    protected function success($message = null, array $option = [])
     {
         $option['status'] = true;
         if (!empty($message)) {
             $option['msg'] = $message;
         }
-        if ($this->isAjax() || $this->getContentType() == 'application/json' || $this->getContentType() == 'text/json') {
+        if (Request::isAjax()) {
+            Request::setContentType('json');
             echo json_encode($option, JSON_UNESCAPED_UNICODE);
             exit;
         }
         if (empty($option['back'])) {
             $back = $this->param('__BACK__');
             if (empty($back)) {
-                $back = $this->getReferrer();
+                $back = Request::referrer();
             }
             $option['back'] = $back;
         }
@@ -151,264 +150,138 @@ abstract class Controller
         exit;
     }
 
+
     /**
-     * get 获取数据 相当于 $_GET
-     * @param string|null $name 键名 也可以指定 返回类型 如  get('name:s')  get('age:i')  支持 a:array  i:int  f:float b:bool
-     * @param null $def 默认值
-     * @return array|mixed|null
+     * @param string $name
+     * @param null $def
+     * @return array|bool|float|int|string|null
      */
-    public function get(string $name = null, $def = null)
+    public function get(string $name = '', $def = null): array|bool|float|int|string|null
     {
         return Request::get($name, $def);
     }
 
     /**
      * post 获取数据 相当于 $_POST
-     * @param string|null $name 键名 也可以指定 返回类型 如  post('name:s')  post('age:i')  支持 a:array  i:int  f:float b:bool
-     * @param null $def 默认值
-     * @return array|mixed|null
+     * @param string $name
+     * @param null $def
+     * @return array|bool|float|int|string|null
      */
-    public function post(string $name = null, $def = null)
+    public function post(string $name = '', $def = null): array|bool|float|int|string|null
     {
         return Request::post($name, $def);
     }
 
     /**
      * param 获取数据 相当于 $_REQUEST
-     * @param string|null $name
+     * @param string $name
      * @param null $def
-     * @return array|mixed|null
+     * @return array|bool|float|int|string|null
      */
-    public function param(string $name = null, $def = null)
+    public function param(string $name = '', $def = null): array|bool|float|int|string|null
     {
         return Request::param($name, $def);
     }
 
     /**
-     * 获取 session 相当于 $_SESSION[$name]
-     * @param string|null $name
-     * @param null $def
-     * @return null
-     */
-    public function getSession(string $name = null, $def = null)
-    {
-        return Request::getSession($name, $def);
-    }
-
-    /**
-     * 设置 session
-     * @param string $name
-     * @param $value
-     */
-    protected function setSession(string $name, $value)
-    {
-        return Request::setSession($name, $value);
-    }
-
-    /**
-     * 清空session
-     */
-    protected function delSession()
-    {
-        return Request::delSession();
-    }
-
-    /**
-     * 获取cookie
-     * @param string $name
-     * @param null $def
-     * @return null
-     */
-    public function getCookie(string $name, $def = null)
-    {
-        return Request::getCookie($name, $def);
-    }
-
-    /**
-     * 设置cookie
-     * @param string $name
-     * @param $value
-     * @param $options
-     * @return bool
-     */
-    protected function setCookie(string $name, $value, $options=null)
-    {
-        return Request::setCookie($name, $value, $options);
-    }
-
-    /**
-     * 获取文件
-     * @param string|null $name
-     * @return null
-     */
-    protected function file(string $name = null)
-    {
-        return Request::file($name);
-    }
-
-    /**
      * 获取路由
-     * @param string|null $name 支持 ctl:控制器名  act:方法名  app:应用名
+     * @param string $name 支持 ctl:控制器名  act:方法名  app:应用名
      * @param null $def
-     * @return null
+     * @return array|bool|float|int|string|null
      */
-    public function route(string $name = null, $def = null)
+    public function route(string $name = '', $def = null): array|bool|float|int|string|null
     {
         return Request::route($name, $def);
     }
 
     /**
-     * 获取请求头
-     * @param string|null $name
-     * @return array|mixed|null|string
-     */
-    public function getHeader(string $name = null)
-    {
-        return Request::getHeader($name);
-    }
-
-    /**
-     * 设置请求头
-     * @param string $name
-     * @param string $value
-     * @param bool $replace
-     * @param null $http_response_code
-     */
-    protected function setHeader(string $name, string $value, bool $replace = true, $http_response_code = null)
-    {
-        return Request::setHeader($name, $value, $replace, $http_response_code);
-    }
-
-    /**
-     * 获取IP
-     * @param bool $proxy
-     * @param bool $forward
-     * @return array|mixed|null|string
-     */
-    protected function getIP(bool $proxy = false, bool $forward = false)
-    {
-        return Request::getIP($proxy, $forward);
-    }
-
-    /**
-     * 获取 内容类型
-     * @param bool $whole
-     * @return array|mixed|null|string
-     */
-    protected function getContentType(bool $whole = false)
-    {
-        return Request::getContentType($whole);
-    }
-
-    /**
-     * 设置内容类型
-     * @param string $type
-     * @param string $encoding
-     */
-    protected function setContentType(string $type, string $encoding = 'utf-8')
-    {
-        return Request::setContentType($type, $encoding);
-    }
-
-    /**
-     * 获取配置项
-     * @param string $name
-     * @param null $def
-     * @return mixed|string
-     */
-    protected function config(string $name, $def = null)
-    {
-        return Request::config($name, $def);
-    }
-
-    /**
-     * 根据模板补丁修正输出数据
-     * @param string $tplName
-     * @param array|null $list
-     * @param array $origFields
-     * @param string $assign
-     * @return array
-     */
-    protected function hook(string $tplName, array $list = null, array $origFields = [], string $assign = 'rs')
-    {
-        if ($list == null) {
-            $data = $this->getAssign();
-            $list = (isset($data['list']) && is_array($data['list'])) ? $data['list'] : [];
-        }
-        if (!isset($list[0])) {
-            return $list;
-        }
-        $this->fetch($tplName);
-        $retList = [];
-        $view = $this->view();
-        $hookFunc = $view->getHook();
-        foreach ($list as $item) {
-            $column = [];
-            foreach ($origFields as $key) {
-                if (isset($item[$key])) {
-                    $column[$key] = isset($item[$key]) ? $item[$key] : null;
-                }
-            }
-            foreach ($hookFunc as $key => $func) {
-                $column[$key] = call_user_func($func, [$assign => $item]);
-            }
-            $retList[] = $column;
-        }
-        return $retList;
-    }
-
-    /**
-     * 是否get请求
+     * 是否AJAX请求
      * @return bool
      */
-    protected function isGet()
-    {
-        return Request::isGet();
-    }
-
-    /**
-     * 判断请求方式
-     * @param string $method
-     * @return bool
-     */
-    protected function isMethod(string $method)
-    {
-        return Request::isMethod($method);
-    }
-
-    /**
-     * 获取请求方式
-     * @return string
-     */
-    public function getMethod()
-    {
-        return Request::getMethod();
-    }
-
-    /**
-     * 是否post 请求
-     * @return bool
-     */
-    public function isPost()
-    {
-        return Request::isPost();
-    }
-
-    /**
-     * 是否ajax
-     * @return bool
-     */
-    public function isAjax()
+    protected function isAjax(): bool
     {
         return Request::isAjax();
     }
 
     /**
-     * 获取来源页
-     * @return array|mixed|null|string
+     * 是否GET请求
+     * @return bool
      */
-    public function getReferrer()
+    protected function isGet(): bool
     {
-        return Request::getReferrer();
+        return Request::isGet();
+    }
+
+    /**
+     * 是否POST请求
+     * @return bool
+     */
+    protected function isPost(): bool
+    {
+        return Request::isPost();
+    }
+
+    /**
+     * 获取来源链接
+     * @return string
+     */
+    public function referrer(): string
+    {
+        return Request::referrer();
+    }
+
+
+    /**
+     * 显示表单
+     * @param Form $form
+     * @param string $template
+     */
+    protected function displayForm(Form $form, string $template = '')
+    {
+        $this->assign('form', $form);
+        if (empty($template)) {
+            if (!empty($form->template)) {
+                $template = $form->template;
+            }
+        }
+        return $this->display($template);
+    }
+
+    /**
+     * 完成表单
+     * @param Form $form
+     * @return array
+     */
+    protected function completeForm(Form $form): array
+    {
+        $form->autoComplete();
+        if (!$form->validate($error)) {
+            $this->error($error);
+        }
+        return $form->getData();
+    }
+
+
+    /**
+     * 使用模板填充数据
+     * @param array $list
+     * @param string $template
+     * @return array
+     */
+    protected function hookData(array $list, string $template = ''): array
+    {
+        $view = new View();
+        $view->context($this);
+        $view->fetch($template);
+        $hook = $view->getHook();
+        $temp = [];
+        foreach ($list as $rs) {
+            $item = [];
+            foreach ($hook as $key => $func) {
+                $item[$key] = call_user_func($func, ['rs' => $rs]);
+            }
+            $temp[] = $item;
+        }
+        return $temp;
     }
 }
