@@ -17,7 +17,6 @@ class UpImage extends Field
     public int $imgHeight = 0;
     public int $size = 0;
 
-
     public function setting(array $args)
     {
         parent::setting($args);
@@ -35,6 +34,12 @@ class UpImage extends Field
         }
         if (isset($args['size']) && is_int($args['size'])) {
             $this->size = $args['size'];
+        }
+        if (isset($args['imgWidth']) && is_int($args['imgWidth'])) {
+            $this->imgWidth = $args['imgWidth'];
+        }
+        if (isset($args['imgHeight']) && is_int($args['imgHeight'])) {
+            $this->imgHeight = $args['imgHeight'];
         }
     }
 
