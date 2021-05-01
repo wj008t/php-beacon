@@ -16,8 +16,9 @@ namespace beacon\core;
 class Logger
 {
 
-    private static string $log_udp_ip = "";
-    private static int $log_udp_port = 0;
+    public static string $addr = "127.0.0.1";
+    public static int $port = 1024;
+
     private static \Socket|null $sock = null;
 
     /**
@@ -33,10 +34,6 @@ class Logger
         }
         if (!get_extension_funcs('sockets')) {
             return;
-        }
-        if (empty(self::$log_udp_ip) || empty(self::$log_udp_port)) {
-            self::$log_udp_ip = Config::get('beacon.log_udp_addr', '127.0.0.1');
-            self::$log_udp_port = Config::get('beacon.log_udp_port', 1024);
         }
         try {
             $backtrace = debug_backtrace(false);
@@ -65,9 +62,26 @@ class Logger
             }
             $sock = self::$sock;
             $msg = json_encode($data);
-            $len = strlen($msg);
-            @socket_sendto($sock, $msg, $len, 0, self::$log_udp_ip, self::$log_udp_port);
-        } catch (\Exception) {
+            $send = [];
+            $msgId = md5(uniqid(microtime() . mt_rand()));
+            $size = 4 * 1024;
+            while (strlen($msg) > $size) {
+                $t = substr($msg, 0, $size);
+                $msg = substr($msg, $size);
+                $send[] = $t;
+            }
+            if (strlen($msg) > 0) {
+                $send[] = $msg;
+            }
+            $count = count($send);
+            $head = $msgId;
+            $head .= pack('n', $count);
+            foreach ($send as $idx => $it) {
+                $str = $head . pack('n', $idx) . $it;
+                $len = strlen($str);
+                @socket_sendto($sock, $str, $len, 0, self::$addr, self::$port);
+            }
+        } catch (\Exception $e) {
 
         }
     }
@@ -174,5 +188,122 @@ class Logger
     public static function sql(string $sql, float $time)
     {
         self::send('sql', [$sql], round($time, 6));
+    }
+
+    /**
+     * 输出数据
+     * @param string $text
+     * @param string $color
+     * @param bool $newLine
+     */
+    private static function out(string $text, string $color = 'info', bool $newLine = true)
+    {
+        $styles = array(
+            'file' => "\033[0;33m%s\033[0m",
+            'sql1' => "\033[0;34m%s\033[0m",
+            'sql2' => "\033[0;37m%s\033[0m",
+            'error' => "\033[31;31m%s\033[0m",
+            'info' => "\033[33;37m%s\033[0m"
+        );
+        $format = '%s';
+        if (isset($styles[$color])) {
+            $format = $styles[$color];
+        }
+        if ($newLine) {
+            $format .= PHP_EOL;
+        }
+        printf($format, $text);
+    }
+
+    /**
+     * 输出调试数据
+     * @param array $item
+     */
+    private static function debug(array $item)
+    {
+        static $tempFile = null;
+        if (!is_array($item) || count($item) == 0) {
+            return;
+        }
+        $act = $item['act'] ?? 'log';
+        $file = $item['file'] ?? null;
+        $data = $item['data'] ?? null;
+        $time = $item['time'] ?? null;
+        if ($file && $tempFile != $file) {
+            $tempFile = $file;
+            self::out('> ' . $file, 'file', true);
+        }
+        if ($data !== null && is_array($data) && count($data) > 0) {
+            if ($act == 'sql') {
+                if ($time !== null) {
+                    self::out($data[0] . '    ', 'sql1', false);
+                    self::out(intval(floatval($time) * 10000) / 10000, 'sql2', true);
+                } else {
+                    self::out($data[0], 'sql1', true);
+                }
+            } else {
+                foreach ($data as &$datum) {
+                    if (is_array($datum)) {
+                        $datum = json_encode($datum, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                    }
+                }
+                self::out(join('    ', $data), $act, true);
+            }
+        }
+    }
+
+    /**
+     * 监听调试
+     * @param string $server
+     */
+    public static function listen()
+    {
+        $socket = stream_socket_server('udp://' . self::$addr . ':' . self::$port, $errno, $errstr, STREAM_SERVER_BIND);
+        echo <<< EOF
+  ____
+ |  _ \
+ | |_) |   ___    __ _    ___    ___    _ __
+ |  _ <   / _ \  / _` |  / __|  / _ \  | '_ \ 
+ | |_) | |  __/ | (_| | | (__  | (_) | | | | |
+ |____/   \___|  \__,_|  \___|  \___/  |_| |_|
+=====================debug====================
+
+EOF;
+        $msgMap = [];
+        $lTime = time() + 10;
+        do {
+            $msg = stream_socket_recvfrom($socket, 1024 * 4 + 36, 0, $peer);
+            if (empty($msg)) {
+                usleep(50000);
+                continue;
+            }
+            //10秒没数据，就把之前的释放
+            if ($lTime < time()) {
+                $msgMap = [];
+            }
+            $lTime = time() + 10;
+            $msgId = substr($msg, 0, 32);
+            $count = substr($msg, 32, 2);
+            $index = substr($msg, 34, 2);
+            $count = unpack('n', $count)[1];
+            $index = unpack('n', $index)[1];
+            $msg = substr($msg, 36);
+            if (!isset($msgMap[$msgId])) {
+                $msgMap[$msgId] = [];
+            }
+            $msgMap[$msgId][$index . ''] = $msg;
+            if (count($msgMap[$msgId]) == $count) {
+                $bigMsg = [];
+                for ($i = 0; $i < $count; $i++) {
+                    $bigMsg[] = $msgMap[$msgId][$i . ''];
+                }
+                $fMsg = join('', $bigMsg);
+                unset($msgMap[$msgId]);
+                if (preg_match('@^[\{\[].*[\}\]]$@', $fMsg)) {
+                    $data = json_decode($fMsg, true);
+                    self::debug($data);
+                }
+            }
+        } while (true);
     }
 }
