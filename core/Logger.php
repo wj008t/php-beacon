@@ -64,6 +64,7 @@ class Logger
             $msg = json_encode($data);
             $send = [];
             $msgId = md5(uniqid(microtime() . mt_rand()));
+            $msgId = '--data--' . substr($msgId, 0, 24);
             $size = 4 * 1024;
             while (strlen($msg) > $size) {
                 $t = substr($msg, 0, $size);
@@ -254,9 +255,9 @@ class Logger
 
     /**
      * 监听调试
-     * @param string $server
+     * @param bool $remove 是否开启远程调试
      */
-    public static function listen()
+    public static function listen(bool $remove = false, string $password = '')
     {
         $socket = stream_socket_server('udp://' . self::$addr . ':' . self::$port, $errno, $errstr, STREAM_SERVER_BIND);
         echo <<< EOF
@@ -271,10 +272,35 @@ class Logger
 EOF;
         $msgMap = [];
         $lTime = time() + 10;
+        $sock = null;
+        $client = null;
+        if (empty($password)) {
+            $remove = false;
+        }
         do {
             $msg = stream_socket_recvfrom($socket, 1024 * 4 + 36, 0, $peer);
             if (empty($msg)) {
                 usleep(50000);
+                continue;
+            }
+            //转发到客户端
+            if ($remove && substr($msg, 0, 10) == '--client--') {
+                $pwd = substr($msg, 10, 32);
+                if ($pwd == md5($password)) {
+                    $client = [];
+                    $client[0] = $peer;
+                    $client[1] = time() + 120;
+                }
+                continue;
+            }
+
+            $valid = substr($msg, 0, 8);
+            if ($valid != '--data--') {
+                continue;
+            }
+            //转发数据
+            if ($remove && $client !== null && is_array($client) && isset($client[1]) && $client[1] > time()) {
+                @stream_socket_sendto($socket, $msg, 0, $client[0]);
                 continue;
             }
             //10秒没数据，就把之前的释放
@@ -282,7 +308,7 @@ EOF;
                 $msgMap = [];
             }
             $lTime = time() + 10;
-            $msgId = substr($msg, 0, 32);
+            $msgId = substr($msg, 8, 24);
             $count = substr($msg, 32, 2);
             $index = substr($msg, 34, 2);
             $count = unpack('n', $count)[1];
@@ -306,4 +332,5 @@ EOF;
             }
         } while (true);
     }
+
 }
