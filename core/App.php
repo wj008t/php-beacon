@@ -2,7 +2,6 @@
 
 namespace beacon\core;
 
-
 use sdopx\SdopxException;
 
 if (!defined('ROOT_DIR')) {
@@ -364,12 +363,45 @@ class App
      */
     public static function rethrow(\Throwable $exception)
     {
-        Logger::error($exception->getMessage(), $exception->getTraceAsString());
-        if ($exception instanceof DBException) {
-            Logger::log($exception->getDetail());
-        } else if ($exception instanceof SdopxException) {
-            Logger::log($exception->getDetail());
+        $out = [];
+        $out['status'] = false;
+        $out['_code'] = 500;
+        //如果开启调试,打印更详细的栈信息.
+        if ((defined('DEV_DEBUG') && DEV_DEBUG)) {
+            $code = [];
+            $code[] = get_class($exception) . ": {$exception->getMessage()}";
+            $code[] = $exception->getTraceAsString();
+            if (is_callable([$exception, 'getDetail'])) {
+                $code[] = "----------------------------------------------------------------------------------------------------------";
+                $code[] = $exception->getDetail();
+            }
+            //开启日志
+            if ((defined('DEBUG_LOG') && DEBUG_LOG)) {
+                Logger::error(join("\n", $code));
+            }
+            $out['_stack'] = explode("\n", join("\n", $code));
+            if ($exception instanceof RouteError) {
+                $out['msg'] = '404 页面没有找到:' . $exception->getMessage();
+            } else {
+                $out['msg'] = '数据出现异常:' . $exception->getMessage();
+            }
+        } else {
+            if ($exception instanceof RouteError) {
+                $out['msg'] = '404 页面没有找到!';
+            } else {
+                $out['msg'] = '数据出现异常,请稍后再试.';
+            }
         }
+        if (Request::isAjax()) {
+            Request::setContentType('json');
+            die(json_encode($out, JSON_UNESCAPED_UNICODE));
+        }
+        //输出错误页面--------
+        Request::setContentType('html');
+        $view = new View();
+        $view->assign('info', $out);
+        $template = Config::get('beacon.exception_template', '@exception.tpl');
+        $view->display($template);
     }
 
     /**
