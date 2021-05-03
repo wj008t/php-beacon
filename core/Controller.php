@@ -280,6 +280,11 @@ abstract class Controller
             foreach ($hook as $key => $func) {
                 $item[$key] = call_user_func($func, ['rs' => $rs]);
             }
+            foreach ($rs as $key => $value) {
+                if (str_starts_with($key, '_')) {
+                    $item[$key] = $value;
+                }
+            }
             $temp[] = $item;
         }
         return $temp;
