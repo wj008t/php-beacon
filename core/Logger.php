@@ -272,7 +272,6 @@ class Logger
 EOF;
         $msgMap = [];
         $lTime = time() + 10;
-        $sock = null;
         $client = null;
         if (empty($password)) {
             $remove = false;
