@@ -47,6 +47,7 @@ class UpImage extends Field
     {
         $attrs['yee-module'] = $this->getYeeModule('upload');
         $attrs['type'] = 'text';
+        $attrs['data-url'] = App::url($this->url);
         if (!empty($this->mode)) {
             $attrs['data-mode'] = $this->mode;
             if ($this->mode == 'imgGroup' && $this->size > 0) {
