@@ -31,25 +31,22 @@ class DelaySelect extends Field
     protected function code(array $attrs = []): string
     {
         $attrs['yee-module'] = $this->getYeeModule('delay-select');
-        $options = [];
-        $attr['data-value'] = $attrs['value'];
-        $attr['data-source'] = is_string($this->source) ? App::url($this->source) : $this->source;
-        $attr['data-method'] = $this->method;
+        $attrs['data-value'] = $attrs['value'];
+        $attrs['data-source'] = is_string($this->source) ? App::url($this->source) : $this->source;
+        $attrs['data-method'] = $this->method;
         unset($attrs['value']);
+        $header = [];
         if (!empty($this->header)) {
             if (is_string($this->header)) {
+                $header = ['value' => '', 'text' => $this->header];
                 $options[] = ['value' => '', 'text' => $this->header];
             } else if (isset($this->header['text'])) {
-                $options[] = ['value' => isset($this->header['value']) ? $this->header['value'] : $this->header['text'], 'text' => $this->header['text']];
+                $header = ['value' => $this->header['value'] ?? $this->header['text'], 'text' => $this->header['text']];
             } else if (isset($this->header[0])) {
-                $options[] = ['value' => $this->header[0], 'text' => isset($this->header[1]) ? $this->header[1] : $this->header[0]];
+                $header = ['value' => $this->header[0], 'text' => $this->header[1] ?? $this->header[0]];
             }
         }
-        $code = [];
-        foreach ($options as $item) {
-            $code[] = static::makeTag('option', ['attrs' => $item, 'exclude' => ['text'], 'text' => $item['text'], 'filter' => false]);
-        }
-        $optCode = "\n" . join("\n", $code) . "\n";
-        return static::makeTag('select', ['attrs' => $attrs, 'exclude' => ['value'], 'code' => $optCode]);
+        $attrs['header'] = $header;
+        return static::makeTag('select', ['attrs' => $attrs, 'exclude' => ['value']]);
     }
 }
