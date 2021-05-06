@@ -31,9 +31,9 @@ class Route
 
     /**
      * 设置应用名称
-     * @param array $namespace
+     * @param string $namespace
      */
-    public function setNamespace(array $namespace)
+    public function setNamespace(string $namespace)
     {
         $this->namespace = $namespace;
     }
