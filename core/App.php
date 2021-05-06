@@ -269,6 +269,7 @@ class App
                 if (is_callable([$startup, 'init'])) {
                     call_user_func([$startup, 'init']);
                 }
+                $data = array_merge(self::$routed, $data);
                 if (is_callable([$startup, 'execute'])) {
                     call_user_func([$startup, 'execute'], $data);
                     return;
