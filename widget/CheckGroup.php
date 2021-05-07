@@ -33,7 +33,7 @@ class CheckGroup extends Field
         if (isset($args['optionFunc']) && (is_string($args['optionFunc']) || is_array($args['optionFunc']))) {
             $this->optionFunc = $args['optionFunc'];
         }
-        if (isset($args['optionSql']) && is_array($args['optionSql'])) {
+        if (isset($args['optionSql']) && is_string($args['optionSql'])) {
             $this->optionSql = $args['optionSql'];
         }
         if (isset($args['options']) && is_array($args['options'])) {
