@@ -39,14 +39,13 @@ class DelaySelect extends Field
         if (!empty($this->header)) {
             if (is_string($this->header)) {
                 $header = ['value' => '', 'text' => $this->header];
-                $options[] = ['value' => '', 'text' => $this->header];
             } else if (isset($this->header['text'])) {
                 $header = ['value' => $this->header['value'] ?? $this->header['text'], 'text' => $this->header['text']];
             } else if (isset($this->header[0])) {
                 $header = ['value' => $this->header[0], 'text' => $this->header[1] ?? $this->header[0]];
             }
         }
-        $attrs['header'] = $header;
+        $attrs['data-header'] = $header;
         return static::makeTag('select', ['attrs' => $attrs, 'exclude' => ['value']]);
     }
 }
