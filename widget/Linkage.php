@@ -44,6 +44,15 @@ class Linkage extends Field
         }
     }
 
+    public function setValue(mixed $value)
+    {
+        if (empty($value)) {
+            $this->value = [];
+            return;
+        }
+        $this->value = Util::convertType($value, 'array');
+    }
+
     private function getValues(bool $toStr = false): array
     {
         $values = $this->getValue();
