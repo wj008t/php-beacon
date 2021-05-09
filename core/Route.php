@@ -10,6 +10,8 @@ class Route
     protected string $namespace;
     protected string $base;
     protected array $rules = [];
+    protected \Closure|null $resolveFunc = null;
+
 
     public function __construct(string $name, string $base = '', string $namespace = '')
     {
@@ -89,7 +91,16 @@ class Route
     }
 
     /**
-     * 泛解析url
+     * 设置反解析URL函数
+     * @param \Closure $func
+     */
+    public function setResolve(\Closure $func)
+    {
+        $this->resolveFunc = $func;
+    }
+
+    /**
+     * 反解析url
      * @param string $ctl
      * @param string $act
      * @param array $keys
@@ -97,6 +108,9 @@ class Route
      */
     public function resolve(string $ctl, string $act, array $keys): string
     {
+        if ($this->resolveFunc !== null && is_callable($this->resolveFunc)) {
+            return call_user_func($this->resolveFunc, $ctl, $act, $keys);
+        }
         $url = '/{ctl}';
         if (!empty($act) && $act != 'index') {
             $url .= '/{act}';
