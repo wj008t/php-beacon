@@ -24,9 +24,6 @@ class Route
         } else {
             $this->base = $base;
         }
-        $this->rules['@^/(\w+)/(\w+)$@i'] = ['ctl' => '$1', 'act' => '$2'];
-        $this->rules['@^/(\w+)/?$@i'] = ['ctl' => '$1', 'act' => 'index'];
-        $this->rules['@^/$@'] = ['ctl' => 'index', 'act' => 'index'];
     }
 
     /**
@@ -40,12 +37,19 @@ class Route
 
     /**
      * 添加路由规则
-     * @param string $pattern
+     * @param string|array $pattern
      * @param array $map
      */
-    public function addRule(string $pattern, array $map)
+    public function addRule(string|array $pattern, array $map = [])
     {
-        $this->rules[$pattern] = $map;
+        if (is_array($pattern)) {
+            foreach ($pattern as $key => $value) {
+                $this->rules[$key] = $value;
+            }
+        } else {
+            $this->rules[$pattern] = $map;
+        }
+
     }
 
     /**

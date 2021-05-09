@@ -88,6 +88,11 @@ class App
     public static function route(string $name, string $base = '', string $namespace = '')
     {
         $route = new Route($name, $base, $namespace);
+        $route->addRule([
+            '@^/(\w+)/(\w+)$@i' => ['ctl' => '$1', 'act' => '$2'],
+            '@^/(\w+)/?$@i' => ['ctl' => '$1', 'act' => 'index'],
+            '@^/$@' => ['ctl' => 'index', 'act' => 'index'],
+        ]);
         static::reg($route);
     }
 
