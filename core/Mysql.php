@@ -324,17 +324,18 @@ class Mysql
      * @param string $sql
      * @param ?array $args
      * @param ?string $field
+     * @param mixed|null $def
      * @return mixed
      * @throws DBException
      */
-    public function getOne(string $sql, mixed $args = null, ?string $field = null): mixed
+    public function getOne(string $sql, mixed $args = null, ?string $field = null, mixed $def = null): mixed
     {
         $row = $this->getRow($sql, $args);
         if ($row === null) {
-            return null;
+            return $def;
         }
         if (is_string($field) && !empty($field)) {
-            return isset($row[$field]) ? $row[$field] : null;
+            return Request::lookup($row, $field, $def);
         }
         return current($row);
     }

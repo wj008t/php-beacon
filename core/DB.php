@@ -185,12 +185,13 @@ class DB
      * @param string $sql
      * @param mixed $args
      * @param ?string $field
+     * @param mixed $def
      * @return mixed
      * @throws DBException
      */
-    public static function getOne(string $sql, mixed $args = null, ?string $field = null): mixed
+    public static function getOne(string $sql, mixed $args = null, ?string $field = null, mixed $def = null): mixed
     {
-        return static::engine()->getOne($sql, $args, $field);
+        return static::engine()->getOne($sql, $args, $field, $def);
     }
 
     /**
