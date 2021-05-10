@@ -154,9 +154,9 @@ abstract class Controller
     /**
      * @param string $name
      * @param null $def
-     * @return array|bool|float|int|string|null
+     * @return mixed
      */
-    public function get(string $name = '', $def = null): array|bool|float|int|string|null
+    public function get(string $name = '', $def = null): mixed
     {
         return Request::get($name, $def);
     }
@@ -165,9 +165,9 @@ abstract class Controller
      * post 获取数据 相当于 $_POST
      * @param string $name
      * @param null $def
-     * @return array|bool|float|int|string|null
+     * @return mixed
      */
-    public function post(string $name = '', $def = null): array|bool|float|int|string|null
+    public function post(string $name = '', $def = null): mixed
     {
         return Request::post($name, $def);
     }
@@ -176,9 +176,9 @@ abstract class Controller
      * param 获取数据 相当于 $_REQUEST
      * @param string $name
      * @param null $def
-     * @return array|bool|float|int|string|null
+     * @return mixed
      */
-    public function param(string $name = '', $def = null): array|bool|float|int|string|null
+    public function param(string $name = '', $def = null): mixed
     {
         return Request::param($name, $def);
     }
@@ -189,7 +189,7 @@ abstract class Controller
      * @param null $def
      * @return array|bool|float|int|string|null
      */
-    public function route(string $name = '', $def = null): array|bool|float|int|string|null
+    public function route(string $name = '', $def = null): ?string
     {
         return Request::route($name, $def);
     }
@@ -268,7 +268,7 @@ abstract class Controller
      * @param string $template
      * @return array
      */
-    protected function hookData(array $list, string $template = ''): array
+    protected function hookData(array $list, string $template = '', string $key = 'rs'): array
     {
         $view = new View();
         $view->context($this);
@@ -277,12 +277,14 @@ abstract class Controller
         $temp = [];
         foreach ($list as $rs) {
             $item = [];
-            foreach ($hook as $key => $func) {
-                $item[$key] = call_user_func($func, ['rs' => $rs]);
+            foreach ($hook as $k => $func) {
+                $row = [];
+                $row[$key] = $rs;
+                $item[$k] = call_user_func($func, $row);
             }
-            foreach ($rs as $key => $value) {
-                if (str_starts_with($key, '_')) {
-                    $item[$key] = $value;
+            foreach ($rs as $k => $value) {
+                if (str_starts_with($k, '_')) {
+                    $item[$k] = $value;
                 }
             }
             $temp[] = $item;

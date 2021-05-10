@@ -397,7 +397,7 @@ class Request
      * @param false $strict
      * @return string
      */
-    protected static function media(string $type, $strict = false): string
+    protected static function media(string $type, bool $strict = false): string
     {
         if ($strict) {
             return $type;
@@ -419,7 +419,7 @@ class Request
      * @param false $strict
      * @return string
      */
-    public static function type(?string $default = null, $strict = false): string
+    public static function type(?string $default = null, bool $strict = false): string
     {
         $type = static::server('HTTP_CONTENT_TYPE', $default ?: 'application/x-www-form-urlencoded');
         return static::media($type, $strict);
@@ -632,7 +632,7 @@ class Request
      * @param null $default
      * @return array|bool|float|int|string|null
      */
-    public static function getSession(string $name = '', $default = null): array|bool|float|int|string|null
+    public static function getSession(string $name = '', $default = null): mixed
     {
         if (USE_REDIS_SESSION) {
             if (static::$sessionData === null) {
@@ -722,7 +722,7 @@ class Request
      * @param null $default
      * @return array|bool|float|int|string|null
      */
-    public static function getCookie(string $name = '', $default = null): array|bool|float|int|string|null
+    public static function getCookie(string $name = '', $default = null): mixed
     {
         return static::lookup($_COOKIE, $name, $default);
     }
@@ -768,9 +768,9 @@ class Request
      * 获取路由
      * @param string $name 支持 ctl:控制器名  act:方法名  app:应用名
      * @param null $default
-     * @return null
+     * @return ?string
      */
-    public static function route(string $name = '', $default = null)
+    public static function route(string $name = '', $default = null): ?string
     {
         $route = App::get();
         if (empty($name)) {
