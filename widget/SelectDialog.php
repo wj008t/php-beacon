@@ -59,7 +59,7 @@ class SelectDialog extends Field
                 $text = call_user_func($this->textFunc, $value);
                 $attrs['data-text'] = $text;
             } elseif (!empty($this->textSql)) {
-                $row = DB::getRow($this->textSql, $value, \PDO::FETCH_COLUMN);
+                $row = DB::getRow($this->textSql, $value, \PDO::FETCH_NUM);
                 if ($row) {
                     $attrs['data-text'] = $row[0];
                 } else {

@@ -92,7 +92,7 @@ class MultiDialog extends Field
             } elseif (!empty($this->textSql)) {
                 $data = [];
                 foreach ($values as $val) {
-                    $row = DB::getRow($this->textSql, $val, \PDO::FETCH_COLUMN);
+                    $row = DB::getRow($this->textSql, $val, \PDO::FETCH_NUM);
                     if ($row) {
                         $text = $row[0];
                     } else {
