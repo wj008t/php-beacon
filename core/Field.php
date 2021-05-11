@@ -440,7 +440,9 @@ abstract class Field
                     $this->default = Request::param($this->defaultFromParam);
                 }
             }
-            $this->value = Util::convertType($this->default, $this->varType);
+            if ($this->default !== null) {
+                $this->value = Util::convertType($this->default, $this->varType);
+            }
         }
         return $this->value;
     }
