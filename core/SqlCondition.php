@@ -80,14 +80,16 @@ class SqlCondition
     {
         if ($sql instanceof SqlCondition) {
             $frame = $sql->getFrame();
-            if (!empty($frame['sql'])) {
-                if (preg_match('@^(and|or)\s+@i', $frame['sql'])) {
-                    $frame['sql'] = preg_replace('@^(and|or)\s+@i', '', $frame['sql']);
+            if (!empty($frame->sql)) {
+                $_sql = $frame->sql;
+                $_args = $frame->args;
+                if (preg_match('@^(and|or)\s+@i', $_sql)) {
+                    $_sql = preg_replace('@^(and|or)\s+@i', '', $_sql);
                 }
-                if ($frame['type'] !== '') {
-                    $this->items[] = new SqlItem($frame['type'] . ' (' . $frame['sql'] . ')', $frame['args']);
+                if ($frame->type !== '') {
+                    $this->items[] = new SqlItem($frame->type . ' (' . $_sql . ')', $_args);
                 } else {
-                    $this->items[] = new SqlItem('(' . $frame['sql'] . ')', $frame['args']);
+                    $this->items[] = new SqlItem('(' . $_sql . ')', $_args);
                 }
             }
             return $this;
@@ -107,7 +109,7 @@ class SqlCondition
      * @param int $type
      * @return $this
      */
-    public function search(string $sql, array|string|int|float|bool|null $value, $type = self::WITHOUT_EMPTY): static
+    public function search(string $sql, array|string|int|float|bool|null $value, int $type = self::WITHOUT_EMPTY): static
     {
         switch ($type) {
             case self::WITHOUT_EMPTY:
