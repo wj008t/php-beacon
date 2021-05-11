@@ -422,7 +422,17 @@ abstract class Field
      */
     public function setValue(mixed $value)
     {
-        $this->value = Util::convertType($value, $this->varType);
+        if ($value !== null) {
+            $this->value = Util::convertType($value, $this->varType);
+        }
+    }
+
+    /**
+     * 清除值
+     */
+    public function clearValue()
+    {
+        $this->value = null;
     }
 
     /**

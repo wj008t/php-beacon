@@ -291,7 +291,7 @@ class Form
             return;
         }
         $fields = $this->getFields();
-        foreach ($fields as  $field) {
+        foreach ($fields as $field) {
             if ($field->close) {
                 continue;
             }
@@ -307,8 +307,8 @@ class Form
     {
         $this->values = null;
         $fields = $this->fields;
-        foreach ($fields as $name => $field) {
-            $field->setValue(null);
+        foreach ($fields as $field) {
+            $field->clearValue();
         }
     }
 
