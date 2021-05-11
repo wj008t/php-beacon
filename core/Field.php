@@ -9,6 +9,7 @@ namespace beacon\core;
  * @package beacon\core
  * @property string $boxId
  * @property string $boxName
+ * @property string $name
  */
 abstract class Field
 {
@@ -16,7 +17,7 @@ abstract class Field
      * 所在表单
      * @var Form|null
      */
-    public ?Form $form = null;
+    protected ?Form $form = null;
     //报告错误
     public string $error = '';
 
@@ -26,7 +27,8 @@ abstract class Field
     protected bool $isInitAttr = false;
 
     //从属性中取值
-    protected mixed $value = null;                         //值
+    protected mixed $value = null;           //值
+    protected string $_name;                //字段名
     public string $varType = '';                        //字段类型
     public mixed $default = null;                       //默认值
     public string|array|null $valFunc = null;           //处理值的函数
@@ -35,8 +37,6 @@ abstract class Field
 
     //基础数据
     public string $label = '';            //标题
-    public string $name;                //字段名
-    //设置项
     public bool $close = false;             //关闭控件
     public bool $viewClose = false;         //视图关闭
     public int $viewMerge = 0;              //合并显示项
@@ -70,7 +70,9 @@ abstract class Field
 
     public function __get(string $property)
     {
-        if ($property == 'boxId') {
+        if ($property == 'name') {
+            return $this->_name;
+        } elseif ($property == 'boxId') {
             return $this->boxId();
         } else if ($property == 'boxName') {
             return $this->boxName();
@@ -169,7 +171,7 @@ abstract class Field
     public function init(?Form $form, string $name, string $type, mixed $default)
     {
         $this->form = $form;
-        $this->name = $name;
+        $this->_name = $name;
         $this->varType = $type;
         $this->default = $default;
     }
@@ -753,7 +755,7 @@ abstract class Field
             throw new \Exception($class . ' is not found.');
         }
         $args = static::getTagArgs($param);
-        $varType = isset($args['varType']) ? $args['varType'] : 'string';
+        $varType = $args['varType'] ?? 'string';
         unset($args['varType']);
         $field = new $class(...$args);
         $field->init(null, $name, $varType, null);
