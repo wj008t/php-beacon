@@ -30,8 +30,8 @@ abstract class Field
     public string $varType = '';                        //字段类型
     public mixed $default = null;                       //默认值
     public string|array|null $valFunc = null;           //处理值的函数
-    protected string|array|null $defaultFunc = null;
-    protected string $defaultFromParam = '';
+    public string|array|null $defaultFunc = null;
+    public string $defaultFromParam = '';
 
     //基础数据
     public string $label = '';            //标题
