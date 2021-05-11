@@ -253,8 +253,14 @@ class DBSelector extends SqlCondition
      * @param array|string|int|float|bool|null $args
      * @return $this
      */
-    public function union(string $sql, array|string|int|float|bool|null $args = null): static
+    public function union(string|DBSelector $sql, array|string|int|float|bool|null $args = null): static
     {
+        if ($sql instanceof DBSelector) {
+            $item = $sql->buildSql();
+            $frame = new SqlFrame($item->sql, $item->args, 'normal');
+            $this->_unions[] = $frame;
+            return $this;
+        }
         $sql = trim($sql);
         if ($sql == '') {
             return $this;
@@ -270,8 +276,14 @@ class DBSelector extends SqlCondition
      * @param array|string|int|float|bool|null $args
      * @return $this
      */
-    public function unionAll(string $sql, array|string|int|float|bool|null $args = null): static
+    public function unionAll(string|DBSelector $sql, array|string|int|float|bool|null $args = null): static
     {
+        if ($sql instanceof DBSelector) {
+            $item = $sql->buildSql();
+            $frame = new SqlFrame($item->sql, $item->args, 'all');
+            $this->_unions[] = $frame;
+            return $this;
+        }
         $sql = trim($sql);
         if ($sql == '') {
             return $this;
