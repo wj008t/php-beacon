@@ -73,15 +73,20 @@ class Util
     /**
      * 下划线转驼峰
      * @param string $name
+     * @param bool $lc
      * @return string
      */
-    public static function toCamel(string $name): string
+    public static function toCamel(string $name, bool $lc = false): string
     {
         $name = preg_replace('@[_-]+@', '_', $name);
         $name = preg_replace_callback('@_[a-z]@', function ($m) {
             return substr(strtoupper($m[0]), 1);
         }, $name);
-        $name = ucfirst($name);
+        if ($lc) {
+            $name = lcfirst($name);
+        } else {
+            $name = ucfirst($name);
+        }
         return $name;
     }
 
