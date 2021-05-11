@@ -265,6 +265,11 @@ class DBSelector extends SqlCondition
         if ($sql == '') {
             return $this;
         }
+        if ($args === null) {
+            $args = [];
+        } elseif (!is_array($args)) {
+            $args = [$args];
+        }
         $frame = new SqlFrame($sql, $args, 'normal');
         $this->_unions[] = $frame;
         return $this;
@@ -287,6 +292,11 @@ class DBSelector extends SqlCondition
         $sql = trim($sql);
         if ($sql == '') {
             return $this;
+        }
+        if ($args === null) {
+            $args = [];
+        } elseif (!is_array($args)) {
+            $args = [$args];
         }
         $frame = new SqlFrame($sql, $args, 'all');
         $this->_unions[] = $frame;
