@@ -43,7 +43,7 @@ class Single extends Field
      * 用于修正表单的方法
      * @var string|array|null
      */
-    public string|array|null $modifyFunc = null;
+    public string|array|\Closure|null $modifyFunc = null;
 
     /**
      * 指定模板
