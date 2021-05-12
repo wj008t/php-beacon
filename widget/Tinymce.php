@@ -39,9 +39,8 @@ class Tinymce extends Field
         if (!empty($this->typeMode)) {
             $attrs['data-type-mode'] = $this->typeMode;
         }
-        $attrs['data-statusbar'] = $this->statusbar;
-        $attrs['data-elementpath'] = $this->elementPath;
-
+        $attrs['data-statusbar'] = $this->statusbar ? 'true' : 'false';
+        $attrs['data-elementpath'] = $this->elementPath ? 'true' : 'false';
         $attrs['yee-module'] = $this->getYeeModule('tinymce');
         return static::makeTag('textarea', ['attrs' => $attrs, 'exclude' => ['value'], 'text' => $attrs['value']]);
     }
