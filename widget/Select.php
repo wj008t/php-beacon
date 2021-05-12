@@ -4,6 +4,7 @@
 namespace beacon\widget;
 
 
+use beacon\core\App;
 use beacon\core\DB;
 use beacon\core\DBException;
 use beacon\core\Field;
@@ -88,6 +89,9 @@ class Select extends Field
             }
             if ($value == strval($option['value'])) {
                 $option['selected'] = 'selected';
+            }
+            if ($option['data-url']) {
+                $option['data-url'] = App::url($option['data-url']);
             }
             $this->cacheOptions[] = $option;
         }
