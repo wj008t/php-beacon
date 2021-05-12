@@ -90,7 +90,7 @@ class Select extends Field
             if ($value == strval($option['value'])) {
                 $option['selected'] = 'selected';
             }
-            if ($option['data-url']) {
+            if (isset($option['data-url'])) {
                 $option['data-url'] = App::url($option['data-url']);
             }
             $this->cacheOptions[] = $option;
