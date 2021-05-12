@@ -79,18 +79,28 @@ class Linkage extends Field
             $attrs['value'] = $values;
         }
         $validGroup = $this->valid['group'] ?? [];
+
+        if (!empty($this->headers)) {
+            foreach ($this->headers as $idx => $header) {
+                $level = $idx + 1;
+                $attrs['data-header' . $level] = $header;
+            }
+        }
+
         if (!empty($this->names)) {
             foreach ($this->names as $idx => $name) {
                 $level = $idx + 1;
                 $attrs['data-name' . $level] = $name;
-                if (isset($this->headers[$idx])) {
-                    $attrs['data-header' . $level] = $this->headers[$idx];
-                }
-                if (isset($validGroup[$idx])) {
-                    $attrs['data-valid-rule' . $level] = $validGroup[$idx];
-                }
             }
         }
+
+        if (!empty($validGroup)) {
+            foreach ($validGroup as $idx => $valid) {
+                $level = $idx + 1;
+                $attrs['data-valid-rule' . $level] = $validGroup[$idx];
+            }
+        }
+
         $attrs['data-source'] = App::url($this->source);
         $attrs['data-method'] = $this->method;
         $attrs['yee-module'] = $this->getYeeModule('linkage');
