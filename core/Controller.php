@@ -266,9 +266,11 @@ abstract class Controller
      * 使用模板填充数据
      * @param array $list
      * @param string $template
+     * @param string $key
+     * @param bool $keep
      * @return array
      */
-    protected function hookData(array $list, string $template = '', string $key = 'rs'): array
+    protected function hookData(array $list, string $template = '', string $key = 'rs', bool $keep = false): array
     {
         $view = new View();
         $view->context($this);
@@ -276,16 +278,20 @@ abstract class Controller
         $hook = $view->getHook();
         $temp = [];
         foreach ($list as $rs) {
-            $item = [];
+            if ($keep) {
+                $item = $rs;
+            } else {
+                $item = [];
+                foreach ($rs as $k => $value) {
+                    if (str_starts_with($k, '_')) {
+                        $item[$k] = $value;
+                    }
+                }
+            }
             foreach ($hook as $k => $func) {
                 $row = [];
                 $row[$key] = $rs;
                 $item[$k] = call_user_func($func, $row);
-            }
-            foreach ($rs as $k => $value) {
-                if (str_starts_with($k, '_')) {
-                    $item[$k] = $value;
-                }
             }
             $temp[] = $item;
         }
