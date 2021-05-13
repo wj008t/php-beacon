@@ -8,6 +8,7 @@ use beacon\core\App;
 use beacon\core\DB;
 use beacon\core\DBException;
 use beacon\core\Field;
+use beacon\core\Util;
 
 #[\Attribute]
 class SelectDialog extends Field
@@ -54,7 +55,16 @@ class SelectDialog extends Field
         $attrs['type'] = 'hidden';
         $attrs['data-url'] = App::url($this->url);
         $value = $this->getValue();
-        if (!empty($value)) {
+        if (is_array($value) && count($value) == 0) {
+            $attrs['value'] = '';
+        }
+        $mode = 2;
+        $typeMap = Util::typeMap($this->varType);
+        if (isset($typeMap['array'])) {
+            $mode = 1;
+        }
+        $attrs['data-mode'] = $mode;
+        if ($mode == 1 && !empty($value) && !is_array($value)) {
             if (!empty($this->textFunc) && is_callable($this->textFunc)) {
                 $text = call_user_func($this->textFunc, $value);
                 $attrs['data-text'] = $text;

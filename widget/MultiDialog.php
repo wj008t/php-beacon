@@ -8,6 +8,7 @@ use beacon\core\App;
 use beacon\core\DB;
 use beacon\core\DBException;
 use beacon\core\Field;
+use beacon\core\Logger;
 use beacon\core\Request;
 use beacon\core\Util;
 
@@ -26,11 +27,18 @@ class MultiDialog extends Field
     public string|array|null $textFunc = null;
     public string $textSql = '';
 
+
     /**
      * 对话框链接
      * @var string
      */
     public string $url = '';
+
+    /**
+     * 填值模式
+     * @var string
+     */
+    public int $mode = 1;
 
     /**
      * 携带参数
@@ -41,7 +49,7 @@ class MultiDialog extends Field
     /**
      * @var string 每项类型
      */
-    public string $itemType = '';
+    public string $itemType = 'string';
 
     public function setting(array $args)
     {
@@ -57,6 +65,12 @@ class MultiDialog extends Field
         }
         if (isset($args['url']) && is_string($args['url'])) {
             $this->url = $args['url'];
+        }
+        if (isset($args['mode']) && is_int($args['mode'])) {
+            $this->mode = $args['mode'];
+            if ($this->mode == 1) {
+                $this->itemType = 'array';
+            }
         }
         if (isset($args['carry']) && is_string($args['carry'])) {
             $this->carry = $args['carry'];
@@ -74,8 +88,9 @@ class MultiDialog extends Field
         $attrs['yee-module'] = $this->getYeeModule('multiple-dialog');
         $attrs['type'] = 'hidden';
         $attrs['data-url'] = App::url($this->url);
+        $attrs['data-mode'] = $this->mode;
         $values = $this->getValue();
-        if (!empty($values)) {
+        if ($this->mode == 2 && !empty($values)) {
             if (is_string($values) && Util::isJson($values)) {
                 $values = json_decode($values, true);
             }
@@ -88,7 +103,7 @@ class MultiDialog extends Field
                     $text = call_user_func($this->textFunc, $val);
                     $data[] = ['value' => $val, 'text' => $text];
                 }
-                $attrs['data-text'] = $data;
+                $attrs['data-items'] = $data;
             } elseif (!empty($this->textSql)) {
                 $data = [];
                 foreach ($values as $val) {
@@ -100,13 +115,13 @@ class MultiDialog extends Field
                     }
                     $data[] = ['value' => $val, 'text' => $text];
                 }
-                $attrs['data-text'] = $data;
+                $attrs['data-items'] = $data;
             } else {
                 $data = [];
                 foreach ($values as $val) {
                     $data[] = ['value' => $val, 'text' => $val];
                 }
-                $attrs['data-text'] = $data;
+                $attrs['data-items'] = $data;
             }
         }
         return static::makeTag('input', ['attrs' => $attrs]);
@@ -120,6 +135,9 @@ class MultiDialog extends Field
     public function fromParam(array $param = []): array
     {
         $name = $this->boxName;
+        if ($this->mode == 1) {
+            $this->itemType = 'array';
+        }
         $values = Request::lookType($param, $name, 'array');
         return Util::mapItemType($values, $this->itemType);
     }
@@ -131,6 +149,9 @@ class MultiDialog extends Field
      */
     public function fromData(array $data = []): array
     {
+        if ($this->mode == 1) {
+            $this->itemType = 'array';
+        }
         $values = isset($data[$this->name]) ? $data[$this->name] : '';
         if (is_string($values) && Util::isJson($values)) {
             $values = json_decode($values, true);
