@@ -32,7 +32,7 @@ class DBSelector extends SqlCondition
     }
 
     /**
-     * 这只数据库
+     * 设置数据库
      * @param Mysql $db
      */
     public function setDb(Mysql $db)
