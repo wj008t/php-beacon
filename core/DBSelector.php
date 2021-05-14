@@ -18,6 +18,7 @@ class DBSelector extends SqlCondition
     protected ?SqlItem $_groups = null;
     protected ?SqlItem $_joins = null;
     protected ?SqlCondition $_having = null;
+    protected Mysql $db;
     /**
      * @var SqlFrame[]
      */
@@ -27,6 +28,16 @@ class DBSelector extends SqlCondition
     {
         parent::__construct();
         $this->table = trim($table);
+        $this->db = DB::engine();
+    }
+
+    /**
+     * 这只数据库
+     * @param Mysql $db
+     */
+    public function setDb(Mysql $db)
+    {
+        $this->db = $db;
     }
 
     /**
@@ -576,7 +587,7 @@ class DBSelector extends SqlCondition
         $this->_limit = 'limit ' . $offset . ',' . $this->_pageSize;
         $item = $this->buildSql(true);
         $this->_limit = $limit;
-        return DB::getList($item->sql, $item->args);
+        return $this->db->getList($item->sql, $item->args);
     }
 
     /**
@@ -617,7 +628,7 @@ class DBSelector extends SqlCondition
     public function getCount(): int
     {
         $item = $this->buildCount();
-        $row = DB::getRow($item->sql, $item->args);
+        $row = $this->db->getRow($item->sql, $item->args);
         if ($row == null) {
             return 0;
         }
@@ -632,7 +643,7 @@ class DBSelector extends SqlCondition
     public function getList(): array
     {
         $item = $this->buildSql($this->_limit != '');
-        return DB::getList($item->sql, $item->args);
+        return $this->db->getList($item->sql, $item->args);
     }
 
     /**
@@ -643,7 +654,7 @@ class DBSelector extends SqlCondition
     public function getRow(): ?array
     {
         $item = $this->buildSql(false);
-        return DB::getRow($item->sql, $item->args);
+        return $this->db->getRow($item->sql, $item->args);
     }
 
 }
