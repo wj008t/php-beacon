@@ -447,6 +447,7 @@ class Mysql
                         $temp[] = $item ? 1 : 0;
                         break;
                     case 'int':
+                    case 'integer':
                     case 'double':
                     case 'float':
                     case 'string':
@@ -503,6 +504,7 @@ class Mysql
                         $temp[] = $item ? 1 : 0;
                         break;
                     case 'int':
+                    case 'integer':
                     case 'double':
                     case 'float':
                     case 'string':
@@ -564,6 +566,7 @@ class Mysql
                         $temp[] = $item ? 1 : 0;
                         break;
                     case 'int':
+                    case 'integer':
                     case 'double':
                     case 'float':
                     case 'string':
