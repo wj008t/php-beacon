@@ -13,10 +13,10 @@ class DBSelector extends SqlCondition
 
     protected string $table = '';
     protected string $_limit = '';
-    protected ?SqlItem $_fields = null;
-    protected ?SqlItem $_orders = null;
-    protected ?SqlItem $_groups = null;
-    protected ?SqlItem $_joins = null;
+    protected ?SqlFrame $_fields = null;
+    protected ?SqlFrame $_orders = null;
+    protected ?SqlFrame $_groups = null;
+    protected ?SqlFrame $_joins = null;
     protected ?SqlCondition $_having = null;
     protected Mysql $db;
     /**
@@ -49,7 +49,7 @@ class DBSelector extends SqlCondition
     public function field(string $fields, array|string|int|float|bool|null $args = null): static
     {
         $fields = trim($fields);
-        $this->_fields = new SqlItem($fields, $args);
+        $this->_fields = new SqlFrame($fields, $args, 'field');
         return $this;
     }
 
@@ -88,7 +88,7 @@ class DBSelector extends SqlCondition
             return $this;
         }
         if ($this->_orders === null) {
-            $this->_orders = new SqlItem('order by ' . $order, $args);
+            $this->_orders = new SqlFrame('order by ' . $order, $args, 'order');
         } else {
             $this->_orders->add(',' . $order, $args);
         }
@@ -110,7 +110,7 @@ class DBSelector extends SqlCondition
             return $this;
         }
         if ($this->_groups === null) {
-            $this->_groups = new SqlItem('group by ' . $group, $args);
+            $this->_groups = new SqlFrame('group by ' . $group, $args, 'group');
         } else {
             $this->_groups->add(',' . $group, $args);
         }
@@ -148,7 +148,7 @@ class DBSelector extends SqlCondition
         }
         $sql = 'left join ' . $table;
         if ($this->_joins == null) {
-            $this->_joins = new SqlItem($sql, $args);
+            $this->_joins = new SqlFrame($sql, $args, 'join');
         } else {
             $this->_joins->add($sql, $args);
         }
@@ -168,7 +168,7 @@ class DBSelector extends SqlCondition
         }
         $sql = 'right join ' . $table;
         if ($this->_joins == null) {
-            $this->_joins = new SqlItem($sql, $args);
+            $this->_joins = new SqlFrame($sql, $args, 'join');
         } else {
             $this->_joins->add($sql, $args);
         }
@@ -188,7 +188,7 @@ class DBSelector extends SqlCondition
         }
         $sql = 'inner join ' . $table;
         if ($this->_joins == null) {
-            $this->_joins = new SqlItem($sql, $args);
+            $this->_joins = new SqlFrame($sql, $args, 'join');
         } else {
             $this->_joins->add($sql, $args);
         }
@@ -209,7 +209,27 @@ class DBSelector extends SqlCondition
         }
         $sql = 'outer join ' . $table;
         if ($this->_joins == null) {
-            $this->_joins = new SqlItem($sql, $args);
+            $this->_joins = new SqlFrame($sql, $args, 'join');
+        } else {
+            $this->_joins->add($sql, $args);
+        }
+        return $this;
+    }
+
+    /**
+     * @param string $table
+     * @param array|string|int|float|bool|null $args
+     * @return DBSelector
+     */
+    public function fullJoin(string $table, array|string|int|float|bool|null $args = null): static
+    {
+        $table = trim($table);
+        if ($table == '') {
+            return $this;
+        }
+        $sql = 'full join ' . $table;
+        if ($this->_joins == null) {
+            $this->_joins = new SqlFrame($sql, $args, 'join');
         } else {
             $this->_joins->add($sql, $args);
         }
@@ -238,25 +258,6 @@ class DBSelector extends SqlCondition
         return $this;
     }
 
-    /**
-     * @param string $table
-     * @param array|string|int|float|bool|null $args
-     * @return DBSelector
-     */
-    public function fullJoin(string $table, array|string|int|float|bool|null $args = null): static
-    {
-        $table = trim($table);
-        if ($table == '') {
-            return $this;
-        }
-        $sql = 'full join ' . $table;
-        if ($this->_joins == null) {
-            $this->_joins = new SqlItem($sql, $args);
-        } else {
-            $this->_joins->add($sql, $args);
-        }
-        return $this;
-    }
 
     /**
      * 联合
@@ -267,8 +268,8 @@ class DBSelector extends SqlCondition
     public function union(string|DBSelector $sql, array|string|int|float|bool|null $args = null): static
     {
         if ($sql instanceof DBSelector) {
-            $item = $sql->buildSql();
-            $frame = new SqlFrame($item->sql, $item->args, 'normal');
+            $frame = $sql->buildSql();
+            $frame->type = 'union';
             $this->_unions[] = $frame;
             return $this;
         }
@@ -281,7 +282,7 @@ class DBSelector extends SqlCondition
         } elseif (!is_array($args)) {
             $args = [$args];
         }
-        $frame = new SqlFrame($sql, $args, 'normal');
+        $frame = new SqlFrame($sql, $args, 'union');
         $this->_unions[] = $frame;
         return $this;
     }
@@ -295,8 +296,8 @@ class DBSelector extends SqlCondition
     public function unionAll(string|DBSelector $sql, array|string|int|float|bool|null $args = null): static
     {
         if ($sql instanceof DBSelector) {
-            $item = $sql->buildSql();
-            $frame = new SqlFrame($item->sql, $item->args, 'all');
+            $frame = $sql->buildSql();
+            $frame->type = 'union-all';
             $this->_unions[] = $frame;
             return $this;
         }
@@ -309,7 +310,7 @@ class DBSelector extends SqlCondition
         } elseif (!is_array($args)) {
             $args = [$args];
         }
-        $frame = new SqlFrame($sql, $args, 'all');
+        $frame = new SqlFrame($sql, $args, 'union-all');
         $this->_unions[] = $frame;
         return $this;
     }
@@ -364,9 +365,9 @@ class DBSelector extends SqlCondition
     /**
      * 建立SQL 语句
      * @param bool $optimize
-     * @return SqlItem
+     * @return SqlFrame
      */
-    public function buildSql(bool $optimize = false): SqlItem
+    public function buildSql(bool $optimize = false): SqlFrame
     {
         $execSql = [];
         $argItems = [];
@@ -450,9 +451,9 @@ class DBSelector extends SqlCondition
             array_unshift($execSql, '(');
             $execSql[] = ')';
             foreach ($this->_unions as $uFrame) {
-                if ($uFrame->type == 'all') {
+                if ($uFrame->type == 'union-all') {
                     $execSql[] = 'union all ( ' . $uFrame->sql . ')';
-                } else {
+                } elseif ($uFrame->type == 'union') {
                     $execSql[] = 'union ( ' . $uFrame->sql . ')';
                 }
                 $argItems = array_merge($argItems, $uFrame->args);
@@ -479,14 +480,14 @@ class DBSelector extends SqlCondition
                 $argItems = array_merge($argItems, $this->_orders->args);
             }
         }
-        return new SqlItem(join(' ', $execSql), $argItems);
+        return new SqlFrame(join(' ', $execSql), $argItems, 'sql');
     }
 
     /**
      * 生成用于查询数量的SQL语句
-     * @return SqlItem
+     * @return SqlFrame
      */
-    public function buildCount(): SqlItem
+    public function buildCount(): SqlFrame
     {
         if ($this->_groups != null || count($this->_unions) != null || $this->_having != null) {
             $order = $this->_orders;
@@ -522,7 +523,7 @@ class DBSelector extends SqlCondition
             $execSql[] = 'where ' . $tempSql;
             $argItems = array_merge($argItems, $frame->args);
         }
-        return new SqlItem(join(' ', $execSql), $argItems);
+        return new SqlFrame(join(' ', $execSql), $argItems, 'sql');
     }
 
     /**

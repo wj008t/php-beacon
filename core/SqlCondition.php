@@ -3,55 +3,6 @@
 
 namespace beacon\core;
 
-class SqlItem
-{
-    public string $sql = '';
-    public array $args = [];
-
-    public function __construct(string $sql, array|string|int|float|bool|null $args = null)
-    {
-        $this->sql = trim($sql);
-        if ($args === null || (is_array($args) && count($args) == 0)) {
-            return;
-        }
-        if (!is_array($args)) {
-            $this->args = [$args];
-        } else {
-            $this->args = $args;
-        }
-    }
-
-    /**
-     * @param string $sql
-     * @param array|string|int|float|bool|null $args
-     * @return $this
-     */
-    public function add(string $sql, array|string|int|float|bool|null $args = null): SqlItem
-    {
-        $this->sql .= ' ' . trim($sql);
-        if ($args === null || (is_array($args) && count($args) == 0)) {
-            return $this;
-        }
-        if (!is_array($args)) {
-            $args = [$args];
-        }
-        $this->args = array_merge($this->args, $args);
-        return $this;
-    }
-
-}
-
-class SqlFrame
-{
-    public function __construct(
-        public string $sql = '',
-        public array $args = [],
-        public string $type = '',
-    )
-    {
-    }
-}
-
 class SqlCondition
 {
     const WITHOUT_EMPTY = 0;
@@ -60,7 +11,7 @@ class SqlCondition
     const WITHOUT_ZERO = 3;
 
     /**
-     * @var SqlItem[]
+     * @var SqlFrame[]
      */
     protected array $items = [];
     public string $type = 'and';
@@ -87,9 +38,9 @@ class SqlCondition
                     $_sql = preg_replace('@^(and|or)\s+@i', '', $_sql);
                 }
                 if ($frame->type !== '') {
-                    $this->items[] = new SqlItem($frame->type . ' (' . $_sql . ')', $_args);
+                    $this->items[] = new SqlFrame($frame->type . ' (' . $_sql . ')', $_args, 'where');
                 } else {
-                    $this->items[] = new SqlItem('(' . $_sql . ')', $_args);
+                    $this->items[] = new SqlFrame('(' . $_sql . ')', $_args, 'where');
                 }
             }
             return $this;
@@ -98,7 +49,7 @@ class SqlCondition
         if (empty($sql)) {
             return $this;
         }
-        $item = new SqlItem($sql, $args);
+        $item = new SqlFrame($sql, $args, 'where');
         $this->items[] = $item;
         return $this;
     }

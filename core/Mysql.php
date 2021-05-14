@@ -404,11 +404,11 @@ class Mysql
      * 创建一个sql语句原义片段,一般用于更新 插入数据时数组的值
      * @param string $sql
      * @param mixed $args
-     * @return SqlRaw
+     * @return SqlFrame
      */
-    public function raw(string $sql, mixed $args = null): SqlRaw
+    public function raw(string $sql, mixed $args = null): SqlFrame
     {
-        return new SqlRaw($sql, $args);
+        return new SqlFrame($sql, $args, 'raw');
     }
 
     /**
@@ -429,7 +429,7 @@ class Mysql
             $names[] = '`' . $key . '`';
             if ($item === null) {
                 $params [] = 'NULL';
-            } else if ($item instanceof SqlRaw) {
+            } else if ($item instanceof SqlFrame) {
                 $params [] = $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -485,7 +485,7 @@ class Mysql
             $names[] = '`' . $key . '`';
             if ($item === null) {
                 $params [] = 'NULL';
-            } else if ($item instanceof SqlRaw) {
+            } else if ($item instanceof SqlFrame) {
                 $params [] = $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -546,7 +546,7 @@ class Mysql
         foreach ($values as $key => $item) {
             if ($item === null) {
                 $maps [] = '`' . $key . '`=NULL';
-            } else if ($item instanceof SqlRaw) {
+            } else if ($item instanceof SqlFrame) {
                 $maps [] = '`' . $key . '`=' . $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {

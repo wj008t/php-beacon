@@ -226,10 +226,10 @@ class DB
      *  创建一个sql语句片段,一般用于更新 插入数据时数组的值
      * @param string $sql
      * @param null $args
-     * @return SqlRaw
+     * @return SqlFrame
      * @throws DBException
      */
-    public static function raw(string $sql, mixed $args = null): SqlRaw
+    public static function raw(string $sql, mixed $args = null): SqlFrame
     {
         return static::engine()->raw($sql, $args);
     }
