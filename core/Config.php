@@ -21,7 +21,7 @@ class Config
      * @param bool $overwrite
      * @return array
      */
-    public static function load($name, $overwrite = false): array
+    public static function load(string $name, bool $overwrite = false): array
     {
         if (is_array($name)) {
             $data = [];
