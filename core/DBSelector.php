@@ -6,7 +6,7 @@ namespace beacon\core;
 class DBSelector extends SqlCondition
 {
     protected int $_page = 0;
-    protected string $_pageKey = 'page';
+    protected string|int $_pageKey = 'page';
     protected int $_count = -1;
     protected int $_pageSize = 20;
     protected int $_pageCount = 0;
@@ -532,7 +532,7 @@ class DBSelector extends SqlCondition
      * @param string $pageKey
      * @return DBSelector
      */
-    public function setPage(int $pageSize = 0, string $pageKey = 'page'): static
+    public function setPage(int $pageSize = 0, string|int $pageKey = 'page'): static
     {
         $this->_pageSize = $pageSize;
         $this->_pageKey = $pageKey;
@@ -546,7 +546,11 @@ class DBSelector extends SqlCondition
      */
     public function pageInfo(): array
     {
-        $this->_page = Request::param($this->_pageKey . ':i', 1);
+        if (is_int($this->_pageKey)) {
+            $this->_page = $this->_pageKey;
+        } else {
+            $this->_page = Request::param($this->_pageKey . ':i', 1);
+        }
         if ($this->_page < 1) {
             $this->_page = 1;
         }
