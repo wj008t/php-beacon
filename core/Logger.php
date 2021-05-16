@@ -304,7 +304,7 @@ class Logger
         if (PHP_SAPI != 'cli') {
             exit;
         }
-        $socket = stream_socket_server('udp://' . self::$addr . ':' . self::$port, $errno, $errstr, STREAM_SERVER_BIND);
+        $socket = stream_socket_server('udp://0.0.0.0:' . self::$port, $errno, $errstr, STREAM_SERVER_BIND);
         echo <<< EOF
   ____
  |  _ \
