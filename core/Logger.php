@@ -329,7 +329,7 @@ EOF;
             if ($remove && substr($msg, 0, 10) == '--client--') {
                 $pwd = substr($msg, 10, 32);
                 if ($pwd == md5($password)) {
-                    if ($client === null) {
+                    if ($client === null || $client[0] != $peer) {
                         echo 'client connect by ' . $peer . PHP_EOL;
                     }
                     $client = [];
