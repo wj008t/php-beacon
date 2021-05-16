@@ -366,10 +366,12 @@ EOF;
 
 EOF;
         $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 3, 'usec' => 0]);
+        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 2, 'usec' => 0]);
         $msg = '--client--' . md5($password);
         $len = strlen($msg);
         $sendTime = 0;
+        $f = '';
+        $p = 0;
         do {
             $nowTime = time();
             if ($sendTime < $nowTime) {
@@ -377,16 +379,12 @@ EOF;
                 socket_sendto($socket, $msg, $len, 0, $addr, $port);
                 $sendTime = $nowTime + 10;
             }
-            while (true) {
-                $from = '';
-                $p = 0;
-                $result = socket_recvfrom($socket, $data, 4096, 0, $from, $p);
-                if ($result === false) {
-                    break;
-                }
-                self::unpack($data);
+            $result = socket_recvfrom($socket, $data, 4096, 0, $f, $p);
+            if ($result === false) {
+                usleep(10000);
+                continue;
             }
-            usleep(10000);
+            self::unpack($data);
         } while (true);
     }
 
