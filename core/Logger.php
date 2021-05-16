@@ -255,11 +255,55 @@ class Logger
     }
 
     /**
+     * 解包数据
+     * @param string $msg
+     */
+    private static function unpack(string $msg)
+    {
+
+        static $msgMap = [];
+        static $lTime = 0;
+        $valid = substr($msg, 0, 8);
+        if ($valid != '--data--') {
+            return;
+        }
+        if ($lTime < time()) {
+            $msgMap = [];
+        }
+        $lTime = time() + 10;
+        $msgId = substr($msg, 8, 24);
+        $count = substr($msg, 32, 2);
+        $index = substr($msg, 34, 2);
+        $count = unpack('n', $count)[1];
+        $index = unpack('n', $index)[1];
+        $msg = substr($msg, 36);
+        if (!isset($msgMap[$msgId])) {
+            $msgMap[$msgId] = [];
+        }
+        $msgMap[$msgId][$index . ''] = $msg;
+        if (count($msgMap[$msgId]) == $count) {
+            $bigMsg = [];
+            for ($i = 0; $i < $count; $i++) {
+                $bigMsg[] = $msgMap[$msgId][$i . ''];
+            }
+            $fMsg = join('', $bigMsg);
+            unset($msgMap[$msgId]);
+            if (preg_match('@^[\{\[].*[\}\]]$@', $fMsg)) {
+                $data = json_decode($fMsg, true);
+                self::debug($data);
+            }
+        }
+    }
+
+    /**
      * 监听调试
      * @param bool $remove 是否开启远程调试
      */
     public static function listen(bool $remove = false, string $password = '')
     {
+        if (PHP_SAPI != 'cli') {
+            exit;
+        }
         $socket = stream_socket_server('udp://' . self::$addr . ':' . self::$port, $errno, $errstr, STREAM_SERVER_BIND);
         echo <<< EOF
   ____
@@ -268,19 +312,17 @@ class Logger
  |  _ <   / _ \  / _` |  / __|  / _ \  | '_ \ 
  | |_) | |  __/ | (_| | | (__  | (_) | | | | |
  |____/   \___|  \__,_|  \___|  \___/  |_| |_|
-=====================debug====================
+==================debug server=================
 
 EOF;
-        $msgMap = [];
-        $lTime = time() + 10;
         $client = null;
         if (empty($password)) {
             $remove = false;
         }
         do {
             $msg = stream_socket_recvfrom($socket, 1024 * 4 + 36, 0, $peer);
-            if (empty($msg)) {
-                usleep(50000);
+            if ($msg === false) {
+                usleep(10000);
                 continue;
             }
             //转发到客户端
@@ -293,43 +335,58 @@ EOF;
                 }
                 continue;
             }
-
-            $valid = substr($msg, 0, 8);
-            if ($valid != '--data--') {
-                continue;
-            }
             //转发数据
             if ($remove && $client !== null && is_array($client) && isset($client[1]) && $client[1] > time()) {
                 @stream_socket_sendto($socket, $msg, 0, $client[0]);
                 continue;
             }
-            //10秒没数据，就把之前的释放
-            if ($lTime < time()) {
-                $msgMap = [];
+            self::unpack($msg);
+        } while (true);
+    }
+
+    /**
+     * 远程客户端
+     * @param string $addr
+     * @param int $port
+     * @param string $password
+     */
+    public static function client(string $addr = '127.0.0.1', int $port = 1024, string $password = '')
+    {
+        if (PHP_SAPI != 'cli') {
+            exit;
+        }
+        echo <<< EOF
+  ____
+ |  _ \
+ | |_) |   ___    __ _    ___    ___    _ __
+ |  _ <   / _ \  / _` |  / __|  / _ \  | '_ \ 
+ | |_) | |  __/ | (_| | | (__  | (_) | | | | |
+ |____/   \___|  \__,_|  \___|  \___/  |_| |_|
+==================debug client=================
+
+EOF;
+        $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 3, 'usec' => 0]);
+        $msg = '--client--' . md5($password);
+        $len = strlen($msg);
+        $sendTime = 0;
+        do {
+            $nowTime = time();
+            if ($sendTime < $nowTime) {
+                //发送心跳
+                socket_sendto($socket, $msg, $len, 0, $addr, $port);
+                $sendTime = $nowTime + 10;
             }
-            $lTime = time() + 10;
-            $msgId = substr($msg, 8, 24);
-            $count = substr($msg, 32, 2);
-            $index = substr($msg, 34, 2);
-            $count = unpack('n', $count)[1];
-            $index = unpack('n', $index)[1];
-            $msg = substr($msg, 36);
-            if (!isset($msgMap[$msgId])) {
-                $msgMap[$msgId] = [];
-            }
-            $msgMap[$msgId][$index . ''] = $msg;
-            if (count($msgMap[$msgId]) == $count) {
-                $bigMsg = [];
-                for ($i = 0; $i < $count; $i++) {
-                    $bigMsg[] = $msgMap[$msgId][$i . ''];
+            while (true) {
+                $from = '';
+                $p = 0;
+                $result = socket_recvfrom($socket, $data, 4096, 0, $from, $p);
+                if ($result === false) {
+                    break;
                 }
-                $fMsg = join('', $bigMsg);
-                unset($msgMap[$msgId]);
-                if (preg_match('@^[\{\[].*[\}\]]$@', $fMsg)) {
-                    $data = json_decode($fMsg, true);
-                    self::debug($data);
-                }
+                self::unpack($data);
             }
+            usleep(10000);
         } while (true);
     }
 
