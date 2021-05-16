@@ -329,6 +329,9 @@ EOF;
             if ($remove && substr($msg, 0, 10) == '--client--') {
                 $pwd = substr($msg, 10, 32);
                 if ($pwd == md5($password)) {
+                    if ($client === null) {
+                        echo 'client connect by ' . $peer . PHP_EOL;
+                    }
                     $client = [];
                     $client[0] = $peer;
                     $client[1] = time() + 120;
@@ -339,6 +342,8 @@ EOF;
             if ($remove && $client !== null && is_array($client) && isset($client[1]) && $client[1] > time()) {
                 @stream_socket_sendto($socket, $msg, 0, $client[0]);
                 continue;
+            } else {
+                $client = null;
             }
             self::unpack($msg);
         } while (true);
