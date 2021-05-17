@@ -320,7 +320,7 @@ EOF;
             $remove = false;
         }
         do {
-            $msg = stream_socket_recvfrom($socket, 4132, 0, $peer);
+            $msg = stream_socket_recvfrom($socket, 5120, 0, $peer);
             if ($msg === false) {
                 usleep(10000);
                 continue;
@@ -384,7 +384,7 @@ EOF;
                 socket_sendto($socket, $msg, $len, 0, $addr, $port);
                 $sendTime = $nowTime + 10;
             }
-            $result = socket_recvfrom($socket, $data, 4132, 0, $f, $p);
+            $result = socket_recvfrom($socket, $data, 5120, 0, $f, $p);
             if ($result === false) {
                 usleep(10000);
                 continue;
