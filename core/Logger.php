@@ -218,7 +218,7 @@ class Logger
         printf($format, $text);
     }
 
-    private static function save(string $text, string $act = 'info')
+    private static function save(string $text, string $act = 'info', bool $file = false)
     {
         if (self::$logSave == null) {
             return;
@@ -231,7 +231,11 @@ class Logger
         if ($kind != 'all' && substr_count($kind, $act) == 0) {
             return;
         }
-        $text = $act[0] . ' [' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+        if ($file) {
+            $text = 'file [' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+        } else {
+            $text = $act . ' [' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+        }
         if (!is_dir($path)) {
             Util::makeDir($path);
         }
@@ -261,7 +265,7 @@ class Logger
         if ($file && $tempFile != $file) {
             $tempFile = $file;
             self::out('> ' . $file, 'file', true);
-            self::save('> ' . $file, $act);
+            self::save('> ' . $file, $act, true);
         }
         if ($data !== null && is_array($data) && count($data) > 0) {
             if ($act == 'sql') {
