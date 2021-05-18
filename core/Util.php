@@ -66,8 +66,7 @@ class Util
         $name = preg_replace_callback('@[A-Z]@', function ($m) {
             return '_' . strtolower($m[0]);
         }, $name);
-        $name = ltrim($name, '_');
-        return $name;
+        return ltrim($name, '_');
     }
 
     /**
@@ -83,11 +82,10 @@ class Util
             return substr(strtoupper($m[0]), 1);
         }, $name);
         if ($lc) {
-            $name = lcfirst($name);
+            return lcfirst($name);
         } else {
-            $name = ucfirst($name);
+            return ucfirst($name);
         }
-        return $name;
     }
 
     /**
@@ -100,8 +98,7 @@ class Util
         $name = preg_replace_callback('@-[a-z]@', function ($m) {
             return substr(strtoupper($m[0]), 1);
         }, trim($name, '-'));
-        $name = lcfirst($name);
-        return $name;
+        return lcfirst($name);
     }
 
     /**
@@ -114,8 +111,7 @@ class Util
         $name = preg_replace_callback('@[A-Z]@', function ($m) {
             return '-' . strtolower($m[0]);
         }, $name);
-        $name = ltrim($name, '-');
-        return $name;
+        return ltrim($name, '-');
     }
 
     /**
@@ -263,21 +259,13 @@ class Util
     public static function mapItemType(array $values, string $type): array
     {
         return array_map(function ($v) use ($type) {
-            switch ($type) {
-                case 'int':
-                    return intval($v);
-                case 'float':
-                case 'double':
-                    return floatval($v);
-                case 'bool':
-                case 'boolean':
-                    return $v === true || $v === 1 || strval($v) == '1' || strval($v) == 'true';
-                case 'object':
-                case 'array':
-                    return $v;
-                default:
-                    return strval($v);
-            }
+            return match ($type) {
+                'int' => intval($v),
+                'float', 'double' => floatval($v),
+                'bool', 'boolean' => $v === true || $v === 1 || strval($v) == '1' || strval($v) == 'true',
+                'object', 'array' => $v,
+                default => strval($v),
+            };
         }, $values);
     }
 

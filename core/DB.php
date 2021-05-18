@@ -9,6 +9,7 @@ class DB
     protected static ?Mysql $engine = null;
 
     /**
+     * 获取Mysql链接实例
      * @return Mysql
      * @throws DBException
      */

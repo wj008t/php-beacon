@@ -35,6 +35,7 @@ class Config
         if (empty(self::$configPath)) {
             self::$configPath = Util::path(ROOT_DIR, 'config');
         }
+        self::$loaded[$name] = 1;
         $filePath = Util::path(self::$configPath, $name . '.config.php');
         if (file_exists($filePath)) {
             $loadData = require($filePath);
@@ -49,7 +50,6 @@ class Config
                     }
                 }
             }
-            self::$loaded[$name] = 1;
             return $loadData;
         }
         return [];
@@ -110,7 +110,7 @@ class Config
                 return self::getSection($name);
             }
         }
-        return isset(self::$global[$key]) ? self::$global[$key] : $default;
+        return self::$global[$key] ?? $default;
     }
 
     /**

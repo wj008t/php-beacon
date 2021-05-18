@@ -8,10 +8,8 @@ class DBException extends \Exception
 {
     protected string $detail = '';
 
-
     public function setDetail(string $detail = '')
     {
-        //Logger::error($detail);
         $this->detail = $detail;
     }
 
@@ -19,5 +17,4 @@ class DBException extends \Exception
     {
         return $this->detail;
     }
-
 }

@@ -29,7 +29,7 @@ class Redis
             }
         } else {
             if (!empty($config['sock'])) {
-                self::$redis = new Client('/tmp/redis.sock');
+                self::$redis = new Client($config['sock']);
             } else {
                 self::$redis = new Client($config);
             }

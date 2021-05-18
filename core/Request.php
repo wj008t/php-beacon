@@ -112,7 +112,7 @@ class Request
             'f' => static::lookType($input, $name, 'float', $default),
             'i' => static::lookType($input, $name, 'int', $default),
             'a' => static::lookType($input, $name, 'array', $default),
-            default => isset($input[$name]) ? $input[$name] : $default,
+            default => $input[$name] ?? $default,
         };
     }
 
@@ -128,7 +128,7 @@ class Request
     public static function lookType(array $input, string $name, string $type, mixed $default = null): mixed
     {
         if (empty($type)) {
-            return isset($input[$name]) ? $input[$name] : $default;
+            return $input[$name] ?? $default;
         }
         $map = Util::typeMap($type);
         $type = array_shift($map);
@@ -221,7 +221,7 @@ class Request
                 }
                 return [];
             default :
-                return isset($input[$name]) ? $input[$name] : $default;
+                return $input[$name] ?? $default;
         }
     }
 
@@ -357,7 +357,7 @@ class Request
         $result = [];
         foreach (array_reverse(explode(',', $terms)) as $part) {
             if (preg_match("/{$regex}/", $part, $m)) {
-                $quality = isset($m['quality']) ? $m['quality'] : 1;
+                $quality = $m['quality'] ?? 1;
                 $result[$m['term']] = $quality;
             }
         }
@@ -509,7 +509,7 @@ class Request
      */
     public static function method(): string
     {
-        $method = static::overridden() ? (isset($_POST[static::OVERRIDE]) ? $_POST[static::OVERRIDE] : $_SERVER[static::OVERRIDE]) : $_SERVER['REQUEST_METHOD'];
+        $method = static::overridden() ? ($_POST[static::OVERRIDE] ?? $_SERVER[static::OVERRIDE]) : $_SERVER['REQUEST_METHOD'];
         return strtoupper($method);
     }
 
@@ -743,10 +743,10 @@ class Request
             return setcookie($name, $value, $options);
         }
         $expire = isset($options['expire']) ? intval($options['expire']) : 0;
-        $path = isset($options['path']) ? $options['path'] : '';
-        $domain = isset($options['domain']) ? $options['domain'] : '';
-        $secure = isset($options['secure']) ? boolval($options['secure']) : false;
-        $httponly = isset($options['httponly']) ? boolval($options['httponly']) : false;
+        $path = $options['path'] ?? '';
+        $domain = $options['domain'] ?? '';
+        $secure = isset($options['secure']) && boolval($options['secure']);
+        $httponly = isset($options['httponly']) && boolval($options['httponly']);
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
 
@@ -761,7 +761,7 @@ class Request
         if (empty($name)) {
             return $_FILES;
         }
-        return isset($_FILES[$name]) ? $_FILES[$name] : $default;
+        return $_FILES[$name] ?? $default;
     }
 
     /**
@@ -785,15 +785,14 @@ class Request
         return $default;
     }
 
-
     /**
      * 设置请求头
      * @param string $name
      * @param string $value
      * @param bool $replace
-     * @param null $http_response_code
+     * @param int $http_response_code
      */
-    public static function setHeader(string $name, string $value, bool $replace = true, $http_response_code = null)
+    public static function setHeader(string $name, string $value, bool $replace = true, int $http_response_code = 0)
     {
         $nameTemps = explode('-', $name);
         foreach ($nameTemps as &$n) {
@@ -801,19 +800,7 @@ class Request
         }
         $name = join('-', $nameTemps);
         $string = $name . ':' . $value;
-        if ($replace) {
-            if ($http_response_code == null) {
-                header($string);
-            } else {
-                header($string, $replace, $http_response_code);
-            }
-        } else {
-            if ($http_response_code == null) {
-                header($string, false);
-            } else {
-                header($string, false, $http_response_code);
-            }
-        }
+        header($string, $replace, $http_response_code);
     }
 
     /**
@@ -821,10 +808,10 @@ class Request
      * @param $type
      * @param string $encoding
      */
-    public static function setContentType($type, $encoding = 'utf-8')
+    public static function setContentType($type, string $encoding = 'utf-8')
     {
         if (!str_contains($type, '/')) {
-            $type = isset(static::$formats[$type]) ? static::$formats[$type] : 'application/octet-stream';
+            $type = static::$formats[$type] ?? 'application/octet-stream';
             if (is_array($type)) {
                 $type = $type[0];
             }

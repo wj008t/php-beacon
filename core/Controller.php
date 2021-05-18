@@ -69,6 +69,7 @@ abstract class Controller
     }
 
     /**
+     * 跳转页面
      * @param string $url
      * @param array $query
      */
@@ -152,6 +153,7 @@ abstract class Controller
 
 
     /**
+     * get 获取参数 相当于 $_GET
      * @param string $name
      * @param null $def
      * @return mixed
@@ -267,7 +269,7 @@ abstract class Controller
      * @param array $list
      * @param string $template
      * @param string $key
-     * @param bool $keep
+     * @param bool $keep 保持原有数据
      * @return array
      */
     protected function hookData(array $list, string $template = '', string $key = 'rs', bool $keep = false): array

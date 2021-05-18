@@ -92,7 +92,7 @@ class Logger
      * @param \ReflectionProperty $property
      * @return string
      */
-    private static function getPropertyKey(\ReflectionProperty $property): string
+    private static function propertyType(\ReflectionProperty $property): string
     {
         $static = $property->isStatic() ? ' static' : '';
         if ($property->isPublic()) {
@@ -135,7 +135,7 @@ class Logger
             if (array_key_exists($property->getName(), $object_vars)) {
                 continue;
             }
-            $type = self::getPropertyKey($property);
+            $type = self::propertyType($property);
             $property->setAccessible(true);
             $value = $property->getValue($object);
             if ($value === $object || in_array($value, $_processed, true)) {

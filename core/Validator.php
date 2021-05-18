@@ -204,7 +204,7 @@ class Validator
     public static function testEqualTo(mixed $val, string $key): bool
     {
         if (!empty($key) && preg_match('/^#?(\w+)/i', $key, $m) != 0) {
-            $name = isset($m[1]) ? $m[1] : '';
+            $name = $m[1] ?? '';
             if (!empty($name)) {
                 $str = Request::param($name . ':s');
                 if (!empty($str)) {
@@ -291,10 +291,10 @@ class Validator
      */
     public static function testMax(mixed $val, mixed $num, bool $nq = false): bool
     {
-        if (gettype($val) != 'int') {
+        if (!is_int($val)) {
             $val = round(floatval($val), 5);
         }
-        if (gettype($num) != 'int') {
+        if (!is_int($num)) {
             $num = round(floatval($num), 5);
         }
         if ($nq) {
@@ -313,10 +313,10 @@ class Validator
      */
     public static function testMin(mixed $val, mixed $num, bool $nq = false): bool
     {
-        if (gettype($val) != 'int') {
+        if (!is_int($val)) {
             $val = round(floatval($val), 5);
         }
-        if (gettype($num) != 'int') {
+        if (!is_int($num)) {
             $num = round(floatval($num), 5);
         }
         if ($nq) {
@@ -414,7 +414,7 @@ class Validator
         if ($valid == null || count($valid) == 0) {
             return true;
         }
-        $validFunc = isset($valid['func']) ? $valid['func'] : null;
+        $validFunc = $valid['func'] ?? null;
         if ($validFunc && is_callable($validFunc)) {
             list($ret, $err) = $validFunc($value);
             if (!$ret) {
@@ -424,11 +424,11 @@ class Validator
                 return false;
             }
         }
-        $disabled = isset($valid['disabled']) ? boolval($valid['disabled']) : false;
+        $disabled = isset($valid['disabled']) && boolval($valid['disabled']);
         if ($disabled) {
             return true;
         }
-        $rule = isset($valid['rule']) ? $valid['rule'] : null;
+        $rule = $valid['rule'] ?? null;
         if (empty($rule)) {
             return true;
         }
@@ -449,7 +449,7 @@ class Validator
             $func = Validator::getFunc('required');
             $r = call_user_func_array($func, $item['args']);
             if (!$r) {
-                $error = empty($item['message']) ? (isset(Validator::$default_errors['required']) ? Validator::$default_errors['required'] : '必填项') : $item['message'];
+                $error = empty($item['message']) ? (Validator::$default_errors['required'] ?? '必填项') : $item['message'];
                 return false;
             }
             unset($maps['required']);
@@ -472,7 +472,7 @@ class Validator
                     if ($out) {
                         continue;
                     }
-                    $err = empty($item['message']) ? (isset(Validator::$default_errors[$type]) ? Validator::$default_errors[$type] : '格式错误') : $item['message'];
+                    $err = empty($item['message']) ? (Validator::$default_errors[$type] ?? '格式错误') : $item['message'];
                     $error = Validator::format($err, $param);
                     return false;
                 } else if (is_array($out) && isset($out['status']) && !$out['status'] && !empty($out['error'])) {
