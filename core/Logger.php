@@ -232,9 +232,9 @@ class Logger
             return;
         }
         if ($file) {
-            $text = 'file [' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+            $text = 'file [' . date('H:i:s') . '] ' . $text . PHP_EOL;
         } else {
-            $text = $act . ' [' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+            $text = $act . ' [' . date('H:i:s') . '] ' . $text . PHP_EOL;
         }
         if (!is_dir($path)) {
             Util::makeDir($path);
