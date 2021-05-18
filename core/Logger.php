@@ -231,11 +231,16 @@ class Logger
         if ($kind != 'all' && substr_count($kind, $act) == 0) {
             return;
         }
-        $text = '[' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+        $text = $act[0] . ' [' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
         if (!is_dir($path)) {
             Util::makeDir($path);
         }
-        $LogFile = Util::path($path, date('Ymd') . '.' . $act . '.log');
+        $single = self::$logSave['single'] ?? false;
+        if ($single) {
+            $LogFile = Util::path($path, date('Ymd') . '.log');
+        } else {
+            $LogFile = Util::path($path, date('Ymd') . '.' . $act . '.log');
+        }
         file_put_contents($LogFile, $text, FILE_APPEND);
     }
 
@@ -249,7 +254,7 @@ class Logger
         if (!is_array($item) || count($item) == 0) {
             return;
         }
-        $act = $item['act'] ?? 'log';
+        $act = empty($item['act']) ? 'log' : $item['act'];
         $file = $item['file'] ?? null;
         $data = $item['data'] ?? null;
         $time = $item['time'] ?? null;
@@ -326,15 +331,17 @@ class Logger
      * 保持日志
      * @param string $path
      * @param string $kind
+     * @param bool $single 是否单一文件
      */
-    public static function saveLog(string $path = '', string $kind = 'all')
+    public static function saveLog(string $path = '', string $kind = 'all', bool $single = false)
     {
         if (empty($path)) {
             return;
         }
         self::$logSave = [
             'path' => $path,
-            'kind' => $kind
+            'kind' => $kind,
+            'single' => $single
         ];
     }
 
