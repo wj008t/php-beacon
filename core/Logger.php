@@ -18,8 +18,9 @@ class Logger
 
     public static string $addr = "127.0.0.1";
     public static int $port = 1024;
-
     private static \Socket|null $sock = null;
+    private static ?array $logSave = null;
+
 
     /**
      * UDP发送
@@ -217,6 +218,27 @@ class Logger
         printf($format, $text);
     }
 
+    private static function save(string $text, string $act = 'info')
+    {
+        if (self::$logSave == null) {
+            return;
+        }
+        $kind = self::$logSave['kind'] ?? 'all';
+        $path = self::$logSave['path'];
+        if (empty($path)) {
+            return;
+        }
+        if ($kind != 'all' && substr_count($kind, $act) == 0) {
+            return;
+        }
+        $text = '[' . date('Y-m-d H:i:s') . '] ' . $text . PHP_EOL;
+        if (!is_dir($path)) {
+            Util::makeDir($path);
+        }
+        $LogFile = Util::path($path, date('Ymd') . '.' . $act . '.log');
+        file_put_contents($LogFile, $text, FILE_APPEND);
+    }
+
     /**
      * 输出调试数据
      * @param array $item
@@ -234,13 +256,17 @@ class Logger
         if ($file && $tempFile != $file) {
             $tempFile = $file;
             self::out('> ' . $file, 'file', true);
+            self::save('> ' . $file, $act);
         }
         if ($data !== null && is_array($data) && count($data) > 0) {
             if ($act == 'sql') {
                 if ($time !== null) {
-                    self::out($data[0] . '    ', 'sql1', false);
-                    self::out(intval(floatval($time) * 10000) / 10000, 'sql2', true);
+                    $time = number_format($time, 4, '.', '');
+                    self::out($time . 's ', 'sql2', false);
+                    self::out($data[0], 'sql1', true);
+                    self::save($time . 's ' . $data[0] . '    ' . $time, $act);
                 } else {
+                    self::save($data[0], $act);
                     self::out($data[0], 'sql1', true);
                 }
             } else {
@@ -250,6 +276,7 @@ class Logger
                     }
                 }
                 self::out(join('    ', $data), $act, true);
+                self::save(join('    ', $data), $act);
             }
         }
     }
@@ -293,6 +320,22 @@ class Logger
                 self::debug($data);
             }
         }
+    }
+
+    /**
+     * 保持日志
+     * @param string $path
+     * @param string $kind
+     */
+    public static function saveLog(string $path = '', string $kind = 'all')
+    {
+        if (empty($path)) {
+            return;
+        }
+        self::$logSave = [
+            'path' => $path,
+            'kind' => $kind
+        ];
     }
 
     /**
