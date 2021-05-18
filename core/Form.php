@@ -285,7 +285,11 @@ class Form
     public function setData(array|int|null $data = null)
     {
         if (is_int($data)) {
-            $data = DB::getItem($this->table, $data);
+            try {
+                $data = DB::getItem($this->table, $data);
+            } catch (DBException $e) {
+                Logger::error($e->getMessage(), $e->getMessage());
+            }
         }
         if ($data == null) {
             return;

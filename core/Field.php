@@ -256,7 +256,6 @@ abstract class Field
     /**
      * 获取属性值
      * @return array
-     * @throws DBException
      */
     protected function attrs(): array
     {
@@ -307,19 +306,17 @@ abstract class Field
      * 获取属性
      * @param string $name
      * @return mixed
-     * @throws DBException
      */
     public function getAttr(string $name): mixed
     {
         $this->attrs();
-        return isset($this->_attrs[$name]) ? $this->_attrs[$name] : null;
+        return $this->_attrs[$name] ?? null;
     }
 
     /**
      * 渲染数据
      * @param array $attrs
      * @return string
-     * @throws DBException
      */
     public function render(array $attrs = []): string
     {
@@ -438,7 +435,6 @@ abstract class Field
     /**
      * 获取值
      * @return mixed
-     * @throws DBException
      */
     public function getValue(): mixed
     {
@@ -473,7 +469,6 @@ abstract class Field
      * 验证控件
      * @param array $errors
      * @return bool
-     * @throws DBException
      */
     public function validate(array &$errors): bool
     {
