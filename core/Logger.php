@@ -264,10 +264,10 @@ class Logger
                     $time = number_format($time, 4, '.', '');
                     self::out($time . 's ', 'sql2', false);
                     self::out($data[0], 'sql1', true);
-                    self::save($time . 's ' . $data[0] . '    ' . $time, $act);
+                    self::save($time . 's ' . $data[0], $act);
                 } else {
-                    self::save($data[0], $act);
                     self::out($data[0], 'sql1', true);
+                    self::save($data[0], $act);
                 }
             } else {
                 foreach ($data as &$datum) {
