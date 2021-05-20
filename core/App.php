@@ -243,7 +243,7 @@ class App
      */
     protected static function runTime()
     {
-        if (defined('DEBUG_LOG') && DEBUG_LOG) {
+        if (defined('DEV_DEBUG') && DEV_DEBUG && defined('DEBUG_LOG') && DEBUG_LOG) {
             error_reporting(E_ALL);
             //程序计时---
             if (isset($_SERVER['REQUEST_URI'])) {
@@ -372,19 +372,19 @@ class App
         $out = [];
         $out['status'] = false;
         $out['_code'] = 500;
+        $code = [];
+        $code[] = get_class($exception) . ": {$exception->getMessage()}";
+        $code[] = $exception->getTraceAsString();
+        if (is_callable([$exception, 'getDetail'])) {
+            $code[] = "--------------------------------------------";
+            $code[] = $exception->getDetail();
+        }
+        //开启日志
+        if ((defined('DEBUG_LOG') && DEBUG_LOG)) {
+            Logger::error(join("\n", $code));
+        }
         //如果开启调试,打印更详细的栈信息.
         if ((defined('DEV_DEBUG') && DEV_DEBUG)) {
-            $code = [];
-            $code[] = get_class($exception) . ": {$exception->getMessage()}";
-            $code[] = $exception->getTraceAsString();
-            if (is_callable([$exception, 'getDetail'])) {
-                $code[] = "----------------------------------------------------------------------------------------------------------";
-                $code[] = $exception->getDetail();
-            }
-            //开启日志
-            if ((defined('DEBUG_LOG') && DEBUG_LOG)) {
-                Logger::error(join("\n", $code));
-            }
             $out['_stack'] = explode("\n", join("\n", $code));
             if ($exception instanceof RouteError) {
                 $out['msg'] = '404 页面没有找到:' . $exception->getMessage();
@@ -408,6 +408,7 @@ class App
         $view->assign('info', $out);
         $template = Config::get('beacon.exception_template', '@exception.tpl');
         $view->display($template);
+        exit;
     }
 
     /**
