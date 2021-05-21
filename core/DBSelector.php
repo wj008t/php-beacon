@@ -320,29 +320,19 @@ class DBSelector extends SqlCondition
      * 解构表名
      * @return array
      */
-    protected function deconstructTable(): array
+    protected function destTable(): array
     {
         $table = $this->table;
-        $alias = '';
-        $oneTable = true; //是否单一表
-        $temp = preg_split('@(\s+as\s+|\s+)@i', $table);
-        //分析是否单一表
-        $len = count($temp);
-        if ($len > 2) {
-            $oneTable = false;
-        } else if ($len == 2) {
-            if (preg_match('@[()]@', $temp[0]) || preg_match('@[()]@', $temp[1])) {
-                $oneTable = false;
-            } else {
-                $table = $temp[0];
-                $alias = $temp[1];
-            }
+        if (!preg_match('@^(.*)(?:\s+as\s+|\s+)(\w+)$@iU', $table, $temp)) {
+            return [true, $table, ''];
         }
-        if ($oneTable) {
-            $table = trim($table, '`');
-            $table = '`' . $table . '`';
+        $table = $temp[1];
+        $alias = $temp[2];
+        if (preg_match('@[()]@', $table)) {
+            return [false, $table, $alias];
         }
-        return [$oneTable, $table, $alias];
+        $table = '`' . trim($table, '`') . '`';
+        return [true, $table, $alias];
     }
 
     /**
@@ -371,7 +361,7 @@ class DBSelector extends SqlCondition
     {
         $execSql = [];
         $argItems = [];
-        [$oneTable, $table, $alias] = $this->deconstructTable();
+        [$oneTable, $table, $alias] = $this->destTable();
         //如果开启优化
         if ($optimize) {
             if (!$oneTable || $this->_joins != null || $this->_limit == '' || $this->_groups != null || $this->_having != null || count($this->_unions) > 0) {
@@ -500,7 +490,7 @@ class DBSelector extends SqlCondition
             $this->_limit = $limit;
             return $item;
         }
-        [$oneTable, $table, $alias] = $this->deconstructTable();
+        [$oneTable, $table, $alias] = $this->destTable();
         $execSql = [];
         $argItems = [];
         if ($oneTable) {
