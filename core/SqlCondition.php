@@ -74,7 +74,11 @@ class SqlCondition
                 }
                 break;
             case self::WITHOUT_ZERO_LENGTH:
-                if ($value === null || strval($value) === '') {
+                if (is_array($value)) {
+                    if (count($value) == 0) {
+                        return $this;
+                    }
+                } else if ($value === null || strval($value) === '') {
                     return $this;
                 }
                 break;

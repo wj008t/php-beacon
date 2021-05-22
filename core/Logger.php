@@ -39,8 +39,25 @@ class Logger
         try {
             $backtrace = debug_backtrace(false);
             $backtrace_message = 'unknown';
-            if (isset($backtrace[1]) && isset($backtrace[1]['file']) && isset($backtrace[1]['line'])) {
-                $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'] . ')';
+            if ($type == 'sql') {
+                foreach ($backtrace as $idx => $item) {
+                    if ($idx == 0) {
+                        continue;
+                    }
+                    if (!isset($item['file']) || !isset($item['line'])) {
+                        continue;
+                    }
+                    $file = basename($item['file']);
+                    if ($file == 'Mysql.php' || $file == 'DB.php' || $file == 'DBSelector.php') {
+                        continue;
+                    }
+                    $backtrace_message = $item['file'] . '(' . $item['line'] . ')';
+                    break;
+                }
+            } else {
+                if (isset($backtrace[1]) && isset($backtrace[1]['file']) && isset($backtrace[1]['line'])) {
+                    $backtrace_message = $backtrace[1]['file'] . '(' . $backtrace[1]['line'] . ')';
+                }
             }
             $temps = [];
             foreach ($args as $arg) {
