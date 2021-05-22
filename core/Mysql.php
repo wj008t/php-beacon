@@ -10,6 +10,7 @@ namespace beacon;
  */
 
 
+use beacon\core\Logger;
 use \PDO as PDO;
 
 /**
@@ -314,7 +315,6 @@ class Mysql
             $retry = 0;
             redo:
             $sth = $this->pdo->prepare($sql);
-            $ret = false;
             try {
                 $ret = $sth->execute($args);
             } catch (\Exception $exception) {
@@ -337,8 +337,11 @@ class Mysql
                 }
             }
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
-                $this->_lastSql = Mysql::format($sql, $args);
-                Logger::sql($this->_lastSql, microtime(true) - $time);
+                $time = microtime(true) - $time;
+                if (!defined('DEBUG_MYSQL_SLOW_LIMIT') || $time * 1000 > DEBUG_MYSQL_SLOW_LIMIT) {
+                    $this->_lastSql = Mysql::format($sql, $args);
+                    Logger::sql($this->_lastSql, $time);
+                }
             }
             return $sth;
         } catch (\Exception $exception) {
