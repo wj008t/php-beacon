@@ -9,8 +9,6 @@ namespace beacon;
  * Time: 14:03
  */
 
-
-use beacon\core\Logger;
 use \PDO as PDO;
 
 /**
