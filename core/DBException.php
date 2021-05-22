@@ -4,7 +4,7 @@
 namespace beacon;
 
 
-class MysqlException extends \Exception
+class DBException extends \Exception
 {
     protected $detail = '';
 

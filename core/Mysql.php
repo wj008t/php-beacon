@@ -13,50 +13,6 @@ namespace beacon;
 use \PDO as PDO;
 
 /**
- * sql 语句片段,用于更新插入时使用
- * Class SqlSection
- * @package beacon
- */
-class SqlRaw
-{
-    public $sql = null;
-    public $args = null;
-
-    public function __construct(string $sql, $args = null)
-    {
-        $this->sql = $sql;
-        $this->args = $args;
-    }
-
-    public function format()
-    {
-        return Mysql::format($this->sql, $this->args);
-    }
-}
-
-/**
- * 错误处理
- * Class MysqlException
- * @package beacon
- */
-class MysqlException extends \Exception
-{
-
-    protected $detail = '';
-
-    public function __construct(string $message = '', $detail = '', int $code = 0, \Throwable $previous = null)
-    {
-        $this->detail = $detail;
-        parent::__construct($message, $code, $previous);
-    }
-
-    public function getDetail()
-    {
-        return $this->detail;
-    }
-}
-
-/**
  * mysql 数据操作类
  * Class Mysql
  * @package beacon
@@ -68,7 +24,7 @@ class Mysql
     /**
      * 获取一个单例
      * @return Mysql|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function instance()
     {
@@ -86,10 +42,10 @@ class Mysql
                 self::$instance = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
             } catch (\PDOException $e) {
                 self::$instance = null;
-                throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+                throw new DBException($e->getMessage(), '', $e->getCode(), $e);
             } catch (\Exception $e) {
                 self::$instance = null;
-                throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+                throw new DBException($e->getMessage(), '', $e->getCode(), $e);
             }
         }
         return self::$instance;
@@ -290,7 +246,7 @@ class Mysql
     /**
      * 回滚事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public function rollBack()
     {
@@ -305,7 +261,7 @@ class Mysql
      * 执行sql
      * @param string $sql
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public function exec(string $sql)
     {
@@ -314,7 +270,7 @@ class Mysql
             $ret = $this->pdo->exec($sql);
             return $ret;
         } catch (\Exception $exception) {
-            throw new MysqlException($exception->getMessage(), $sql, $exception->getCode(), $exception);
+            throw new DBException($exception->getMessage(), $sql, $exception->getCode(), $exception);
         }
     }
 
@@ -342,7 +298,7 @@ class Mysql
      * @param string $sql
      * @param null $args
      * @return bool|\PDOStatement
-     * @throws MysqlException
+     * @throws DBException
      */
     public function execute(string $sql, $args = null)
     {
@@ -375,9 +331,9 @@ class Mysql
                 }
                 $this->_lastSql = Mysql::format($sql, $args);
                 if (isset($err[2])) {
-                    throw new MysqlException('execute sql statement error:' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
+                    throw new DBException('execute sql statement error:' . $err[0] . ',' . $err[1] . ',' . $err[2], $this->_lastSql);
                 } else {
-                    throw new MysqlException('execute sql statement error:', $this->_lastSql);
+                    throw new DBException('execute sql statement error:', $this->_lastSql);
                 }
             }
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
@@ -390,7 +346,7 @@ class Mysql
             if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
                 Logger::sql($this->_lastSql, microtime(true) - $time);
             }
-            throw new MysqlException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
+            throw new DBException($exception->getMessage(), $this->_lastSql, $exception->getCode(), $exception);
         }
     }
 
@@ -402,7 +358,7 @@ class Mysql
      * @param null $fetch_argument
      * @param array|null $ctor_args
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
     public function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
     {
@@ -431,7 +387,7 @@ class Mysql
      * @param null $cursor_orientation
      * @param int $cursor_offset
      * @return mixed|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
     {
@@ -450,7 +406,7 @@ class Mysql
      * @param null $args
      * @param null $field
      * @return mixed|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public function getOne(string $sql, $args = null, $field = null)
     {
@@ -471,7 +427,7 @@ class Mysql
      * @param null $where
      * @param null $args
      * @return null
-     * @throws MysqlException
+     * @throws DBException
      */
     public function getMax(string $tbname, string $field, $where = null, $args = null)
     {
@@ -501,7 +457,7 @@ class Mysql
      * @param null $where
      * @param null $args
      * @return null
-     * @throws MysqlException
+     * @throws DBException
      */
     public function getMin(string $tbname, string $field, $where = null, $args = null)
     {
@@ -528,19 +484,18 @@ class Mysql
      * 创建一个sql语句原义片段,一般用于更新 插入数据时数组的值
      * @param string $sql
      * @param null $args
-     * @return SqlRaw
+     * @return SqlFrame
      */
     public function raw(string $sql, $args = null)
     {
-        $data = new SqlRaw($sql, $args);
-        return $data;
+        return new SqlFrame($sql, $args, 'raw');
     }
 
     /**
      * 插入记录
      * @param string $tbname
      * @param array $values
-     * @throws MysqlException
+     * @throws DBException
      */
     public function insert(string $tbname, array $values = [])
     {
@@ -554,7 +509,7 @@ class Mysql
             $names[] = '`' . $key . '`';
             if ($item === null) {
                 $vals [] = 'NULL';
-            } else if ($item instanceof SqlRaw) {
+            } else if ($item instanceof SqlFrame) {
                 $vals [] = $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -598,7 +553,7 @@ class Mysql
      * 替换记录集
      * @param string $tbname
      * @param array $values
-     * @throws MysqlException
+     * @throws DBException
      */
     public function replace(string $tbname, array $values = [])
     {
@@ -612,7 +567,7 @@ class Mysql
             $names[] = '`' . $key . '`';
             if ($item === null) {
                 $vals [] = 'NULL';
-            } else if ($item instanceof SqlRaw) {
+            } else if ($item instanceof SqlFrame) {
                 $vals [] = $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -658,7 +613,7 @@ class Mysql
      * @param array $values
      * @param null $where
      * @param null $args
-     * @throws MysqlException
+     * @throws DBException
      */
     public function update(string $tbname, array $values, $where = null, $args = null)
     {
@@ -675,7 +630,7 @@ class Mysql
         foreach ($values as $key => $item) {
             if ($item === null) {
                 $maps [] = '`' . $key . '`=NULL';
-            } else if ($item instanceof SqlRaw) {
+            } else if ($item instanceof SqlFrame) {
                 $maps [] = '`' . $key . '`=' . $item->sql;
                 if (is_array($item->args)) {
                     foreach ($item->args as $it) {
@@ -712,7 +667,7 @@ class Mysql
         }
         $sql = 'update ' . $tbname . ' set ' . join(',', $maps);
         if (empty($where)) {
-            throw new MysqlException('编辑数据必须带有条件');
+            throw new DBException('编辑数据必须带有条件');
         }
         $sql .= ' where ' . $where;
         if (is_array($args)) {
@@ -731,7 +686,7 @@ class Mysql
      * @param string $tbname
      * @param null $where
      * @param null $args
-     * @throws MysqlException
+     * @throws DBException
      */
     public function delete(string $tbname, $where = null, $args = null)
     {
@@ -742,7 +697,7 @@ class Mysql
         }
         $sql = 'DELETE FROM ' . $tbname;
         if (empty($where)) {
-            throw new MysqlException('删除数据必须带有条件');
+            throw new DBException('删除数据必须带有条件');
         }
         $sql .= ' where ' . $where;
         $Stm = $this->execute($sql, $args);
@@ -753,7 +708,7 @@ class Mysql
      * 获取表字段
      * @param string $tbname
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
     public function getFields(string $tbname)
     {
@@ -765,7 +720,7 @@ class Mysql
      * @param string $tbname
      * @param string $field
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public function existsField(string $tbname, string $field)
     {
@@ -776,7 +731,7 @@ class Mysql
      * 创建数据库表
      * @param string $tbname
      * @param array $options
-     * @throws MysqlException
+     * @throws DBException
      */
     public function createTable(string $tbname, array $options = [])
     {
@@ -786,12 +741,12 @@ class Mysql
             'comment' => '',
         ], $options);
         if ($this->existsTable($tbname)) {
-            throw new MysqlException("数据库表已经存在,{$tbname}");
+            throw new DBException("数据库表已经存在,{$tbname}");
         }
         $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=?";
         $stm = $this->execute($sql, [$options['comment']]);
         if (!$stm) {
-            throw new MysqlException("创建数据库表失败,{$tbname}");
+            throw new DBException("创建数据库表失败,{$tbname}");
         }
     }
 
@@ -801,7 +756,7 @@ class Mysql
      * @param string $field
      * @param array $options
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public function addField(string $tbname, string $field, array $options = [])
     {
@@ -850,7 +805,7 @@ class Mysql
      * @param string $field
      * @param array $options
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public function modifyField(string $tbname, string $field, array $options = [])
     {
@@ -903,7 +858,7 @@ class Mysql
      * @param string $newfield
      * @param array $options
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public function updateField(string $tbname, string $oldfield, string $newfield, array $options = [])
     {
@@ -962,7 +917,7 @@ class Mysql
      * @param string $tbname
      * @param string $field
      * @return int|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public function dropField(string $tbname, string $field)
     {
@@ -977,7 +932,7 @@ class Mysql
      * 检查表是否存在
      * @param string $tbname
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public function existsTable(string $tbname)
     {
@@ -990,7 +945,7 @@ class Mysql
      * 删除表
      * @param string $tbname
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public function dropTable(string $tbname)
     {

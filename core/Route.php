@@ -25,10 +25,6 @@ defined('IS_CLI') or define('IS_CLI', PHP_SAPI == 'cli' ? true : false);
 defined('IS_WIN') or define('IS_WIN', strstr(PHP_OS, 'WIN') ? true : false);
 
 
-class RouteError extends \Exception
-{
-}
-
 class Route
 {
 
@@ -577,7 +573,7 @@ class Route
                         if ($refType != null) {
                             if (version_compare(PHP_VERSION, '7.4.0', '<')) {
                                 $type = strval($refType);
-                            }else{
+                            } else {
                                 $type = $refType->getName();
                             }
                             $type = empty($type) ? 'any' : $type;

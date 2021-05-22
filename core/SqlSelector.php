@@ -4,27 +4,6 @@ namespace beacon;
 
 use sdopx\Sdopx;
 
-/**
- * Created by PhpStorm.
- * User: wj008
- * Date: 2018/1/5
- * Time: 1:37
- */
-class SqlUnionItem
-{
-    public $all = false;
-    /**
-     * @var SqlSelector
-     */
-    public $selector = null;
-
-    public function __construct(SqlSelector $selector, bool $all = false)
-    {
-        $this->all = $all;
-        $this->selector = $selector;
-    }
-}
-
 class SqlSelector
 {
 
@@ -36,21 +15,21 @@ class SqlSelector
 
     protected $count = -1;
     /**
-     * @var SqlItem;
+     * @var SqlFrame;
      */
     protected $orderItem = null;
     /**
-     * @var SqlItem;
+     * @var SqlFrame;
      */
     protected $groupItem = null;
     /**
-     * @var SqlItem;
+     * @var SqlFrame;
      */
     protected $fieldItem = null;
 
     protected $limit = '';
     /**
-     * @var SqlItem;
+     * @var SqlFrame;
      */
     protected $joinItem = null;
     /**
@@ -63,7 +42,7 @@ class SqlSelector
     protected $condition = null;
 
     /**
-     * @var SqlUnionItem[]
+     * @var SqlFrame[]
      */
     protected $unionItem = null;
 
@@ -202,7 +181,7 @@ class SqlSelector
 
     /**
      * 获取帧
-     * @return array
+     * @return SqlFrame
      */
     public function getFrame()
     {
@@ -217,7 +196,7 @@ class SqlSelector
      */
     public function field(string $field, $args = null)
     {
-        $this->fieldItem = new SqlItem($field, $args);
+        $this->fieldItem = new SqlFrame($field, $args, 'field');
         return $this;
     }
 
@@ -246,7 +225,7 @@ class SqlSelector
             if (!preg_match('@^by\s+@i', $order)) {
                 $order = 'by ' . $order;
             }
-            $this->orderItem = new SqlItem($order, $args);
+            $this->orderItem = new SqlFrame($order, $args, 'order');
         } else {
             if (!preg_match('@^(by|,)\s+@i', $order)) {
                 $order = ',' . $order;
@@ -279,7 +258,7 @@ class SqlSelector
             if (!preg_match('@^by\s+@i', $group)) {
                 $group = 'by ' . $group;
             }
-            $this->groupItem = new SqlItem($group, $args);
+            $this->groupItem = new SqlFrame($group, $args, 'group');
         } else {
             if (!preg_match('@^(by|,)\s+@i', $group)) {
                 $group = ',' . $group;
@@ -335,7 +314,7 @@ class SqlSelector
             $sql = 'join ' . $sql;
         }
         if ($this->joinItem === null) {
-            $this->joinItem = new SqlItem($sql, $args);
+            $this->joinItem = new SqlFrame($sql, $args, 'join');
         } else {
             $this->joinItem->add($sql, $args);
         }
@@ -359,7 +338,7 @@ class SqlSelector
         $sql = trim($sql);
         $sql = 'left join ' . $sql;
         if ($this->joinItem === null) {
-            $this->joinItem = new SqlItem($sql, $args);
+            $this->joinItem = new SqlFrame($sql, $args, 'join');
         } else {
             $this->joinItem->add($sql, $args);
         }
@@ -371,7 +350,7 @@ class SqlSelector
         $sql = trim($sql);
         $sql = 'right join ' . $sql;
         if ($this->joinItem === null) {
-            $this->joinItem = new SqlItem($sql, $args);
+            $this->joinItem = new SqlFrame($sql, $args, 'join');
         } else {
             $this->joinItem->add($sql, $args);
         }
@@ -383,7 +362,7 @@ class SqlSelector
         $sql = trim($sql);
         $sql = 'inner join ' . $sql;
         if ($this->joinItem === null) {
-            $this->joinItem = new SqlItem($sql, $args);
+            $this->joinItem = new SqlFrame($sql, $args, 'join');
         } else {
             $this->joinItem->add($sql, $args);
         }
@@ -395,7 +374,7 @@ class SqlSelector
         $sql = trim($sql);
         $sql = 'outer join ' . $sql;
         if ($this->joinItem === null) {
-            $this->joinItem = new SqlItem($sql, $args);
+            $this->joinItem = new SqlFrame($sql, $args, 'join');
         } else {
             $this->joinItem->add($sql, $args);
         }
@@ -407,7 +386,7 @@ class SqlSelector
         $sql = trim($sql);
         $sql = 'full join ' . $sql;
         if ($this->joinItem === null) {
-            $this->joinItem = new SqlItem($sql, $args);
+            $this->joinItem = new SqlFrame($sql, $args, 'join');
         } else {
             $this->joinItem->add($sql, $args);
         }
@@ -433,41 +412,69 @@ class SqlSelector
 
     /**
      * 联合另外一个查询器
-     * @param SqlSelector $selector
+     * @param SqlSelector|string $sql
+     * @param mixed $args
      * @return $this
      */
-    public function union(SqlSelector $selector)
+    public function union($sql, $args = null)
     {
-        if ($selector == null) {
+        if ($sql == null) {
             return $this;
         }
-        if ($this->unionItem == null) {
-            $this->unionItem = [];
+        if ($sql instanceof SqlSelector) {
+            $frame = $sql->createSql(0);
+            $frame->type = 'union';
+            $this->unionItem[] = $frame;
+            return $this;
         }
-        $this->unionItem[] = new SqlUnionItem($selector, false);
+        $sql = trim($sql);
+        if ($sql == '') {
+            return $this;
+        }
+        if ($args === null) {
+            $args = [];
+        } elseif (!is_array($args)) {
+            $args = [$args];
+        }
+        $frame = new SqlFrame($sql, $args, 'union');
+        $this->unionItem[] = $frame;
+        return $this;
+    }
+
+    /**
+     * 联合,运行结果重复
+     * @param SqlSelector|string $sql
+     * @param mixed $args
+     * @return $this
+     */
+    public function unionAll($sql, $args = null)
+    {
+        if ($sql == null) {
+            return $this;
+        }
+        if ($sql instanceof SqlSelector) {
+            $frame = $sql->createSql(0);
+            $frame->type = 'union-all';
+            $this->unionItem[] = $frame;
+            return $this;
+        }
+        $sql = trim($sql);
+        if ($sql == '') {
+            return $this;
+        }
+        if ($args === null) {
+            $args = [];
+        } elseif (!is_array($args)) {
+            $args = [$args];
+        }
+        $frame = new SqlFrame($sql, $args, 'union-all');
+        $this->unionItem[] = $frame;
         return $this;
     }
 
     public function emptyUnion()
     {
         $this->unionItem = null;
-        return $this;
-    }
-
-    /**
-     * 联合,运行结果重复
-     * @param SqlSelector $selector
-     * @return $this
-     */
-    public function unionAll(SqlSelector $selector)
-    {
-        if ($selector == null) {
-            return $this;
-        }
-        if ($this->unionItem == null) {
-            $this->unionItem = [];
-        }
-        $this->unionItem[] = new SqlUnionItem($selector, true);
         return $this;
     }
 
@@ -528,14 +535,14 @@ class SqlSelector
         $data['alias'] = $this->alias;
         $data['where'] = '';
         $frame = $this->condition->getFrame();
-        if (!empty($frame['sql'])) {
-            if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
-                $data['where'] = 'where ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+        if (!empty($frame->sql)) {
+            if (preg_match('@^(AND|OR)\s+@i', $frame->sql)) {
+                $data['where'] = 'where ' . preg_replace('@^(AND|OR)\s+@i', '', $frame->sql);
             } else {
-                $data['where'] = 'where ' . $frame['sql'];
+                $data['where'] = 'where ' . $frame->sql;
             }
-            if ($frame['args'] !== null && is_array($frame['args'])) {
-                $data['where'] = Mysql::format($data['where'], $frame['args']);
+            if ($frame->args !== null && is_array($frame->args)) {
+                $data['where'] = Mysql::format($data['where'], $frame->args);
             }
         }
         $data['order'] = '';
@@ -563,14 +570,14 @@ class SqlSelector
         $data['having'] = '';
         if ($this->havingItem != null) {
             $frame = $this->havingItem->getFrame();
-            if (!empty($frame['sql'])) {
-                if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
-                    $data['having'] = 'having ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+            if (!empty($frame->sql)) {
+                if (preg_match('@^(AND|OR)\s+@i', $frame->sql)) {
+                    $data['having'] = 'having ' . preg_replace('@^(AND|OR)\s+@i', '', $frame->sql);
                 } else {
-                    $data['having'] = 'having ' . $frame['sql'];
+                    $data['having'] = 'having ' . $frame->sql;
                 }
-                if ($frame['args'] !== null && is_array($frame['args'])) {
-                    $data['having'] = Mysql::format($data['having'], $frame['args']);
+                if ($frame->args !== null && is_array($frame->args)) {
+                    $data['having'] = Mysql::format($data['having'], $frame->args);
                 }
             }
         }
@@ -606,7 +613,6 @@ class SqlSelector
                 $data['join'] = $joinSql;
             }
         }
-
         $data['limit'] = $this->limit;
         $data['param'] = $this->param;
         return $data;
@@ -615,11 +621,10 @@ class SqlSelector
     /**
      * 创建sql
      * @param int $type
-     * @return array
+     * @return SqlFrame
      */
     public function createSql($type = 0)
     {
-
         if (!empty($this->sqlTemplate)) {
             $runtimeDir = Config::get('sdopx.runtime_dir', 'runtime');
             $runtimeDir = Utils::trimPath($runtimeDir);
@@ -633,11 +638,13 @@ class SqlSelector
                 $this->orderItem = $order;
                 $this->limit = $limit;
                 $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment, $runtimeDir);
-                return ['sql' => 'select count(1) from (' . $sql . ') countTempTable', 'args' => []];
+                return new SqlFrame('select count(1) from (' . $sql . ') countTempTable', [], 'sql');
+                //return ['sql' => 'select count(1) from (' . $sql . ') countTempTable', 'args' => []];
             } else {
                 $segment = $this->getSegment();
                 $sql = Sdopx::fetchSQL($this->sqlTemplate, $segment, $runtimeDir);
-                return ['sql' => $sql, 'args' => []];
+                return new SqlFrame($sql, [], 'sql');
+                //return ['sql' => $sql, 'args' => []];
             }
         }
         $sqlItems = [];
@@ -649,11 +656,11 @@ class SqlSelector
                 $limit = $this->limit;
                 $this->orderItem = null;
                 $this->limit = null;
-                $temp = $this->createSql(0);
-                $temp['sql'] = 'select count(1) from (' . $temp['sql'] . ') countTempTable';
+                $tempFrame = $this->createSql(0);
+                $tempFrame->sql = 'select count(1) from (' . $tempFrame->sql . ') countTempTable';
                 $this->orderItem = $order;
                 $this->limit = $limit;
-                return $temp;
+                return $tempFrame;
             } else {
                 $sqlItems[] = 'select count(1) from ' . $this->table;
                 if (!empty($this->alias)) {
@@ -709,14 +716,14 @@ class SqlSelector
         }
         //WHERE
         $frame = $this->condition->getFrame();
-        if (!empty($frame['sql'])) {
-            if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
-                $sqlItems[] = 'where ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+        if (!empty($frame->sql)) {
+            if (preg_match('@^(AND|OR)\s+@i', $frame->sql)) {
+                $sqlItems[] = 'where ' . preg_replace('@^(AND|OR)\s+@i', '', $frame->sql);
             } else {
-                $sqlItems[] = 'where ' . $frame['sql'];
+                $sqlItems[] = 'where ' . $frame->sql;
             }
-            if ($frame['args'] !== null && is_array($frame['args'])) {
-                $argItems = array_merge($argItems, $frame['args']);
+            if ($frame->args !== null && is_array($frame->args)) {
+                $argItems = array_merge($argItems, $frame->args);
             }
         }
         //GROUP BY
@@ -733,14 +740,14 @@ class SqlSelector
         //处理 havingItem
         if ($this->havingItem != null) {
             $frame = $this->havingItem->getFrame();
-            if (!empty($frame['sql'])) {
-                if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
-                    $sqlItems[] = 'having ' . preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+            if (!empty($frame->sql)) {
+                if (preg_match('@^(AND|OR)\s+@i', $frame->sql)) {
+                    $sqlItems[] = 'having ' . preg_replace('@^(AND|OR)\s+@i', '', $frame->sql);
                 } else {
-                    $sqlItems[] = 'having ' . $frame['sql'];
+                    $sqlItems[] = 'having ' . $frame->sql;
                 }
-                if ($frame['args'] !== null && is_array($frame['args'])) {
-                    $argItems = array_merge($argItems, $frame['args']);
+                if ($frame->args !== null && is_array($frame->args)) {
+                    $argItems = array_merge($argItems, $frame->args);
                 }
             }
         }
@@ -750,14 +757,13 @@ class SqlSelector
                 array_unshift($sqlItems, '(');
                 $sqlItems[] = ')';
                 foreach ($this->unionItem as $item) {
-                    $temp = $item->selector->createSql(0);
-                    if ($item->all) {
-                        $sqlItems[] = 'union all ( ' . $temp['sql'] . ' )';
+                    if ($item->type == 'union-all') {
+                        $sqlItems[] = 'union all ( ' . $item->sql . ' )';
                     } else {
-                        $sqlItems[] = 'union ( ' . $temp['sql'] . ' )';
+                        $sqlItems[] = 'union ( ' . $item->sql . ' )';
                     }
-                    if (!empty($temp['args'])) {
-                        $argItems = array_merge($argItems, $temp['args']);
+                    if (!empty($item->args)) {
+                        $argItems = array_merge($argItems, $item->args);
                     }
                 }
             }
@@ -765,12 +771,12 @@ class SqlSelector
         //ORDER BY
         if ($type != 2 && $this->orderItem != null) {
             $orderSql = $this->orderItem->sql;
-            $ordeArgs = $this->orderItem->args;
+            $orderArgs = $this->orderItem->args;
             if (!empty($orderSql)) {
                 $sqlItems[] = 'order ' . $orderSql;
             }
-            if ($ordeArgs !== null && is_array($ordeArgs)) {
-                $argItems = array_merge($argItems, $ordeArgs);
+            if ($orderArgs !== null && is_array($orderArgs)) {
+                $argItems = array_merge($argItems, $orderArgs);
             }
         }
         //LIMIT
@@ -782,19 +788,19 @@ class SqlSelector
             $sqlItems[] = ') Y where ' . $alias . '.id=Y.id';
             if ($this->orderItem != null) {
                 $orderSql = $this->orderItem->sql;
-                $ordeArgs = $this->orderItem->args;
+                $orderArgs = $this->orderItem->args;
                 if (!empty($orderSql)) {
                     $orderSql = preg_replace_callback('@by\s+(`?\w+`?)\s+(desc|asc)@i', function ($math) use ($alias) {
                         return 'by ' . $alias . '.' . $math[1] . ' ' . $math[2];
                     }, $orderSql);
                     $sqlItems[] = 'order ' . $orderSql;
                 }
-                if ($ordeArgs !== null && is_array($ordeArgs)) {
-                    $argItems = array_merge($argItems, $ordeArgs);
+                if ($orderArgs !== null && is_array($orderArgs)) {
+                    $argItems = array_merge($argItems, $orderArgs);
                 }
             }
         }
-        return ['sql' => join(' ', $sqlItems), 'args' => $argItems];
+        return new SqlFrame(join(' ', $sqlItems), $argItems, 'sql');
     }
 
     /**
@@ -803,14 +809,14 @@ class SqlSelector
      */
     public function getCompleteSql()
     {
-        $sqlItem = $this->createSql();
-        return Mysql::format($sqlItem['sql'], $sqlItem['args']);
+        $frame = $this->createSql();
+        return $frame->format();
     }
 
     public function getCount()
     {
-        $temp = $this->createSql(2);
-        $count = DB::getOne($temp['sql'], $temp['args']);
+        $frame = $this->createSql(2);
+        $count = DB::getOne($frame->sql, $frame->args);
         if ($count === null) {
             return 0;
         }
@@ -828,15 +834,15 @@ class SqlSelector
             $this->count = $this->getCount();
         }
         if (!$this->optimize) {
-            $temp = $this->createSql(0);
+            $frame = $this->createSql(0);
         } else {
             if ($this->joinItem || $this->groupItem || $this->unionItem) {
-                $temp = $this->createSql(0);
+                $frame = $this->createSql(0);
             } else {
-                $temp = $this->createSql(1);
+                $frame = $this->createSql(1);
             }
         }
-        $pageList = new PageList($temp['sql'], $temp['args'], $size, $pagekey);
+        $pageList = new PageList($frame->sql, $frame->args, $size, $pagekey);
         $pageList->setSelector($this);
         if ($this->count >= 0) {
             $pageList->setCount($this->count);
@@ -860,22 +866,22 @@ class SqlSelector
      */
     public function getList()
     {
-        $temp = $this->createSql(0);
-        return DB::getList($temp['sql'], $temp['args']);
+        $frame = $this->createSql(0);
+        return DB::getList($frame->sql, $frame->args);
     }
 
     public function getListByPageList()
     {
         if (!$this->optimize) {
-            $temp = $this->createSql(0);
+            $frame = $this->createSql(0);
         } else {
             if ($this->joinItem || $this->groupItem || $this->unionItem) {
-                $temp = $this->createSql(0);
+                $frame = $this->createSql(0);
             } else {
-                $temp = $this->createSql(1);
+                $frame = $this->createSql(1);
             }
         }
-        return DB::getList($temp['sql'], $temp['args']);
+        return DB::getList($frame->sql, $frame->args);
     }
 
     /**
@@ -884,8 +890,8 @@ class SqlSelector
      */
     public function getRow()
     {
-        $temp = $this->createSql(0);
-        return DB::getRow($temp['sql'], $temp['args']);
+        $frame = $this->createSql(0);
+        return DB::getRow($frame->sql, $frame->args);
     }
 
     /**
@@ -894,8 +900,8 @@ class SqlSelector
      */
     public function getOne()
     {
-        $temp = $this->createSql(0);
-        return DB::getOne($temp['sql'], $temp['args']);
+        $frame = $this->createSql(0);
+        return DB::getOne($frame->sql, $frame->args);
     }
 
 }

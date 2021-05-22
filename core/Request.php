@@ -348,7 +348,7 @@ class Request
      * @param bool $whole
      * @return array|mixed|null|string
      */
-    public static function getContentType($whole = false)
+    public static function getContentType(bool $whole = false)
     {
         $content_type = self::getHeader('content-type');
         if ($whole) {
@@ -363,7 +363,7 @@ class Request
      * @param $type
      * @param string $encoding
      */
-    public static function setContentType($type, $encoding = 'utf-8')
+    public static function setContentType($type, string $encoding = 'utf-8')
     {
         if (strpos($type, '/') === false) {
             $mime_types = [

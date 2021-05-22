@@ -15,7 +15,7 @@ class DB
     /**
      * 获取数据库引擎实例
      * @return Mysql|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function engine()
     {
@@ -34,10 +34,10 @@ class DB
             static::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
         } catch (\PDOException $e) {
             static::$engine = null;
-            throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            throw new DBException($e->getMessage(), '', $e->getCode(), $e);
         } catch (\Exception $e) {
             static::$engine = null;
-            throw new MysqlException($e->getMessage(), '', $e->getCode(), $e);
+            throw new DBException($e->getMessage(), '', $e->getCode(), $e);
         }
         return static::$engine;
     }
@@ -45,7 +45,7 @@ class DB
     /**
      * 开启事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function beginTransaction()
     {
@@ -55,7 +55,7 @@ class DB
     /**
      * 是否在事物里面
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function inTransaction()
     {
@@ -82,7 +82,7 @@ class DB
     /**
      * 提交事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function commit()
     {
@@ -92,7 +92,7 @@ class DB
     /**
      * 回滚事务
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function rollBack()
     {
@@ -103,7 +103,7 @@ class DB
      * 执行sql 语句
      * @param string $sql
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function exec(string $sql)
     {
@@ -113,7 +113,7 @@ class DB
     /**
      * 获取最后一条sql 语句,需要开启 DEBUG_MYSQL_LOG
      * @return string
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function lastSql()
     {
@@ -124,7 +124,7 @@ class DB
      * 获取最后的插入的id
      * @param null $name
      * @return string
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function lastInsertId($name = null)
     {
@@ -136,7 +136,7 @@ class DB
      * @param string $sql
      * @param null $args
      * @return bool|\PDOStatement
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function execute(string $sql, $args = null)
     {
@@ -151,7 +151,7 @@ class DB
      * @param null $fetch_argument
      * @param array|null $ctor_args
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function getList(string $sql, $args = null, $fetch_style = null, $fetch_argument = null, array $ctor_args = null)
     {
@@ -166,7 +166,7 @@ class DB
      * @param null $cursor_orientation
      * @param int $cursor_offset
      * @return mixed|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function getRow(string $sql, $args = null, $fetch_style = null, $cursor_orientation = null, $cursor_offset = 0)
     {
@@ -179,7 +179,7 @@ class DB
      * @param null $args
      * @param null $field
      * @return mixed|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function getOne(string $sql, $args = null, $field = null)
     {
@@ -193,7 +193,7 @@ class DB
      * @param null $where
      * @param null $args
      * @return null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function getMax(string $tbname, string $field, $where = null, $args = null)
     {
@@ -207,7 +207,7 @@ class DB
      * @param null $where
      * @param null $args
      * @return null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function getMin(string $tbname, string $field, $where = null, $args = null)
     {
@@ -219,7 +219,7 @@ class DB
      * @param string $sql
      * @param null $args
      * @return SqlRaw
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function raw(string $sql, $args = null)
     {
@@ -230,7 +230,7 @@ class DB
      * 插入记录
      * @param string $tbname
      * @param array $values
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function insert(string $tbname, array $values = [])
     {
@@ -241,7 +241,7 @@ class DB
      * 替换记录集
      * @param string $tbname
      * @param array $values
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function replace(string $tbname, array $values = [])
     {
@@ -254,7 +254,7 @@ class DB
      * @param array $values
      * @param null $where
      * @param null $args
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function update(string $tbname, array $values, $where = null, $args = null)
     {
@@ -266,7 +266,7 @@ class DB
      * @param string $tbname
      * @param null $where
      * @param null $args
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function delete(string $tbname, $where = null, $args = null)
     {
@@ -277,7 +277,7 @@ class DB
      * 获取表字段 判断字段是否存在
      * @param string $tbname
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function getFields(string $tbname)
     {
@@ -289,7 +289,7 @@ class DB
      * @param array $data
      * @param string $tbname
      * @return array
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function fieldFilter(array $data, string $tbname)
     {
@@ -310,7 +310,7 @@ class DB
      * @param string $tbname
      * @param string $field
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function existsField(string $tbname, string $field)
     {
@@ -321,7 +321,7 @@ class DB
      * 创建数据库表
      * @param string $tbname
      * @param array $options
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function createTable(string $tbname, array $options = [])
     {
@@ -334,7 +334,7 @@ class DB
      * @param string $field
      * @param array $options
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function addField(string $tbname, string $field, array $options = [])
     {
@@ -347,7 +347,7 @@ class DB
      * @param string $field
      * @param array $options
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function modifyField(string $tbname, string $field, array $options = [])
     {
@@ -361,7 +361,7 @@ class DB
      * @param string $newfield
      * @param array $options
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function updateField(string $tbname, string $oldfield, string $newfield, array $options = [])
     {
@@ -373,7 +373,7 @@ class DB
      * @param string $tbname
      * @param string $field
      * @return int|null
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function dropField(string $tbname, string $field)
     {
@@ -384,7 +384,7 @@ class DB
      * 检查表是否存在
      * @param string $tbname
      * @return bool
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function existsTable(string $tbname)
     {
@@ -395,7 +395,7 @@ class DB
      * 删除表
      * @param string $tbname
      * @return int
-     * @throws MysqlException
+     * @throws DBException
      */
     public static function dropTable(string $tbname)
     {

@@ -9,43 +9,6 @@
 namespace beacon;
 
 
-class SqlItem
-{
-    public $sql = '';
-    public $args = null;
-
-    public function __construct(string $sql, $args = null)
-    {
-        $this->sql = trim($sql);
-        if ($args === null || (is_array($args) && count($args) == 0)) {
-            return;
-        }
-        if (!is_array($args)) {
-            $this->args = [$args];
-        } else {
-            $this->args = $args;
-        }
-    }
-
-    public function add(string $sql, $args = null)
-    {
-        $this->sql .= ' ' . $sql;
-        if ($args === null || (is_array($args) && count($args) == 0)) {
-            return $this;
-        }
-        if (!is_array($args)) {
-            $args = [$args];
-        }
-        if ($this->args == null) {
-            $this->args = $args;
-        } else {
-            $this->args = array_merge($this->args, $args);
-        }
-        return $this;
-    }
-
-}
-
 class SqlCondition
 {
     const WITHOUT_EMPTY = 0;
@@ -53,7 +16,7 @@ class SqlCondition
     const WITHOUT_ZERO_LENGTH = 2;
     const WITHOUT_ZERO = 3;
     /**
-     * @var SqlItem[]
+     * @var SqlFrame[]
      */
     private $items = [];
     public $type = 'and';
@@ -76,14 +39,15 @@ class SqlCondition
         }
         if ($sql instanceof SqlCondition) {
             $frame = $sql->getFrame();
-            if (!empty($frame['sql'])) {
-                if (preg_match('@^(AND|OR)\s+@i', $frame['sql'])) {
-                    $frame['sql'] = preg_replace('@^(AND|OR)\s+@i', '', $frame['sql']);
+            $frameSql = $frame->sql;
+            if (!empty($frameSql)) {
+                if (preg_match('@^(AND|OR)\s+@i', $frameSql)) {
+                    $frameSql = preg_replace('@^(AND|OR)\s+@i', '', $frameSql);
                 }
-                if ($frame['type'] !== '') {
-                    $this->items[] = new SqlItem($frame['type'] . ' (' . $frame['sql'] . ')', $frame['args']);
+                if ($frame->type !== '') {
+                    $this->items[] = new SqlFrame($frame->type . ' (' . $frameSql . ')', $frame->args, 'where');
                 } else {
-                    $this->items[] = new SqlItem('(' . $frame['sql'] . ')', $frame['args']);
+                    $this->items[] = new SqlFrame('(' . $frameSql . ')', $frame->args, 'where');
                 }
             }
             return $this;
@@ -104,7 +68,7 @@ class SqlCondition
         if (!isset($sql[0])) {
             return $this;
         }
-        $item = new SqlItem($sql, $args);
+        $item = new SqlFrame($sql, $args, 'where');
         $this->items[] = $item;
         return $this;
     }
@@ -117,7 +81,7 @@ class SqlCondition
      * @param string|null $format
      * @return $this
      */
-    public function search(string $sql, $value, $type = self::WITHOUT_EMPTY, string $format = null)
+    public function search(string $sql, $value, int $type = self::WITHOUT_EMPTY, string $format = null)
     {
         switch ($type) {
             case self::WITHOUT_EMPTY:
@@ -131,7 +95,11 @@ class SqlCondition
                 }
                 break;
             case self::WITHOUT_ZERO_LENGTH:
-                if ($value === null || strval($value) === '') {
+                if (is_array($value)) {
+                    if (count($value) == 0) {
+                        return $this;
+                    }
+                } else if ($value === null || strval($value) === '') {
                     return $this;
                 }
                 break;
@@ -143,9 +111,24 @@ class SqlCondition
             default:
                 break;
         }
-        if ($format !== null) {
+
+        if (!is_array($value) && $format !== null) {
             $value = preg_replace('@\{0\}@', $value);
         }
+
+        //用于 in not in
+        if (substr_count($sql, '[?]') == 1 && is_array($value)) {
+            if (count($value) > 0) {
+                $temp = [];
+                foreach ($value as $item) {
+                    $temp[] = '?';
+                }
+                $sql = str_replace('[?]', join(',', $temp), $sql);
+                $this->where($sql, $value);
+            }
+            return $this;
+        }
+
         $maxCount = substr_count($sql, '?');
         if ($maxCount > 1) {
             $temp = [];
@@ -160,7 +143,7 @@ class SqlCondition
 
     /**
      * 获取代码帧
-     * @return array
+     * @return SqlFrame
      */
     public function getFrame()
     {
@@ -190,7 +173,7 @@ class SqlCondition
             }
 
         }
-        return ['sql' => join(' ', $sqlItems), 'args' => $argItems, 'type' => $this->type];
+        return new SqlFrame(join(' ', $sqlItems), $argItems, $this->type);
     }
 
     public function empty()
