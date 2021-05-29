@@ -11,7 +11,7 @@ namespace beacon;
 if (!defined('ROOT_DIR')) {
     die('未定义ROOT_DIR目录');
 }
-set_error_handler(function ($errno, $errstr, $errfile, $errline, array $errcontext) {
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
     if (0 === error_reporting()) {
         return false;
     }
