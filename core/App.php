@@ -144,7 +144,7 @@ class App
             foreach ($map as $key => $val) {
                 if (is_string($val)) {
                     $temp = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m) {
-                        return isset($m[$m2[1]]) ? $m[$m2[1]] : '';
+                        return $m[$m2[1]] ?? '';
                     }, $val);
                     $arg[$key] = $temp;
                 }
@@ -227,7 +227,7 @@ class App
             throw new RouteError('路由失败,url:' . $url);
         }
         $app = static::$routed['app'];
-        $route = isset(static::$routeMap[$app]) ? static::$routeMap[$app] : null;
+        $route = static::$routeMap[$app] ?? null;
         if ($route === null) {
             throw new RouteError('路由失败,url:' . $url);
         }
@@ -419,12 +419,12 @@ class App
     public static function getNamespace(string $app = ''): string
     {
         if (empty($app)) {
-            $app = isset(static::$routed['app']) ? static::$routed['app'] : '';
+            $app = static::$routed['app'] ?? '';
         }
         if (empty($app)) {
             return '';
         }
-        $route = isset(static::$routeMap[$app]) ? static::$routeMap[$app] : null;
+        $route = static::$routeMap[$app] ?? null;
         if ($route === null) {
             return '';
         }
@@ -566,7 +566,7 @@ class App
             return static::replaceURL($temp_url, $query, $ext);
         }
         //恢复URL
-        $route = isset(static::$routeMap[$app]) ? static::$routeMap[$app] : null;
+        $route = static::$routeMap[$app] ?? null;
         if ($route == null) {
             return '';
         }
@@ -622,9 +622,9 @@ class App
     public static function url(array|string $url, array $query = []): string
     {
         if (is_array($url)) {
-            $app = isset($url['app']) ? $url['app'] : static::get('app');
-            $ctl = isset($url['ctl']) ? $url['ctl'] : static::get('ctl');
-            $act = isset($url['act']) ? $url['act'] : '';
+            $app = $url['app'] ?? static::get('app');
+            $ctl = $url['ctl'] ?? static::get('ctl');
+            $act = $url['act'] ?? '';
             $path = '/' . $ctl;
             if (!empty($act)) {
                 $path .= '/' . $act;
@@ -649,8 +649,8 @@ class App
             }
         }
         $info = parse_url($url);
-        $path = isset($info['path']) ? $info['path'] : '';
-        $str_query = isset($info['query']) ? $info['query'] : '';
+        $path = $info['path'] ?? '';
+        $str_query = $info['query'] ?? '';
         $query = is_array($query) ? $query : [];
         //合并参数
         if (!empty($str_query)) {
@@ -672,8 +672,8 @@ class App
         if (!preg_match('@^\^/(\w+)((?:/\w+){1,2})?(\.\w+)?$@', $path, $data)) {
             return $url;
         }
-        $app = isset($data[1]) ? $data[1] : static::get('app');
-        $path = isset($data[2]) ? $data[2] : static::get('path');
+        $app = $data[1] ?? static::get('app');
+        $path = $data[2] ?? static::get('path');
         $path = empty($path) ? '/' : $path;
         if (isset($data[3])) {
             $path .= $data[3];
