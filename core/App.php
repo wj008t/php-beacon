@@ -489,7 +489,14 @@ class App
     private static function hashURL(string $pathname, array $query): string
     {
         //计算hash
-        $hash = Util::toUnder($pathname);
+        $temp = explode('/', $pathname);
+        foreach ($temp as &$item) {
+            if (isset($item[0])) {
+                $item = Util::toUnder($item);
+            }
+        }
+        $pathname = join('/', $temp);
+        $hash = $pathname;
         if (count($query) > 0) {
             $temp = [];
             foreach ($query as $key => $val) {
