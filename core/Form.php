@@ -138,7 +138,7 @@ class Form
      */
     public function getField(string $name): ?Field
     {
-        return isset($this->fields[$name]) ? $this->fields[$name] : null;
+        return $this->fields[$name] ?? null;
     }
 
     /**
