@@ -691,4 +691,50 @@ class App
     }
 
 
+    /**
+     * 解析虚拟URL
+     * @param string $url
+     * @return false|array
+     */
+    public static function parseVirtualUrl(string $url): false|array
+    {
+        $isInner = (isset($url[1]) && ($url[0] == '~' || $url[0] == '^') && $url[1] == '/');
+        if (!$isInner) {
+            return false;
+        }
+        $info = parse_url($url);
+        $path = $info['path'] ?? '';
+        $str_query = $info['query'] ?? '';
+        $query = [];
+        if (!empty($str_query)) {
+            parse_str($str_query, $temp);
+            $query = array_merge($temp, $query);
+        }
+        $app = static::get('app');
+        $ctl = 'index';
+        $act = 'index';
+        if ($url[0] == '~' && preg_match('@^~/(\w+)(?:/(\w+))?@', $path, $mth)) {
+            $ctl = Util::toUnder($mth[1]);
+            if (isset($mth[2])) {
+                $act = Util::toUnder($mth[2]);
+            }
+        } else if (preg_match('@^\^/(\w+)(?:/(\w+))?(?:/(\w+))?@', $path, $mth)) {
+            $ctl = Util::toUnder($mth[1]);
+            if (isset($mth[2])) {
+                $ctl = Util::toUnder($mth[2]);
+            }
+            if (isset($mth[3])) {
+                $act = Util::toUnder($mth[3]);
+            }
+        } else {
+            return false;
+        }
+        return [
+            'app' => $app,
+            'ctl' => $ctl,
+            'act' => $act,
+            'query' => $query
+        ];
+    }
+
 }
