@@ -14,6 +14,15 @@ defined('IS_CGI') or define('IS_CGI', substr(PHP_SAPI, 0, 3) == 'cgi');
 defined('IS_CLI') or define('IS_CLI', PHP_SAPI == 'cli');
 defined('IS_WIN') or define('IS_WIN', strstr(PHP_OS, 'WIN'));
 
+set_error_handler(function (int $errno, string $errStr, string $errFile, int $errLine) {
+    if (!(error_reporting() & $errno)) {
+        return false;
+    }
+    if ($errno == E_WARNING || $errno == E_PARSE || $errno == E_NOTICE) {
+        throw new \ErrorException($errStr, 0, $errno, $errFile, $errLine);
+    }
+    return true;
+});
 
 class App
 {
