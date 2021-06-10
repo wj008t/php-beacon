@@ -58,13 +58,13 @@ class SelectDialog extends Field
         if (is_array($value) && count($value) == 0) {
             $attrs['value'] = '';
         }
-        $mode = 2;
+        $mode = 2; //非数组模式
         $typeMap = Util::typeMap($this->varType);
         if (isset($typeMap['array'])) {
-            $mode = 1;
+            $mode = 1; //数组模式
         }
         $attrs['data-mode'] = $mode;
-        if ($mode == 1 && !empty($value) && !is_array($value)) {
+        if ($mode == 2 && !empty($value) && !is_array($value)) {
             if (!empty($this->textFunc) && is_callable($this->textFunc)) {
                 $text = call_user_func($this->textFunc, $value);
                 $attrs['data-text'] = $text;
