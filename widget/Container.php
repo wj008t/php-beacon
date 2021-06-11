@@ -71,7 +71,7 @@ class Container extends Field
 
     public int $minSize = 0;
     public int $maxSize = 1000;
-    public int $initSize = 1;
+    public int $initSize = 0;
 
     /**
      * Container constructor.
