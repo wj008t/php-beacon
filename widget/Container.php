@@ -69,6 +69,9 @@ class Container extends Field
      */
     public bool $sortBtn = false;
 
+    public int $minSize = 0;
+    public int $maxSize = 1000;
+    public int $initSize = 1;
 
     /**
      * Container constructor.
@@ -100,6 +103,15 @@ class Container extends Field
         }
         if (isset($args['sortBtn']) && is_bool($args['sortBtn'])) {
             $this->sortBtn = $args['sortBtn'];
+        }
+        if (isset($args['minSize']) && is_int($args['minSize'])) {
+            $this->minSize = $args['minSize'];
+        }
+        if (isset($args['maxSize']) && is_int($args['maxSize'])) {
+            $this->maxSize = $args['maxSize'];
+        }
+        if (isset($args['initSize']) && is_int($args['initSize'])) {
+            $this->initSize = $args['initSize'];
         }
     }
 
@@ -255,6 +267,9 @@ class Container extends Field
         $source = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $subForm, 'index' => '@@index@@']) . '</div>';
         $attrs['yee-module'] = $this->getYeeModule('container');
         $attrs['data-index'] = $index;
+        $attrs['data-min-size'] = $this->minSize;
+        $attrs['data-max-size'] = $this->maxSize;
+        $attrs['data-init-size'] = $this->initSize;
         $attrs['data-source'] = base64_encode($source);
         $wrapStyle = '';
         if (!empty($attrs['wrap-style'])) {
