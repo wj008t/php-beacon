@@ -3,6 +3,7 @@
 
 namespace beacon\core;
 
+use sdopx\lib\Raw;
 use \ReflectionClass;
 
 #[\Attribute]
@@ -240,7 +241,7 @@ class Form
      * @param string $tabIndex
      * @return string
      */
-    public function fetchHideBox(string $tabIndex = ''): string
+    public function fetchHideBox(string $tabIndex = ''): Raw
     {
         $fields = $this->getFields($tabIndex);
         foreach ($fields as $field) {
@@ -253,7 +254,7 @@ class Form
         foreach ($this->hideBox as $name => $val) {
             $box[] = '<input type="hidden" name="' . htmlspecialchars($name, ENT_QUOTES) . '" value="' . htmlspecialchars($val, ENT_QUOTES) . '">';
         }
-        return join('', $box);
+        return new Raw(join('', $box));
     }
 
     /**
