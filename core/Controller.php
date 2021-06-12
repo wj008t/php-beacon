@@ -73,6 +73,7 @@ abstract class Controller
      * @param string $url
      * @param array $query
      */
+    #[\NoReturn]
     protected function redirect(string $url, array $query = [])
     {
         $url = empty($url) ? '/' : $url;
@@ -87,6 +88,7 @@ abstract class Controller
      * @param $option ?array :data code back template 等
      * 如 ['data'=>$myData,'back'=>'/index','code'=>33,'template'=>'myError.tpl']
      */
+    #[\NoReturn]
     protected function error(string|array $error, ?array $option = [])
     {
         $option['status'] = false;
@@ -116,13 +118,13 @@ abstract class Controller
         exit;
     }
 
-
     /**
      * 显示正确信息
      * @param null $message
      * @param array $option :data code back template 等
      * 如 ['data'=>$myData,'back'=>'/index','code'=>33,'template'=>'myError.tpl']
      */
+    #[\NoReturn]
     protected function success($message = null, array $option = [])
     {
         $option['status'] = true;
@@ -150,7 +152,6 @@ abstract class Controller
         }
         exit;
     }
-
 
     /**
      * get 获取参数 相当于 $_GET
