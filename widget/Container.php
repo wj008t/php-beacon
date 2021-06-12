@@ -6,11 +6,10 @@ namespace beacon\widget;
 
 use beacon\core\Field;
 use beacon\core\Form;
-use beacon\core\Logger;
 use beacon\core\Request;
 use beacon\core\Util;
-use beacon\core\Validator;
 use beacon\core\View;
+use sdopx\lib\Raw;
 
 #[\Attribute]
 class Container extends Field
@@ -278,7 +277,7 @@ class Container extends Field
         }
         $data = [];
         $data['field'] = $this;
-        $data['body'] = '<div class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</div>';
+        $data['body'] = new Raw('<div class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</div>');
         return static::makeTag('div', ['attrs' => $attrs, 'exclude' => ['name'], 'code' => $wrapFunc($data)]);
     }
 
