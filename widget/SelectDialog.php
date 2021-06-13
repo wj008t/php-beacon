@@ -25,6 +25,14 @@ class SelectDialog extends Field
      * @var string
      */
     public string $url = '';
+    public int $width = 0;
+    public int $height = 0;
+    public string $btnText = '';
+    /**
+     * 携带参数
+     * @var string
+     */
+    public string $carry = '';
 
     /**
      * @param array $args
@@ -41,6 +49,18 @@ class SelectDialog extends Field
         if (isset($args['url']) && is_string($args['url'])) {
             $this->url = $args['url'];
         }
+        if (isset($args['carry']) && is_string($args['carry'])) {
+            $this->carry = $args['carry'];
+        }
+        if (isset($args['btnText']) && is_string($args['btnText'])) {
+            $this->btnText = $args['btnText'];
+        }
+        if (isset($args['width']) && is_int($args['width'])) {
+            $this->width = $args['width'];
+        }
+        if (isset($args['height']) && is_int($args['height'])) {
+            $this->height = $args['height'];
+        }
     }
 
     /**
@@ -54,6 +74,18 @@ class SelectDialog extends Field
         $attrs['yee-module'] = $this->getYeeModule('select-dialog');
         $attrs['type'] = 'hidden';
         $attrs['data-url'] = App::url($this->url);
+        if (!empty($this->carry)) {
+            $attrs['data-carry'] = $this->carry;
+        }
+        if (!empty($this->btnText)) {
+            $attrs['data-btn-text'] = $this->btnText;
+        }
+        if (!empty($this->width)) {
+            $attrs['data-width'] = $this->width;
+        }
+        if (!empty($this->height)) {
+            $attrs['data-height'] = $this->height;
+        }
         $value = $this->getValue();
         if (is_array($value) && count($value) == 0) {
             $attrs['value'] = '';

@@ -51,6 +51,11 @@ class MultiDialog extends Field
      */
     public string $itemType = 'string';
 
+    public int $width = 0;
+    public int $height = 0;
+    public string $btnText = '';
+
+
     public function setting(array $args)
     {
         parent::setting($args);
@@ -75,6 +80,15 @@ class MultiDialog extends Field
         if (isset($args['carry']) && is_string($args['carry'])) {
             $this->carry = $args['carry'];
         }
+        if (isset($args['btnText']) && is_string($args['btnText'])) {
+            $this->btnText = $args['btnText'];
+        }
+        if (isset($args['width']) && is_int($args['width'])) {
+            $this->width = $args['width'];
+        }
+        if (isset($args['height']) && is_int($args['height'])) {
+            $this->height = $args['height'];
+        }
     }
 
     /**
@@ -89,6 +103,18 @@ class MultiDialog extends Field
         $attrs['type'] = 'hidden';
         $attrs['data-url'] = App::url($this->url);
         $attrs['data-mode'] = $this->mode;
+        if (!empty($this->carry)) {
+            $attrs['data-carry'] = $this->carry;
+        }
+        if (!empty($this->btnText)) {
+            $attrs['data-btn-text'] = $this->btnText;
+        }
+        if (!empty($this->width)) {
+            $attrs['data-width'] = $this->width;
+        }
+        if (!empty($this->height)) {
+            $attrs['data-height'] = $this->height;
+        }
         $values = $this->getValue();
         if ($this->mode == 2 && !empty($values)) {
             if (is_string($values) && Util::isJson($values)) {
