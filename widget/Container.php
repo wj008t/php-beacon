@@ -72,6 +72,8 @@ class Container extends Field
     public int $maxSize = 1000;
     public int $initSize = 0;
 
+    public string $mode = 'div';
+
     /**
      * Container constructor.
      * @param array $args
@@ -111,6 +113,9 @@ class Container extends Field
         }
         if (isset($args['initSize']) && is_int($args['initSize'])) {
             $this->initSize = $args['initSize'];
+        }
+        if (isset($args['mode']) && is_string($args['mode'])) {
+            $this->mode = $args['mode'];
         }
     }
 
@@ -257,13 +262,21 @@ class Container extends Field
                 $editForm = $this->getSubForm($className, 'add');
                 $editForm->setData($item);
                 $this->perfectForm($editForm, $index);
-                $subCode = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</div>';
+                if ($this->mode == 'table') {
+                    $subCode = '<tr class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</tr>';
+                } else {
+                    $subCode = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</div>';
+                }
                 $code[] = $subCode;
                 $index++;
             }
         }
         $this->perfectForm($subForm);
-        $source = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $subForm, 'index' => '@@index@@']) . '</div>';
+        if ($this->mode == 'table') {
+            $source = '<tr class="container-item">' . $itemFunc(['field' => $this, 'form' => $subForm, 'index' => '@@index@@']) . '</tr>';
+        } else {
+            $source = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $subForm, 'index' => '@@index@@']) . '</div>';
+        }
         $attrs['yee-module'] = $this->getYeeModule('container');
         $attrs['data-index'] = $index;
         $attrs['data-min-size'] = $this->minSize;
@@ -277,7 +290,11 @@ class Container extends Field
         }
         $data = [];
         $data['field'] = $this;
-        $data['body'] = new Raw('<div class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</div>');
+        if ($this->mode == 'table') {
+            $data['body'] = new Raw('<tbody class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</tbody>');
+        } else {
+            $data['body'] = new Raw('<div class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</div>');
+        }
         return static::makeTag('div', ['attrs' => $attrs, 'exclude' => ['name'], 'code' => $wrapFunc($data)]);
     }
 
