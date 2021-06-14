@@ -159,6 +159,9 @@ abstract class Field
         if (isset($args['dynamic']) && is_array($args['dynamic'])) {
             $this->dynamic = $args['dynamic'];
         }
+        if (isset($args['boxName']) && is_string($args['boxName'])) {
+            $this->_attrs['name'] = $args['boxName'];
+        }
     }
 
     /**
