@@ -221,7 +221,7 @@ abstract class Field
      */
     protected function boxId(): string
     {
-        return $this->_attrs['id'] ?? $this->name;
+        return $this->_attrs['id'] ?? $this->boxName;
     }
 
 
