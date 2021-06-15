@@ -105,7 +105,7 @@ abstract class Field
         if (isset($args['offJoin']) && is_bool($args['offJoin'])) {
             $this->offJoin = $args['offJoin'];
         }
-        if (isset($args['before']) && is_string($args['offJoin'])) {
+        if (isset($args['before']) && is_string($args['before'])) {
             $this->before = $args['before'];
         }
         if (isset($args['after']) && is_string($args['after'])) {
