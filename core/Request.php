@@ -591,7 +591,7 @@ class Request
                     $has = Redis::instance()->exists('sid.' . $token);
                 } while ($has);
                 //先占用2分钟
-                Redis::instance()->setex('sid.' . $token, 120, '[]');
+                Redis::instance()->setex('sid.' . $token, 300, '[]');
             }
             static::setSessionId($token);
             return $token;
@@ -645,7 +645,8 @@ class Request
                         if (!is_array(static::$sessionData)) {
                             static::$sessionData = [];
                         }
-                        Redis::instance()->expire('sid.' . $token, 3600);
+                        $timeout = Config::get('session.timeout', 3600);
+                        Redis::instance()->expire('sid.' . $token, $timeout);
                     }
                 }
             }
