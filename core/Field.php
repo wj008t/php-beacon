@@ -496,9 +496,6 @@ abstract class Field
     public function createDynamic()
     {
 
-        if ($this->form === null) {
-            return;
-        }
         if ($this->dynamic === null || !is_array($this->dynamic)) {
             return;
         }
@@ -535,11 +532,15 @@ abstract class Field
                     if (!is_string($name) || empty($name)) {
                         continue;
                     }
-                    $box = $this->form->getField($name);
-                    if ($box == null || empty($box->boxId())) {
-                        continue;
+                    if ($this->form != null) {
+                        $box = $this->form->getField($name);
+                        if ($box == null || empty($box->boxId())) {
+                            continue;
+                        }
+                        $tempIds[] = $box->boxId();
+                    } else {
+                        $tempIds[] = $name;
                     }
-                    $tempIds[] = $box->boxId();
                 }
                 if (count($tempIds) > 0) {
                     $temp[$type] = $tempIds;
@@ -551,10 +552,8 @@ abstract class Field
             }
             $dynamic[] = $temp;
         }
-
         //设置 yee-module 属性
         if (count($dynamic) > 0) {
-
             $this->_attrs['data-dynamic'] = $dynamic;
             $this->addYeeModule('dynamic');
         }
