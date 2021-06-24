@@ -323,9 +323,7 @@ abstract class Field
      */
     public function render(array $attrs = []): string
     {
-        if ($this->form !== null) {
-            $this->createDynamic();
-        }
+        $this->createDynamic();
         $attrs = array_merge($this->attrs(), $attrs);
         $code = [];
         if (!empty($this->before)) {
