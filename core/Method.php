@@ -21,14 +21,10 @@ class Method
         $this->act = $act;
         $this->method = $method;
         $this->contentType = $contentType;
-
     }
 
     public function auth(string $act, string $method): bool
     {
-        if (!empty($this->contentType)) {
-            Request::setContentType($this->contentType);
-        }
         if ($act != $this->act) {
             return false;
         }
@@ -39,6 +35,9 @@ class Method
             'DELETE' => 8,
         };
         if (($cMethod & $this->method) > 0) {
+            if (!empty($this->contentType)) {
+                Request::setContentType($this->contentType);
+            }
             return true;
         }
         return false;
