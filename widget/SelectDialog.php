@@ -96,19 +96,23 @@ class SelectDialog extends Field
             $mode = 1; //数组模式
         }
         $attrs['data-mode'] = $mode;
-        if ($mode == 2 && !empty($value) && !is_array($value)) {
-            if (!empty($this->textFunc) && is_callable($this->textFunc)) {
-                $text = call_user_func($this->textFunc, $value);
-                $attrs['data-text'] = $text;
-            } elseif (!empty($this->textSql)) {
-                $row = DB::getRow($this->textSql, $value, \PDO::FETCH_NUM);
-                if ($row) {
-                    $attrs['data-text'] = $row[0];
+        if ($mode == 2) {
+            if (!empty($value) && !is_array($value)) {
+                if (!empty($this->textFunc) && is_callable($this->textFunc)) {
+                    $text = call_user_func($this->textFunc, $value);
+                    $attrs['data-text'] = $text;
+                } elseif (!empty($this->textSql)) {
+                    $row = DB::getRow($this->textSql, $value, \PDO::FETCH_NUM);
+                    if ($row) {
+                        $attrs['data-text'] = $row[0];
+                    } else {
+                        $attrs['data-text'] = '';
+                    }
                 } else {
-                    $attrs['data-text'] = '';
+                    $attrs['data-text'] = $value;
                 }
             } else {
-                $attrs['data-text'] = $value;
+                $attrs['data-text'] = '';
             }
         }
         return static::makeTag('input', ['attrs' => $attrs]);
