@@ -105,7 +105,7 @@ class SelectDialog extends Field
                 if ($row) {
                     $attrs['data-text'] = $row[0];
                 } else {
-                    $attrs['data-text'] = $value;
+                    $attrs['data-text'] = '';
                 }
             } else {
                 $attrs['data-text'] = $value;
