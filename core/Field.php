@@ -402,7 +402,7 @@ abstract class Field
      */
     public function joinData(array &$data = [])
     {
-        $data[$this->name] = $this->value;
+        $data[$this->name] = $this->getValue();
     }
 
     /**

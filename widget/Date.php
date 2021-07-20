@@ -62,10 +62,11 @@ class Date extends Field
      */
     public function joinData(array &$data = [])
     {
-        if ($this->value === '') {
+        $value = $this->getValue();
+        if ($value === '') {
             $data[$this->name] = null;
         } else {
-            $data[$this->name] = $this->value;
+            $data[$this->name] = $value;
         }
     }
 

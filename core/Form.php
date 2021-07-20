@@ -352,6 +352,9 @@ class Form
                 $valueFuncFields[] = $field;
                 continue;
             }
+            if($field->viewClose){
+                continue;
+            }
             $value = $field->fromParam($data);
             $field->setValue($value);
         }
