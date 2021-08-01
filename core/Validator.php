@@ -66,7 +66,7 @@ class Validator
         }
         return preg_replace_callback('@{(\d+)}@', function ($m) use ($args) {
             $index = intval($m[1]);
-            return isset($args[$index]) ? $args[$index] : '';
+            return $args[$index] ?? '';
         }, $str);
     }
 

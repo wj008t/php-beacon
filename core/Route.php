@@ -142,7 +142,7 @@ class Route
      * 返回隐射表
      * @param string $ctl
      * @param string $act
-     * @return array
+     * @return array{namespace:string,classFullName:string,className:string,method:string}
      */
     public function getMap(string $ctl, string $act): array
     {

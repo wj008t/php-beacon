@@ -494,7 +494,7 @@ abstract class Field
     public function createDynamic()
     {
 
-        if ($this->dynamic === null || !is_array($this->dynamic)) {
+        if (!is_array($this->dynamic)) {
             return;
         }
         if (!empty($this->_attrs['data-dynamic'])) {
@@ -565,7 +565,7 @@ abstract class Field
         if ($this->form === null) {
             return;
         }
-        if ($this->dynamic === null || !is_array($this->dynamic)) {
+        if (!is_array($this->dynamic)) {
             return;
         }
         //Logger::log('form empty', $this->dynamic);
@@ -681,7 +681,7 @@ abstract class Field
     /**
      * 生成代码
      * @param string $tag 标签 如 a
-     * @param array $data 数据，attrs:属性值，exclude 排除属性，filter 过滤空属性,默认为真，text 标签内文本，code 标签内代码
+     * @param array{attrs:array,exclude:array,filter:bool,text:string,code:string} $data 数据，attrs:属性值，exclude 排除属性，filter 过滤空属性,默认为真，text 标签内文本，code 标签内代码
      * @return string
      */
     public static function makeTag(string $tag = '', array $data = []): string
@@ -698,7 +698,7 @@ abstract class Field
         $base = [];
         $base[] = $begin;
         if (isset($data['attrs'])) {
-            $filter = isset($data['filter']) ? $data['filter'] : true;
+            $filter = $data['filter'] ?? true;
             $exclude = isset($data['exclude']) && is_array($data['exclude']) ? $data['exclude'] : [];
             foreach ($data['attrs'] as $key => $val) {
                 if ($val === null) {
@@ -745,7 +745,7 @@ abstract class Field
 
     /**
      * 使用参数创建字段
-     * @param array $param
+     * @param array{name:string,type:string} $param
      * @return Field
      * @throws \Exception
      */

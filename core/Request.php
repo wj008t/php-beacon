@@ -721,7 +721,7 @@ class Request
      * 获取cookie
      * @param string $name
      * @param null $default
-     * @return array|bool|float|int|string|null
+     * @return mixed
      */
     public static function getCookie(string $name = '', $default = null): mixed
     {

@@ -531,7 +531,7 @@ class DBSelector extends SqlCondition
 
     /**
      * 获取分页数据
-     * @return array
+     * @return array{keyName:string,page:int,pageCount:int,recordsCount:int,pageSize:int}
      * @throws DBException
      */
     public function pageInfo(): array
@@ -604,7 +604,7 @@ class DBSelector extends SqlCondition
     }
 
     /**
-     * @return array
+     * @return array{list:array,pageInfo:array}
      * @throws DBException
      */
     public function pageData(): array

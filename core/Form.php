@@ -239,7 +239,7 @@ class Form
     /**
      * 输出隐藏输入框
      * @param string $tabIndex
-     * @return string
+     * @return Raw
      */
     public function fetchHideBox(string $tabIndex = ''): Raw
     {
@@ -247,7 +247,6 @@ class Form
         foreach ($fields as $field) {
             if (isset($field->hidden) && $field->hidden == true) {
                 $this->setHideBox($field->boxName, $field->getValue());
-                continue;
             }
         }
         $box = [];
@@ -343,13 +342,13 @@ class Form
     {
         $fields = $this->getFields();
         $valFnField = [];
-        foreach ($fields as $name => $field) {
+        foreach ($fields as $field) {
             if ($field->close || ($field->offEdit && $this->type == 'edit')) {
                 continue;
             }
             $valFunc = $field->valFunc;
             if (!empty($valFunc) && is_callable($valFunc)) {
-                $valueFuncFields[] = $field;
+                $valFnField[] = $field;
                 continue;
             }
             if($field->viewClose){
@@ -380,7 +379,7 @@ class Form
         if ($errors === null) {
             $errors = [];
         }
-        foreach ($fields as $name => $field) {
+        foreach ($fields as $field) {
             if (!$field->validate($errors)) {
                 $result = false;
             }

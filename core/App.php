@@ -224,7 +224,7 @@ class App
     /**
      * 获取路由信息
      * @param string|null $url
-     * @return array<string>|null
+     * @return array{namespace:string,classFullName:string,className:string,method:string}|null
      * @throws RouteError
      */
     protected static function getRouteMap(?string $url = null): array|null
@@ -447,7 +447,7 @@ class App
     /**
      * 获取路由数据
      * @param string $name
-     * @return string|array
+     * @return string|array{app:string,ctl:string,act:string}
      */
     public static function get(string $name = ''): string|array
     {
@@ -694,7 +694,7 @@ class App
     /**
      * 解析虚拟URL
      * @param string $url
-     * @return false|array
+     * @return false|array{app:string,ctl:string,act:string,query:array}
      */
     public static function parseVirtualUrl(string $url): false|array
     {
