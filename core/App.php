@@ -726,7 +726,6 @@ class App
             $query = array_merge($temp, $query);
         }
         $app = static::get('app');
-        $ctl = 'index';
         $act = 'index';
         if ($url[0] == '~' && preg_match('@^~/(\w+)(?:/(\w+))?@', $path, $mth)) {
             $ctl = Util::toUnder($mth[1]);
