@@ -53,6 +53,12 @@ class App
     public static array $routed = [];
 
     /**
+     * url后缀
+     * @var string
+     */
+    protected static string $urlExt = '';
+
+    /**
      * 注册扩展
      * @param string $type
      * @param callable $func
@@ -122,6 +128,12 @@ class App
         return null;
     }
 
+
+    public static function setUrlExtension(string $ext = '')
+    {
+        static::$urlExt = $ext;
+    }
+
     /**
      * 解析URL
      * @param string $url
@@ -134,6 +146,9 @@ class App
         if (preg_match('@\.json$@i', $url)) {
             $_SERVER['REQUEST_AJAX'] = 1;
             $url = preg_replace('@\.json$@i', '', $url);
+        }
+        if (!empty(static::$urlExt)) {
+            $url = preg_replace('@\.' . preg_quote(static::$urlExt, '@') . '$@i', '', $url);
         }
         $route = static::matchRoute($url, $uri);
         if ($route === null) {
