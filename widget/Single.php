@@ -285,7 +285,7 @@ class Single extends Field
      */
     public function fromData(array $data = []): object|null|array
     {
-        $itemData = isset($data[$this->name]) ? $data[$this->name] : null;
+        $itemData = $data[$this->name] ?? null;
         if (is_string($itemData) && Util::isJson($itemData)) {
             $itemData = json_decode($itemData, true);
         }
