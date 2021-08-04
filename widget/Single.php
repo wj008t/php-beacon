@@ -41,7 +41,7 @@ class Single extends Field
     public array $childError = [];
     /**
      * 用于修正表单的方法
-     * @var string|array|null
+     * @var string|array|\Closure|null
      */
     public string|array|\Closure|null $modifyFunc = null;
 
@@ -214,6 +214,7 @@ class Single extends Field
             $template = $this->template;
         }
         $code = $viewer->fetch($template);
+        unset($attrs['value']);
         return static::makeTag('div', ['attrs' => $attrs, 'exclude' => ['name', 'value'], 'code' => $code]);
     }
 
