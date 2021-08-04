@@ -42,7 +42,7 @@ class Container extends Field
     public array $childError = [];
     /**
      * 用于修正表单的方法
-     * @var string|array|null
+     * @var string|array|\Closure|null
      */
     public string|array|\Closure|null $modifyFunc = null;
 
@@ -127,7 +127,7 @@ class Container extends Field
     private function perfectForm(Form $subForm, string $index = '@@index@@')
     {
         $fields = $subForm->getFields();
-        foreach ($fields as $name => $child) {
+        foreach ($fields as $child) {
             if (isset($this->valid['disabled']) && $this->valid['disabled']) {
                 $child->valid['disabled'] = true;
             }
@@ -295,6 +295,7 @@ class Container extends Field
         } else {
             $data['body'] = new Raw('<div class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</div>');
         }
+        unset($attrs['value']);
         return static::makeTag('div', ['attrs' => $attrs, 'exclude' => ['name'], 'code' => $wrapFunc($data)]);
     }
 
