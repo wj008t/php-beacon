@@ -164,7 +164,6 @@ class App
                     $temp = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m) {
                         return $m[$m2[1]] ?? '';
                     }, $val);
-                    if ($arg['act'] != '') continue;
                     $arg[$key] = $temp;
                 }
             }
