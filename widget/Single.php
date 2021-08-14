@@ -18,6 +18,10 @@ use beacon\core\View;
  */
 class Single extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp single',
+    ];
+
     public string $varType = 'array';
     /**
      * @var string 部件类名称
@@ -285,7 +289,7 @@ class Single extends Field
      */
     public function fromData(array $data = []): object|null|array
     {
-        $itemData = $data[$this->name] ?? null;
+        $itemData = isset($data[$this->name]) ? $data[$this->name] : null;
         if (is_string($itemData) && Util::isJson($itemData)) {
             $itemData = json_decode($itemData, true);
         }

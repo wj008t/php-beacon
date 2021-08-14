@@ -10,6 +10,9 @@ use beacon\core\Field;
 #[\Attribute]
 class Remote extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp remote',
+    ];
     public string $url = '';
     public string $method = 'get';
     public string $carry = '';

@@ -8,6 +8,9 @@ use beacon\core\Field;
 #[\Attribute]
 class Tinymce extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp tinymce',
+    ];
 
     public string $imagesUploadUrl = '';
     public string $typeMode = 'basic';

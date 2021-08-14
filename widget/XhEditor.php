@@ -8,6 +8,10 @@ use beacon\core\Field;
 #[\Attribute]
 class XhEditor extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp xh-editor',
+    ];
+
     public string $upLinkUrl = '';
     public string $upLinkExt = '';
     public string $upImgUrl = '';

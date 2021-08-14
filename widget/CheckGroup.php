@@ -14,7 +14,10 @@ use beacon\core\Util;
 #[\Attribute]
 class CheckGroup extends Field
 {
-
+    protected array $_attrs=[
+        'class'=>'form-inp check-group',
+        'inp-class'=>'form-inp'
+    ];
     public array $options = [];
     public string|array $optionFunc = '';
     public string $optionSql = '';

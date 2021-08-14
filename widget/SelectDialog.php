@@ -13,6 +13,9 @@ use beacon\core\Util;
 #[\Attribute]
 class SelectDialog extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp select-dialog',
+    ];
     /**
      * 用于兑换文本的方法
      * @var string|array|null

@@ -8,6 +8,11 @@ use beacon\core\Field;
 #[\Attribute]
 class UpImage extends Field
 {
+
+    protected array $_attrs=[
+        'class'=>'form-inp up-image',
+    ];
+
     public string $url = '/service/upload';
     public string $mode = 'image';
     public string $extensions = 'jpg,jpeg,bmp,gif,png';

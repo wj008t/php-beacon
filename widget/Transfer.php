@@ -16,6 +16,9 @@ use beacon\core\Field;
 class Transfer extends Field
 {
 
+    protected array $_attrs=[
+        'class'=>'form-inp transfer',
+    ];
     /**
      * 对话框链接
      * @var string

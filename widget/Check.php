@@ -9,6 +9,10 @@ use beacon\core\Field;
 #[\Attribute]
 class Check extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp check'
+    ];
+
     protected function code(array $attrs = []): string
     {
         $attrs['checked'] = $attrs['value'] ? 'checked' : '';

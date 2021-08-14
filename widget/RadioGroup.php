@@ -11,6 +11,10 @@ use beacon\core\Field;
 #[\Attribute]
 class RadioGroup extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp radio-group',
+        'inp-class'=>'form-inp',
+    ];
 
     public array $options = [];
     public string|array $optionFunc = '';

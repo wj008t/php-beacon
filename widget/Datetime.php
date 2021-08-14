@@ -12,6 +12,10 @@ use beacon\core\Validator;
 #[\Attribute]
 class Datetime extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp datetime',
+    ];
+
     protected string $origValue = '';
 
     /**

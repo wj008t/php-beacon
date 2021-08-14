@@ -9,6 +9,10 @@ use beacon\core\Field;
 #[\Attribute]
 class Button extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-btn'
+    ];
+
     public bool $offJoin = true;
 
     public function setting(array $args)
