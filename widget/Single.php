@@ -19,7 +19,7 @@ use beacon\core\View;
 class Single extends Field
 {
     protected array $_attrs=[
-        'class'=>'form-inp single',
+        'class'=>'single',
     ];
 
     public string $varType = 'array';

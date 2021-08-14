@@ -15,7 +15,7 @@ use sdopx\lib\Raw;
 class Container extends Field
 {
     protected array $_attrs=[
-        'class'=>'form-inp container',
+        'class'=>'container',
     ];
     /**
      * @var string 部件类名称

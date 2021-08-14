@@ -10,7 +10,7 @@ use beacon\core\Field;
 class Check extends Field
 {
     protected array $_attrs=[
-        'class'=>'form-inp check'
+        'class'=>'form-inp'
     ];
 
     protected function code(array $attrs = []): string
@@ -33,7 +33,6 @@ class Check extends Field
             $code[] = '<span class="before"> ' . $this->before . '</span>';
         }
         $code[] = '<label>';
-        $this->addDefaultAttr($attrs);
         $code[] = $this->code($attrs);
         if (!empty($this->after)) {
             $code[] = '<span class="after"> ' . $this->after . '</span>';

@@ -12,7 +12,7 @@ use beacon\core\Field;
 class RadioGroup extends Field
 {
     protected array $_attrs=[
-        'class'=>'form-inp radio-group',
+        'class'=>'radio-group',
         'inp-class'=>'form-inp',
     ];
 
