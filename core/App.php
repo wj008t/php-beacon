@@ -151,20 +151,14 @@ class App
             $url = preg_replace('@\.' . preg_quote(static::$urlExt, '@') . '$@i', '', $url);
         }
         $route = static::matchRoute($url, $uri);
-        if ($route === null) {
-            return false;
-        }
+        if ($route === null) return false;
         static::$routed['app'] = $route->getName();
         static::$routed['base'] = $route->getBase();
         $arg = ['ctl' => '', 'act' => ''];
         $rule = $route->getRules();
         foreach ($rule as $pattern => $map) {
-            if (!is_array($map)) {
-                continue;
-            }
-            if (!preg_match($pattern, $uri, $m)) {
-                continue;
-            }
+            if (!is_array($map)) continue;
+            if (!preg_match($pattern, $uri, $m)) continue;
             foreach ($map as $key => $val) {
                 if (is_string($val)) {
                     $temp = preg_replace_callback('@\$(\d+)@', function ($m2) use ($m) {

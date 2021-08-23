@@ -8,6 +8,10 @@ use beacon\core\Field;
 #[\Attribute]
 class UpFile extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp up-file',
+    ];
+
     public string $url = '/service/upload';
     public string $mode = 'file';
     public string $extensions = '';

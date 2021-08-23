@@ -12,6 +12,10 @@ use beacon\core\Field;
 #[\Attribute]
 class Select extends Field
 {
+
+    protected array $_attrs=[
+        'class'=>'form-inp select',
+    ];
     public string|array $header = '';
     public array $options = [];
     public string|array $optionFunc = '';
