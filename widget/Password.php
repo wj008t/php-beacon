@@ -9,6 +9,10 @@ use beacon\core\Field;
 #[\Attribute]
 class Password extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp password',
+    ];
+
     public string|array|null $encodeFunc = 'md5';
 
     protected mixed $encodeValue = null;

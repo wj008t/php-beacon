@@ -10,6 +10,11 @@ use beacon\core\Request;
 #[\Attribute]
 class Telephone extends Field
 {
+
+    protected array $_attrs=[
+        'class'=>'form-inp telephone',
+    ];
+
     public ?array $names = null;
     public int $gWidth = 0;
     public int $qWidth = 0;

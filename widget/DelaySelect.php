@@ -10,6 +10,10 @@ use beacon\core\Field;
 #[\Attribute]
 class DelaySelect extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp delay-select',
+    ];
+
     public string|array $header = '';
     public string|array $source = '';
     public string $method = 'get';

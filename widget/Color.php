@@ -10,6 +10,10 @@ use beacon\core\Field;
 class Color extends Field
 {
 
+    protected array $_attrs=[
+        'class'=>'form-inp color',
+    ];
+
     protected function code(array $attrs = []): string
     {
         $attrs['yee-module'] = $this->getYeeModule('color');

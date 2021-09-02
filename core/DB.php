@@ -182,6 +182,61 @@ class DB
     }
 
     /**
+     * 获取多条记录，并缓存
+     * @param string $sql
+     * @param mixed|null $args
+     * @param int $fetch_style
+     * @return array
+     * @throws DBException
+     */
+    public static function getListCache(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): array
+    {
+        static $cache=[];
+        $temp=$args==null?'':join(',',$args);
+        $key=md5($sql.'|'.$temp.'|'.$fetch_style);
+        if(isset($cache[$key])){
+            return $cache[$key];
+        }
+        return $cache[$key]=static::getList($sql, $args, $fetch_style);
+    }
+
+    /**
+     * 获取一条记录并缓存
+     * @param string $sql
+     * @param mixed|null $args
+     * @param int $fetch_style
+     * @return mixed
+     * @throws DBException
+     */
+    public static function getRowCache(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): mixed
+    {
+        static $cache=[];
+        $temp=$args==null?'':join(',',$args);
+        $key=md5($sql.'|'.$temp.'|'.$fetch_style);
+        if(isset($cache[$key])){
+            return $cache[$key];
+        }
+        return $cache[$key]=static::getRow($sql, $args, $fetch_style);
+    }
+
+    /**
+     * 获取1条记录并缓存
+     * @param string $table
+     * @param int $id
+     * @return array|null
+     * @throws DBException
+     */
+    public static function getItemCache(string $table, int $id): ?array
+    {
+        static $cache=[];
+        $key=md5($table.'|'.$id);
+        if(isset($cache[$key])){
+            return $cache[$key];
+        }
+        return  $cache[$key]=static::getItem($table, $id);
+    }
+
+    /**
      * 获取单个字段值
      * @param string $sql
      * @param mixed $args
@@ -193,6 +248,25 @@ class DB
     public static function getOne(string $sql, mixed $args = null, ?string $field = null, mixed $def = null): mixed
     {
         return static::engine()->getOne($sql, $args, $field, $def);
+    }
+
+    /**
+     * 获取数值
+     * @param string $sql
+     * @param mixed|null $args
+     * @return float|int
+     * @throws DBException
+     */
+    public static function getNumber(string $sql, mixed $args = null): float|int
+    {
+        $value=static::engine()->getOne($sql, $args);
+        if($value===null){
+            return 0;
+        }
+        if(preg_match('@^[+-]?\d+$@',$value)){
+            return intval($value);
+        }
+        return floatval($value);
     }
 
     /**

@@ -9,6 +9,10 @@ use beacon\core\Field;
 #[\Attribute]
 class Line extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-line',
+    ];
+
     public bool $offJoin = true;
 
     public function setting(array $args)

@@ -10,6 +10,10 @@ use beacon\core\Field;
 #[\Attribute]
 class DfsFile extends Field
 {
+    protected array $_attrs=[
+        'class'=>'form-inp up-file',
+    ];
+
     public string $module = 'go-dfs';
     public string $conf = 'dfs';
     public string $fieldName = 'file';

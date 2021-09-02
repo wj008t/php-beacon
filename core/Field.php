@@ -329,37 +329,11 @@ abstract class Field
         if (!empty($this->before)) {
             $code[] = '<span class="before"> ' . $this->before . '</span>';
         }
-        $this->addDefaultAttr($attrs);
         $code[] = $this->code($attrs);
         if (!empty($this->after)) {
             $code[] = '<span class="after"> ' . $this->after . '</span>';
         }
         return join('', $code);
-    }
-
-    /**
-     * 添加默认属性
-     * @param array $attrs
-     */
-    public function addDefaultAttr(array &$attrs)
-    {
-        $config = Config::get('form.field_default', []);
-        if (empty($config)) {
-            return;
-        }
-        $function = new \ReflectionClass($this);
-        $name = $function->getShortName();
-        foreach ($config as $key => $func) {
-            if (isset($attrs[$key])) {
-                continue;
-            }
-            if (is_callable($func)) {
-                $attrValue = call_user_func($func, $name);
-                if ($attrValue !== null) {
-                    $attrs[$key] = $attrValue;
-                }
-            }
-        }
     }
 
     /**

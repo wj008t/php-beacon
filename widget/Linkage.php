@@ -13,7 +13,9 @@ use beacon\core\Util;
 #[\Attribute]
 class Linkage extends Field
 {
-
+    protected array $_attrs=[
+        'class'=>'form-inp linkage',
+    ];
     public ?array $names = null;
     public array $headers = [];
     public string $source = '';
