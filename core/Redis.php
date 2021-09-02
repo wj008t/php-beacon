@@ -27,6 +27,12 @@ class Redis
             } else {
                 self::$redis->pconnect($config['host'], $config['port'], isset($config['timeout']) ? $config['timeout'] : 20);
             }
+            if (!empty($config['password'])) {
+                self::$redis->auth($config['password']);
+            }
+            if (!empty($config['database'])) {
+                self::$redis->select($config['database']);
+            }
         } else {
             if (!empty($config['sock'])) {
                 self::$redis = new Client($config['sock']);
