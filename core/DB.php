@@ -191,13 +191,17 @@ class DB
      */
     public static function getListCache(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): array
     {
-        static $cache=[];
-        $temp=$args==null?'':join(',',$args);
-        $key=md5($sql.'|'.$temp.'|'.$fetch_style);
-        if(isset($cache[$key])){
+        static $cache = [];
+        if (is_array($args)) {
+            $param = $args == null ? '' : join(',', $args);
+        } else {
+            $param = strval($args);
+        }
+        $key = md5($sql . '|' . $param . '|' . $fetch_style);
+        if (isset($cache[$key])) {
             return $cache[$key];
         }
-        return $cache[$key]=static::getList($sql, $args, $fetch_style);
+        return $cache[$key] = static::getList($sql, $args, $fetch_style);
     }
 
     /**
@@ -210,13 +214,17 @@ class DB
      */
     public static function getRowCache(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): mixed
     {
-        static $cache=[];
-        $temp=$args==null?'':join(',',$args);
-        $key=md5($sql.'|'.$temp.'|'.$fetch_style);
-        if(isset($cache[$key])){
+        static $cache = [];
+        if (is_array($args)) {
+            $param = $args == null ? '' : join(',', $args);
+        } else {
+            $param = strval($args);
+        }
+        $key = md5($sql . '|' . $param . '|' . $fetch_style);
+        if (isset($cache[$key])) {
             return $cache[$key];
         }
-        return $cache[$key]=static::getRow($sql, $args, $fetch_style);
+        return $cache[$key] = static::getRow($sql, $args, $fetch_style);
     }
 
     /**
@@ -228,12 +236,12 @@ class DB
      */
     public static function getItemCache(string $table, int $id): ?array
     {
-        static $cache=[];
-        $key=md5($table.'|'.$id);
-        if(isset($cache[$key])){
+        static $cache = [];
+        $key = md5($table . '|' . $id);
+        if (isset($cache[$key])) {
             return $cache[$key];
         }
-        return  $cache[$key]=static::getItem($table, $id);
+        return $cache[$key] = static::getItem($table, $id);
     }
 
     /**
@@ -259,11 +267,11 @@ class DB
      */
     public static function getNumber(string $sql, mixed $args = null): float|int
     {
-        $value=static::engine()->getOne($sql, $args);
-        if($value===null){
+        $value = static::engine()->getOne($sql, $args);
+        if ($value === null) {
             return 0;
         }
-        if(preg_match('@^[+-]?\d+$@',$value)){
+        if (preg_match('@^[+-]?\d+$@', $value)) {
             return intval($value);
         }
         return floatval($value);
