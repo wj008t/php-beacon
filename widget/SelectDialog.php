@@ -31,6 +31,7 @@ class SelectDialog extends Field
     public int $width = 0;
     public int $height = 0;
     public string $btnText = '';
+    public bool $clearBtn = false;
     /**
      * 携带参数
      * @var string
@@ -57,6 +58,9 @@ class SelectDialog extends Field
         }
         if (isset($args['btnText']) && is_string($args['btnText'])) {
             $this->btnText = $args['btnText'];
+        }
+        if (isset($args['clearBtn']) && is_bool($args['clearBtn'])) {
+            $this->clearBtn = $args['clearBtn'];
         }
         if (isset($args['width']) && is_int($args['width'])) {
             $this->width = $args['width'];
@@ -88,6 +92,9 @@ class SelectDialog extends Field
         }
         if (!empty($this->height)) {
             $attrs['data-height'] = $this->height;
+        }
+        if ($this->clearBtn) {
+            $attrs['data-clear-btn'] = true;
         }
         $value = $this->getValue();
         if (is_array($value) && count($value) == 0) {
