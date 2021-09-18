@@ -397,6 +397,12 @@ class App
             $code[] = "--------------------------------------------";
             $code[] = $exception->getDetail();
         }
+
+        //如果是路由问题，要显示404
+        if($exception instanceof RouteError){
+            header('HTTP/1.1 404 Not Found');
+            header('status: 404 Not Found');
+        }
         //开启日志
         if ((defined('DEBUG_LOG') && DEBUG_LOG)) {
             Logger::error(join("\n", $code));
