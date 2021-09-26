@@ -3,8 +3,9 @@
 
 namespace beacon\core;
 
+use beacon\widget\Line;
+use ReflectionClass;
 use sdopx\lib\Raw;
-use \ReflectionClass;
 
 #[\Attribute]
 class Form
@@ -434,8 +435,14 @@ class Form
                 $temp[$key] = $field;
             }
         }
-        foreach ($this->mergeForms as $form) {
-            $temp = array_merge($temp, $form->getViewFields($tabIndex));
+        foreach ($this->mergeForms as $prefix=>$form) {
+           $mrFileds= $form->getViewFields($tabIndex);
+            if(!empty($form->title)){
+                $temp[$prefix.':title']=new Line(label:$form->title);
+            }
+            foreach ($mrFileds as $mrName => $mrField){
+                $temp[$prefix.'_'.$mrName]=$mrField;
+            }
         }
         return $temp;
     }
@@ -447,6 +454,7 @@ class Form
      */
     public function mergeView(Form $form, string $prefix = '')
     {
+        static $num=0;
         if (!empty($prefix)) {
             $fields = $form->getFields();
             foreach ($fields as $child) {
@@ -485,8 +493,11 @@ class Form
                     $child->setAttr('data-dynamic', $dataDynamic);
                 }
             }
+        }else{
+            $prefix='m'.$num;
+            $num++;
         }
-        $this->mergeForms[] = $form;
+        $this->mergeForms[$prefix] = $form;
     }
 
 }
