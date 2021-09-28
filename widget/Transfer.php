@@ -35,7 +35,7 @@ class Transfer extends Field
 
     public function setting(array $args)
     {
-        parent::setting(...$args);
+        parent::setting($args);
         if (isset($args['source']) && is_string($args['source'])) {
             $this->source = $args['source'];
         }
