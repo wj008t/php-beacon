@@ -31,7 +31,7 @@ class Transfer extends Field
     public string $caption = '';
     public int $width = 0;
     public int $height = 0;
-
+    public bool $search = false;
 
     public function setting(array $args)
     {
@@ -51,6 +51,9 @@ class Transfer extends Field
         if (isset($args['height']) && is_int($args['height'])) {
             $this->height = $args['height'];
         }
+        if (isset($args['search']) && is_bool($args['search'])) {
+            $this->search = $args['search'];
+        }
     }
 
     protected function code(array $attrs = []): string
@@ -60,6 +63,9 @@ class Transfer extends Field
         $attrs['data-source'] = App::url($this->source);
         $attrs['data-method'] = $this->method;
         $attrs['data-caption'] = $this->caption;
+        if ($this->search) {
+            $attrs['data-search'] = 1;
+        }
         if ($this->width > 0) {
             $attrs['data-width'] = $this->width;
         }
