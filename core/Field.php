@@ -50,8 +50,9 @@ abstract class Field
     public string $tabIndex = '';          //所在标签
 
     //只有在全动态模式下有效
-    public string $labelStyle = '';        //标题宽
     public string $warpStyle = '';          //容器宽
+    public string $labelStyle = '';        //标题宽
+    public string $cellStyle = '';          //单元格样式
 
     //用于验证的数据
     public array $valid = [];       //验证内容
@@ -90,12 +91,17 @@ abstract class Field
         if (isset($args['label']) && is_string($args['label'])) {
             $this->label = $args['label'];
         }
-        if (isset($args['labelStyle']) && is_string($args['labelStyle'])) {
-            $this->labelStyle = $args['labelStyle'];
-        }
+
         if (isset($args['warpStyle']) && is_string($args['warpStyle'])) {
             $this->warpStyle = $args['warpStyle'];
         }
+        if (isset($args['labelStyle']) && is_string($args['labelStyle'])) {
+            $this->labelStyle = $args['labelStyle'];
+        }
+        if (isset($args['cellStyle']) && is_string($args['cellStyle'])) {
+            $this->cellStyle = $args['cellStyle'];
+        }
+
         if (isset($args['close']) && is_bool($args['close'])) {
             $this->close = $args['close'];
         }
