@@ -49,6 +49,9 @@ abstract class Field
     public bool $star = false;             //是否标星
     public string $tabIndex = '';          //所在标签
 
+    //只有在全动态模式下有效
+    public int $labelWidth = 0;        //标题宽
+    public int $warpWidth = 0;          //容器宽
 
     //用于验证的数据
     public array $valid = [];       //验证内容
@@ -86,6 +89,12 @@ abstract class Field
     {
         if (isset($args['label']) && is_string($args['label'])) {
             $this->label = $args['label'];
+        }
+        if (isset($args['labelWidth']) && is_int($args['labelWidth'])) {
+            $this->labelWidth = $args['labelWidth'];
+        }
+        if (isset($args['warpWidth']) && is_int($args['warpWidth'])) {
+            $this->warpWidth = $args['warpWidth'];
         }
         if (isset($args['close']) && is_bool($args['close'])) {
             $this->close = $args['close'];
