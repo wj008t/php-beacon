@@ -6,7 +6,6 @@ namespace beacon\widget;
 
 use beacon\core\App;
 use beacon\core\Field;
-use beacon\core\Logger;
 use beacon\core\Request;
 use beacon\core\Util;
 
@@ -81,28 +80,33 @@ class Linkage extends Field
             $attrs['value'] = $values;
         }
         $validGroup = $this->valid['group'] ?? [];
-
         if (!empty($this->headers)) {
             foreach ($this->headers as $idx => $header) {
                 $level = $idx + 1;
                 $attrs['data-header' . $level] = $header;
             }
         }
-
         if (!empty($this->names)) {
-            foreach ($this->names as $idx => $name) {
-                $level = $idx + 1;
-                $attrs['data-name' . $level] = $name;
+            if (array_is_list($this->names)) {
+                foreach ($this->names as $idx => $name) {
+                    $level = $idx + 1;
+                    $attrs['data-name' . $level] = $name;
+                }
+            } else {
+                $idx = 0;
+                foreach ($this->names as $name => $type) {
+                    $level = $idx + 1;
+                    $attrs['data-name' . $level] = $name;
+                    $idx++;
+                }
             }
         }
-
         if (!empty($validGroup)) {
             foreach ($validGroup as $idx => $valid) {
                 $level = $idx + 1;
-                $attrs['data-valid-rule' . $level] = $validGroup[$idx];
+                $attrs['data-valid-rule' . $level] = $valid;
             }
         }
-
         $attrs['data-source'] = App::url($this->source);
         $attrs['data-method'] = $this->method;
         $attrs['yee-module'] = $this->getYeeModule('linkage');
@@ -116,11 +120,20 @@ class Linkage extends Field
     {
         if (!empty($this->names)) {
             $values = [];
-            foreach ($this->names as $idx => $name) {
-                if (empty($name)) {
-                    continue;
+            if (array_is_list($this->names)) {
+                foreach ($this->names as $idx => $name) {
+                    if (empty($name)) {
+                        continue;
+                    }
+                    $values[] = Request::lookType($param, $name, $this->itemType);
                 }
-                $values[] = Request::lookType($param, $name, $this->itemType);
+            } else {
+                foreach ($this->names as $name => $type) {
+                    if (empty($name)) {
+                        continue;
+                    }
+                    $values[] = Request::lookType($param, $name, $type);
+                }
             }
             return $values;
         }
@@ -133,14 +146,27 @@ class Linkage extends Field
     {
         if (!empty($this->names)) {
             $values = $this->getValues();
-
-            foreach ($this->names as $idx => $name) {
-                if (empty($name)) {
-                    continue;
+            if (array_is_list($this->names)) {
+                foreach ($this->names as $idx => $name) {
+                    if (empty($name)) {
+                        continue;
+                    }
+                    $data[$name] = 0;
+                    $value = $values[$idx] ?? null;
+                    $data[$name] = Util::convertType($value, $this->itemType);
                 }
-                $data[$name] = 0;
-                $value = isset($values[$idx]) ? $values[$idx] : null;
-                $data[$name] = Util::convertType($value, $this->itemType);
+            } else {
+                $idx = 0;
+                foreach ($this->names as $name => $type) {
+                    if (empty($name)) {
+                        $idx++;
+                        continue;
+                    }
+                    $data[$name] = 0;
+                    $value = $values[$idx] ?? null;
+                    $data[$name] = Util::convertType($value, $type);
+                    $idx++;
+                }
             }
             return;
         }
@@ -152,16 +178,28 @@ class Linkage extends Field
     {
         if (!empty($this->names)) {
             $values = [];
-            foreach ($this->names as $idx => $name) {
-                if (empty($name)) {
-                    continue;
+            if (array_is_list($this->names)) {
+                foreach ($this->names as $idx => $name) {
+                    if (empty($name)) {
+                        continue;
+                    }
+                    $value = $data[$name] ?? null;
+                    $values[] = Util::convertType($value, $this->itemType);
                 }
-                $value = isset($data[$name]) ? $data[$name] : null;
-                $values[] = Util::convertType($value, $this->itemType);
+            } else {
+                $idx = 0;
+                foreach ($this->names as $name => $type) {
+                    if (empty($name)) {
+                        $idx++;
+                        continue;
+                    }
+                    $value = $data[$name] ?? null;
+                    $values[] = Util::convertType($value, $type);
+                }
             }
             return $values;
         }
-        $values = isset($data[$this->name]) ? $data[$this->name] : '';
+        $values = $data[$this->name] ?? '';
         if (is_string($values) && Util::isJson($values)) {
             $values = json_decode($values, true);
         }
