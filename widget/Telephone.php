@@ -2,6 +2,13 @@
 
 
 namespace beacon\widget;
+// array_is_list
+if (!function_exists('array_is_list')) {
+    function array_is_list(array $a)
+    {
+        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
+    }
+}
 
 use beacon\core\Field;
 use beacon\core\Form;
@@ -11,7 +18,7 @@ use beacon\core\Request;
 class Telephone extends Field
 {
 
-    protected array $_attrs=[
+    protected array $_attrs = [
         'class'=>'form-inp telephone',
     ];
 

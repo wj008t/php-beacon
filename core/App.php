@@ -24,13 +24,6 @@ set_error_handler(function (int $errno, string $errStr, string $errFile, int $er
     return true;
 });
 
-// array_is_list
-if (!function_exists('array_is_list')) {
-    function array_is_list(array $a)
-    {
-        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
-    }
-}
 
 class App
 {

@@ -3,6 +3,13 @@
 
 namespace beacon\widget;
 
+// array_is_list
+if (!function_exists('array_is_list')) {
+    function array_is_list(array $a)
+    {
+        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
+    }
+}
 
 use beacon\core\DB;
 use beacon\core\DBException;
@@ -14,9 +21,9 @@ use beacon\core\Util;
 #[\Attribute]
 class CheckGroup extends Field
 {
-    protected array $_attrs=[
-        'class'=>'check-group',
-        'inp-class'=>'form-inp'
+    protected array $_attrs = [
+        'class' => 'check-group',
+        'inp-class' => 'form-inp'
     ];
     public array $options = [];
     public string|array $optionFunc = '';
@@ -267,8 +274,7 @@ class CheckGroup extends Field
                             $opt_value = intval($opt_value);
                         }else if($type == 'decimal'){
                             $opt_value = floatval($opt_value);
-                        }
-                        else {
+                        } else {
                             $opt_value = strval($opt_value);
                         }
                         $values[] = $opt_value;
@@ -283,8 +289,7 @@ class CheckGroup extends Field
                             $opt_value = intval($opt_value);
                         }else if($type == 'decimal'){
                             $opt_value = floatval($opt_value);
-                        }
-                        else {
+                        } else {
                             $opt_value = strval($opt_value);
                         }
                         $values[] = $opt_value;
