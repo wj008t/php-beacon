@@ -63,7 +63,7 @@ class Logger
             foreach ($args as $arg) {
                 $arg = self::convert($arg);
                 $temp = json_encode($arg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                if ($temp[0] != '{' && $temp[0] != '[') {
+                if ($temp===false || ($temp[0] != '{' && $temp[0] != '[')) {
                     $temp = strval($arg);
                 }
                 $temps[] = $temp;
