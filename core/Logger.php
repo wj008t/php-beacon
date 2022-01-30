@@ -75,11 +75,13 @@ class Logger
             if ($time !== null) {
                 $data['time'] = $time;
             }
+
             if (self::$sock === null) {
                 self::$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
             }
             $sock = self::$sock;
             $msg = json_encode($data);
+
             $send = [];
             $msgId = md5(uniqid(microtime() . mt_rand()));
             $msgId = '--data--' . substr($msgId, 0, 24);
@@ -133,13 +135,18 @@ class Logger
      */
     private static function convert($object): array|string|object|null
     {
-        if (!is_object($object)) {
+        if (!is_object($object)&&!is_resource($object)) {
             return $object;
         }
         static $_processed = [];
         $_processed[] = $object;
         $object_as_array = [];
-        $object_as_array['___class_name'] = get_class($object);
+        if(is_object($object)){
+            $object_as_array['___class_name'] = get_class($object);
+        }else{
+            $object_as_array['___resource_name'] = get_resource_type($object);
+            return $object_as_array;
+        }
         $object_vars = get_object_vars($object);
         //解析属性值
         foreach ($object_vars as $key => $value) {
