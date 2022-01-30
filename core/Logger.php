@@ -179,6 +179,10 @@ class Logger
      */
     public static function error(...$args)
     {
+        if (count($args) == 1 && $args[0] instanceof \Exception) {
+            self::send('error', [$args[0]->getMessage(), $args[0]->getTraceAsString()]);
+            return;
+        }
         self::send('error', $args);
     }
 
