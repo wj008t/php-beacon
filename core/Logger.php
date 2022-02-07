@@ -130,10 +130,10 @@ class Logger
     /**
      * 对象解析出来以便可以json输出
      * @param $object
-     * @return array|string|object|null
+     * @return mixed
      * @throws \Exception
      */
-    private static function convert($object): array|string|object|null
+    private static function convert($object): mixed
     {
         if (!is_object($object)&&!is_resource($object)) {
             return $object;
