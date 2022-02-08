@@ -262,7 +262,8 @@ class Container extends Field
         $values = $this->cacheData;
         if (!empty($values) && is_array($values)) {
             foreach ($values as $item) {
-                $editForm = $this->getSubForm($className, 'edit');
+                //todo 如果是add 可能会造成 不能设置 offEdit
+                $editForm = $this->getSubForm($className);
                 $editForm->setData($item);
                 $this->perfectForm($editForm, $index);
                 if ($mode == 'table') {
