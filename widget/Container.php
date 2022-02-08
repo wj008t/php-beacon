@@ -403,7 +403,7 @@ class Container extends Field
      */
     public function validate(array &$errors): bool
     {
-        if($this->valid['disabled']){
+        if(isset($this->valid['disabled']) && $this->valid['disabled']){
             return parent::validate($errors);
         }
         foreach ($this->childError as $childName => $error) {
