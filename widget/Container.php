@@ -262,7 +262,7 @@ class Container extends Field
         $values = $this->cacheData;
         if (!empty($values) && is_array($values)) {
             foreach ($values as $item) {
-                $editForm = $this->getSubForm($className, 'add');
+                $editForm = $this->getSubForm($className, 'edit');
                 $editForm->setData($item);
                 $this->perfectForm($editForm, $index);
                 if ($mode == 'table') {
