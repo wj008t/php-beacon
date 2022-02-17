@@ -12,7 +12,7 @@ class Config
 {
 
     private static string|null $configPath = null;
-    private static array $global = []; //全局的
+    public static array $global = []; //全局的
     private static array $loaded = []; //已经加载过的
 
     /**
@@ -41,12 +41,9 @@ class Config
             $loadData = require($filePath);
             if (is_array($loadData)) {
                 foreach ($loadData as $key => $val) {
-                    if ($overwrite) {
-                        self::$global[$name . '.' . $key] = $val;
-                    } else {
-                        if (!isset(self::$global[$name . '.' . $key])) {
-                            self::$global[$name . '.' . $key] = $val;
-                        }
+                    $nKey = $name . '.' . $key;
+                    if ($overwrite || !isset(self::$global[$nKey])) {
+                        self::$global[$nKey] = $val;
                     }
                 }
             }
@@ -94,12 +91,15 @@ class Config
      * 获取配置项
      * @param string|null $key
      * @param null $default
-     * @return array|string|null|int|callable|float|bool
+     * @return mixed
      */
-    public static function get(string $key = null, $default = null): array|string|null|int|callable|float|bool
+    public static function get(string $key = null, mixed $default = null): mixed
     {
         if ($key == null) {
             return self::$global;
+        }
+        if (isset(self::$global[$key])) {
+            return self::$global[$key];
         }
         if (preg_match('@^(\w+)\.(.+)$@', $key, $m)) {
             $name = trim($m[1]);
