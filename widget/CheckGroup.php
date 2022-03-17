@@ -78,7 +78,7 @@ class CheckGroup extends Field
         if (function_exists('array_is_list')) {
             return \array_is_list($data);
         }
-        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
+        return $data === [] || (array_keys($data) === range(0, count($data) - 1));
     }
 
     /**
