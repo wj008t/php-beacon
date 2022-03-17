@@ -75,7 +75,7 @@ class CheckGroup extends Field
 
     private function isList(array $data)
     {
-        if (!function_exists('array_is_list')) {
+        if (function_exists('array_is_list')) {
             return \array_is_list($data);
         }
         return $a === [] || (array_keys($a) === range(0, count($a) - 1));
