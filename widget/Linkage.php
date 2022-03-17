@@ -3,14 +3,6 @@
 
 namespace beacon\widget;
 
-// array_is_list
-if (!function_exists('array_is_list')) {
-    function array_is_list(array $a)
-    {
-        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
-    }
-}
-
 use beacon\core\App;
 use beacon\core\Field;
 use beacon\core\Request;
@@ -19,8 +11,8 @@ use beacon\core\Util;
 #[\Attribute]
 class Linkage extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-inp linkage',
+    protected array $_attrs = [
+        'class' => 'form-inp linkage',
     ];
     public ?array $names = null;
     public array $headers = [];
@@ -78,6 +70,14 @@ class Linkage extends Field
         return $values;
     }
 
+    private function isList(array $data)
+    {
+        if (!function_exists('array_is_list')) {
+            return \array_is_list($data);
+        }
+        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
+    }
+
     protected function code(array $attrs = []): string
     {
         $values = $this->getValues(true);
@@ -94,7 +94,7 @@ class Linkage extends Field
             }
         }
         if (!empty($this->names)) {
-            if (array_is_list($this->names)) {
+            if ($this->isList($this->names)) {
                 foreach ($this->names as $idx => $name) {
                     $level = $idx + 1;
                     $attrs['data-name' . $level] = $name;
@@ -127,7 +127,7 @@ class Linkage extends Field
     {
         if (!empty($this->names)) {
             $values = [];
-            if (array_is_list($this->names)) {
+            if ($this->isList($this->names)) {
                 foreach ($this->names as $idx => $name) {
                     if (empty($name)) {
                         continue;
@@ -153,7 +153,7 @@ class Linkage extends Field
     {
         if (!empty($this->names)) {
             $values = $this->getValues();
-            if (array_is_list($this->names)) {
+            if ($this->isList($this->names)) {
                 foreach ($this->names as $idx => $name) {
                     if (empty($name)) {
                         continue;
@@ -185,7 +185,7 @@ class Linkage extends Field
     {
         if (!empty($this->names)) {
             $values = [];
-            if (array_is_list($this->names)) {
+            if ($this->isList($this->names)) {
                 foreach ($this->names as $idx => $name) {
                     if (empty($name)) {
                         continue;
