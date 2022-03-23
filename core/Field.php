@@ -724,7 +724,7 @@ abstract class Field
                 $base[] = $text;
             }
         }
-        if (isset($data['code']) && $data['text'] !== '') {
+        if (isset($data['code']) && $data['code'] !== '') {
             $base[] = $data['code'];
         }
         $base[] = $end2;
