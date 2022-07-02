@@ -100,8 +100,9 @@ class App
      * @param string $name
      * @param string $base
      * @param string $namespace
+     * @return Route
      */
-    public static function route(string $name, string $base = '', string $namespace = '')
+    public static function route(string $name, string $base = '', string $namespace = ''): Route
     {
         $route = new Route($name, $base, $namespace);
         $route->addRule([
@@ -110,6 +111,7 @@ class App
             '@^/$@' => ['ctl' => 'index', 'act' => 'index'],
         ]);
         static::reg($route);
+        return $route;
     }
 
     /**
@@ -304,7 +306,7 @@ class App
                 throw new RouteError('没有找到控制器信息' . $data['className']);
             }
             static::executeMethod($classFullName, $data['method']);
-        } catch (RouteError | \Exception $exception) {
+        } catch (RouteError|\Exception $exception) {
             static::rethrow($exception);
         } catch (\Error $error) {
             static::rethrow($error);
@@ -400,7 +402,7 @@ class App
         }
 
         //如果是路由问题，要显示404
-        if($exception instanceof RouteError){
+        if ($exception instanceof RouteError) {
             header('HTTP/1.1 404 Not Found');
             header('status: 404 Not Found');
         }

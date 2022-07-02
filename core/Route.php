@@ -32,7 +32,7 @@ class Route
      * 设置应用名称
      * @param string $namespace
      */
-    public function setNamespace(string $namespace)
+    public function setNamespace(string $namespace): void
     {
         $this->namespace = $namespace;
     }
@@ -42,7 +42,7 @@ class Route
      * @param string|array $pattern
      * @param array $map
      */
-    public function addRule(string|array $pattern, array $map = [])
+    public function addRule(string|array $pattern, array $map = []): void
     {
         if (is_array($pattern)) {
             foreach ($pattern as $key => $value) {
@@ -51,7 +51,6 @@ class Route
         } else {
             $this->rules[$pattern] = $map;
         }
-
     }
 
     /**
