@@ -13,8 +13,8 @@ use beacon\core\Util;
 #[\Attribute]
 class SelectDialog extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-inp select-dialog',
+    protected array $_attrs = [
+        'class' => 'form-inp select-dialog',
     ];
     /**
      * 用于兑换文本的方法
@@ -22,6 +22,7 @@ class SelectDialog extends Field
      */
     public string|array|null $textFunc = null;
     public string $textSql = '';
+    public string $text = '';
 
     /**
      * 对话框链接
@@ -49,6 +50,9 @@ class SelectDialog extends Field
         }
         if (isset($args['textSql']) && is_string($args['textSql'])) {
             $this->textSql = $args['textSql'];
+        }
+        if (isset($args['text']) && is_string($args['text'])) {
+            $this->text = $args['text'];
         }
         if (isset($args['url']) && is_string($args['url'])) {
             $this->url = $args['url'];
@@ -96,6 +100,9 @@ class SelectDialog extends Field
         if ($this->clearBtn) {
             $attrs['data-clear-btn'] = true;
         }
+        if ($this->text !== '') {
+            $attrs['data-text'] = $this->text;
+        }
         $value = $this->getValue();
         if (is_array($value) && count($value) == 0) {
             $attrs['value'] = '';
@@ -106,7 +113,7 @@ class SelectDialog extends Field
             $mode = 1; //数组模式
         }
         $attrs['data-mode'] = $mode;
-        if ($mode == 2) {
+        if ($mode == 2 && $this->text === '') {
             if (!empty($value) && !is_array($value)) {
                 if (!empty($this->textFunc) && is_callable($this->textFunc)) {
                     $text = call_user_func($this->textFunc, $value);

@@ -198,6 +198,17 @@ abstract class Controller
     }
 
     /**
+     * 获取配置
+     * @param string $name 支持 ctl:控制器名  act:方法名  app:应用名
+     * @param null $def
+     * @return mixed
+     */
+    public function config(string $name = '', $def = null): mixed
+    {
+        return Config::get($name, $def);
+    }
+
+    /**
      * 是否AJAX请求
      * @return bool
      */

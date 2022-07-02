@@ -128,7 +128,7 @@ class Route
         $pattern = '@^' . preg_quote($base, '@') . '(/.*)?$@i';
         if (preg_match($pattern, $url, $m)) {
             $uri = empty($m[1]) ? '' : $m[1];
-            $uri = preg_replace('@^/index\.php@i', '/', $uri);
+            $uri = preg_replace('@/index\.php$@i', '/', $uri);
             if (empty($uri)) {
                 $uri = '/';
             }

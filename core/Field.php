@@ -712,7 +712,7 @@ abstract class Field
             $base = [join(' ', $base)];
         }
         $base[] = $end1;
-        if (!empty($data['text'])) {
+        if (isset($data['text']) && $data['text'] !== '') {
             $text = $data['text'];
             if (is_array($text) || is_object($text)) {
                 $base[] = htmlspecialchars(json_encode($text, JSON_UNESCAPED_UNICODE));
@@ -724,7 +724,7 @@ abstract class Field
                 $base[] = $text;
             }
         }
-        if (!empty($data['code'])) {
+        if (isset($data['code']) && $data['code'] !== '') {
             $base[] = $data['code'];
         }
         $base[] = $end2;

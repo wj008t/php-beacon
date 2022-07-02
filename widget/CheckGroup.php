@@ -3,17 +3,10 @@
 
 namespace beacon\widget;
 
-// array_is_list
-if (!function_exists('array_is_list')) {
-    function array_is_list(array $a)
-    {
-        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
-    }
-}
-
 use beacon\core\DB;
 use beacon\core\DBException;
 use beacon\core\Field;
+use beacon\core\Logger;
 use beacon\core\Request;
 use beacon\core\Util;
 
@@ -78,6 +71,14 @@ class CheckGroup extends Field
             }, $values);
         }
         return $values;
+    }
+
+    private function isList(array $data)
+    {
+        if (function_exists('array_is_list')) {
+            return \array_is_list($data);
+        }
+        return $data === [] || (array_keys($data) === range(0, count($data) - 1));
     }
 
     /**
@@ -227,7 +228,7 @@ class CheckGroup extends Field
             foreach ($options as $item) {
                 $opts[] = strval($item['value']);
             }
-            $names=array_is_list($this->names)?$this->names:array_keys($this->names);
+            $names = $this->isList($this->names) ? $this->names : array_keys($this->names);
             foreach ($names as $idx => $name) {
                 $data[$name] = 0;
                 $val = $opts[$idx] ?? null;
@@ -265,14 +266,14 @@ class CheckGroup extends Field
             foreach ($options as $item) {
                 $opts[] = $item['value'];
             }
-            if(array_is_list($this->names)){
-                $type=$this->itemType;
+            if ($this->isList($this->names)) {
+                $type = $this->itemType;
                 foreach ($this->names as $idx => $name) {
                     $opt_value = $opts[$idx] ?? null;
                     if ($opt_value !== null && isset($data[$name]) && intval($data[$name]) == 1) {
-                        if ($type == 'int'||$type == 'tinyint') {
+                        if ($type == 'int' || $type == 'tinyint') {
                             $opt_value = intval($opt_value);
-                        }else if($type == 'decimal'){
+                        } else if ($type == 'decimal') {
                             $opt_value = floatval($opt_value);
                         } else {
                             $opt_value = strval($opt_value);
@@ -280,14 +281,14 @@ class CheckGroup extends Field
                         $values[] = $opt_value;
                     }
                 }
-            }else{
-                $idx=0;
+            } else {
+                $idx = 0;
                 foreach ($this->names as $name => $type) {
                     $opt_value = $opts[$idx] ?? null;
                     if ($opt_value !== null && isset($data[$name]) && intval($data[$name]) == 1) {
-                        if ($type == 'int'||$type == 'tinyint') {
+                        if ($type == 'int' || $type == 'tinyint') {
                             $opt_value = intval($opt_value);
-                        }else if($type == 'decimal'){
+                        } else if ($type == 'decimal') {
                             $opt_value = floatval($opt_value);
                         } else {
                             $opt_value = strval($opt_value);

@@ -736,7 +736,7 @@ class App
                 $act = Util::toUnder($mth[2]);
             }
         } else if (preg_match('@^\^/(\w+)(?:/(\w+))?(?:/(\w+))?@', $path, $mth)) {
-            $ctl = Util::toUnder($mth[1]);
+            $app = Util::toUnder($mth[1]);
             if (isset($mth[2])) {
                 $ctl = Util::toUnder($mth[2]);
             }
