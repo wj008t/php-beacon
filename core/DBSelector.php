@@ -565,14 +565,19 @@ class DBSelector extends SqlCondition
 
     /**
      * 获取分页数据
+     * @param int $page
      * @return array
      * @throws DBException
      */
-    public function pageList(): array
+    public function pageList(int $page = 0): array
     {
-        $this->_page = Request::param($this->_pageKey . ':i', 1);
-        if ($this->_page < 1) {
-            $this->_page = 1;
+        if ($page <= 0) {
+            $this->_page = Request::param($this->_pageKey . ':i', 1);
+            if ($this->_page < 1) {
+                $this->_page = 1;
+            }
+        } else {
+            $this->_page = $page;
         }
         if ($this->_pageSize < 1) {
             $this->_pageSize = 20;
