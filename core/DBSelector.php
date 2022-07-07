@@ -600,11 +600,14 @@ class DBSelector extends SqlCondition
         if (empty($sort) || count($limits) == 0) {
             return;
         }
-        if (preg_match('@^((?:\w+\.)?\w+)-(asc|desc)$@', $sort, $match)) {
-            if (!in_array($match[1], $limits)) {
+        if (preg_match('@^(\w+\.)?(\w+)-(asc|desc)$@', $sort, $match)) {
+            $field = $match[1] . $match[2];
+            $order = $match[3];
+            if (!in_array($field, $limits)) {
                 return;
             }
-            $this->order($match[1] . ' ' . $match[2]);
+            $field = $match[1] . '`' . $match[2] . '`';
+            $this->order($field . ' ' . $order);
         }
     }
 
