@@ -601,7 +601,7 @@ class DBSelector extends SqlCondition
             return;
         }
         if (preg_match('@^((?:\w+\.)?\w+)-(asc|desc)$@', $sort, $match)) {
-            if (count($limits) > 0 && !in_array($match[1], $limits)) {
+            if (!in_array($match[1], $limits)) {
                 return;
             }
             $this->order($match[1] . ' ' . $match[2]);
