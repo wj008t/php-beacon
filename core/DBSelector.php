@@ -597,7 +597,7 @@ class DBSelector extends SqlCondition
      */
     public function sort(string $sort, array $limits = [])
     {
-        if (empty($sort)) {
+        if (empty($sort) || count($limits) == 0) {
             return;
         }
         if (preg_match('@^((?:\w+\.)?\w+)-(asc|desc)$@', $sort, $match)) {
