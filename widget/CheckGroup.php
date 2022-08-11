@@ -3,10 +3,10 @@
 
 namespace beacon\widget;
 
-
 use beacon\core\DB;
 use beacon\core\DBException;
 use beacon\core\Field;
+use beacon\core\Logger;
 use beacon\core\Request;
 use beacon\core\Util;
 
@@ -14,9 +14,9 @@ use beacon\core\Util;
 #[\Attribute]
 class CheckGroup extends Field
 {
-    protected array $_attrs=[
-        'class'=>'check-group',
-        'inp-class'=>'form-inp'
+    protected array $_attrs = [
+        'class' => 'check-group',
+        'inp-class' => 'form-inp'
     ];
     public array $options = [];
     public string|array $optionFunc = '';
@@ -71,6 +71,14 @@ class CheckGroup extends Field
             }, $values);
         }
         return $values;
+    }
+
+    private function isList(array $data)
+    {
+        if (function_exists('array_is_list')) {
+            return \array_is_list($data);
+        }
+        return $data === [] || (array_keys($data) === range(0, count($data) - 1));
     }
 
     /**
@@ -220,9 +228,10 @@ class CheckGroup extends Field
             foreach ($options as $item) {
                 $opts[] = strval($item['value']);
             }
-            foreach ($this->names as $idx => $name) {
+            $names = $this->isList($this->names) ? $this->names : array_keys($this->names);
+            foreach ($names as $idx => $name) {
                 $data[$name] = 0;
-                $val = isset($opts[$idx]) ? $opts[$idx] : null;
+                $val = $opts[$idx] ?? null;
                 if ($val !== null && in_array($val, $values)) {
                     $data[$name] = 1;
                 }
@@ -257,20 +266,41 @@ class CheckGroup extends Field
             foreach ($options as $item) {
                 $opts[] = $item['value'];
             }
-            foreach ($this->names as $idx => $name) {
-                $opt_value = isset($opts[$idx]) ? $opts[$idx] : null;
-                if ($opt_value !== null && isset($data[$name]) && intval($data[$name]) == 1) {
-                    if ($this->itemType == 'int') {
-                        $opt_value = intval($opt_value);
-                    } else {
-                        $opt_value = strval($opt_value);
+            if ($this->isList($this->names)) {
+                $type = $this->itemType;
+                foreach ($this->names as $idx => $name) {
+                    $opt_value = $opts[$idx] ?? null;
+                    if ($opt_value !== null && isset($data[$name]) && intval($data[$name]) == 1) {
+                        if ($type == 'int' || $type == 'tinyint') {
+                            $opt_value = intval($opt_value);
+                        } else if ($type == 'decimal') {
+                            $opt_value = floatval($opt_value);
+                        } else {
+                            $opt_value = strval($opt_value);
+                        }
+                        $values[] = $opt_value;
                     }
-                    $values[] = $opt_value;
+                }
+            } else {
+                $idx = 0;
+                foreach ($this->names as $name => $type) {
+                    $opt_value = $opts[$idx] ?? null;
+                    if ($opt_value !== null && isset($data[$name]) && intval($data[$name]) == 1) {
+                        if ($type == 'int' || $type == 'tinyint') {
+                            $opt_value = intval($opt_value);
+                        } else if ($type == 'decimal') {
+                            $opt_value = floatval($opt_value);
+                        } else {
+                            $opt_value = strval($opt_value);
+                        }
+                        $values[] = $opt_value;
+                    }
+                    $idx++;
                 }
             }
             return $values;
         }
-        $values = isset($data[$this->name]) ? $data[$this->name] : '';
+        $values = $data[$this->name] ?? '';
         if (is_string($values) && Util::isJson($values)) {
             $values = json_decode($values, true);
         }

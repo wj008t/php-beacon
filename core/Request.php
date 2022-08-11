@@ -311,7 +311,7 @@ class Request
      * @param null $default
      * @return  string|null
      */
-    public static function server(string $key = '', $default = null): string|null
+    public static function server(string $key = '', $default = null): string|array|null
     {
         return static::lookup($_SERVER, $key, $default);
     }

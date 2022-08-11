@@ -8,7 +8,6 @@ use beacon\core\App;
 use beacon\core\DB;
 use beacon\core\DBException;
 use beacon\core\Field;
-use beacon\core\Logger;
 use beacon\core\Request;
 use beacon\core\Util;
 
@@ -57,6 +56,7 @@ class MultiDialog extends Field
     public int $width = 0;
     public int $height = 0;
     public string $btnText = '';
+    public bool $clearBtn = false;
 
 
     public function setting(array $args)
@@ -92,6 +92,9 @@ class MultiDialog extends Field
         if (isset($args['height']) && is_int($args['height'])) {
             $this->height = $args['height'];
         }
+        if (isset($args['clearBtn']) && is_bool($args['clearBtn'])) {
+            $this->clearBtn = $args['clearBtn'];
+        }
     }
 
     /**
@@ -111,6 +114,9 @@ class MultiDialog extends Field
         }
         if (!empty($this->btnText)) {
             $attrs['data-btn-text'] = $this->btnText;
+        }
+        if ($this->clearBtn) {
+            $attrs['data-clear-btn'] = 1;
         }
         if (!empty($this->width)) {
             $attrs['data-width'] = $this->width;

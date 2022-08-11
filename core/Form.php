@@ -3,8 +3,9 @@
 
 namespace beacon\core;
 
+use beacon\widget\Line;
+use ReflectionClass;
 use sdopx\lib\Raw;
-use \ReflectionClass;
 
 #[\Attribute]
 class Form
@@ -23,6 +24,10 @@ class Form
     public string $template = '';
     public string $tabIndex = '';
     protected array $tabFields = [];
+    /**
+     * @var Form[]
+     */
+    protected array $mergeForms = [];
 
     /**
      * 隐藏输入框
@@ -351,7 +356,7 @@ class Form
                 $valFnField[] = $field;
                 continue;
             }
-            if($field->viewClose){
+            if ($field->viewClose) {
                 continue;
             }
             $value = $field->fromParam($data);
@@ -430,7 +435,69 @@ class Form
                 $temp[$key] = $field;
             }
         }
+        foreach ($this->mergeForms as $prefix=>$form) {
+           $mrFileds= $form->getViewFields($tabIndex);
+            if(!empty($form->title)){
+                $temp[$prefix.':title']=new Line(label:$form->title);
+            }
+            foreach ($mrFileds as $mrName => $mrField){
+                $temp[$prefix.'_'.$mrName]=$mrField;
+            }
+        }
         return $temp;
+    }
+
+    /**
+     * 合并表单
+     * @param Form $form
+     * @param string $prefix
+     */
+    public function mergeView(Form $form, string $prefix = '')
+    {
+        static $num=0;
+        if (!empty($prefix)) {
+            $fields = $form->getFields();
+            foreach ($fields as $child) {
+                $child->setAttr('id', $prefix . '_' . $child->boxId);
+                $child->setAttr('name', $prefix . '_' . $child->boxName);
+                //如果存在拆分的时候
+                if (property_exists($child, 'names') && isset($child->names) && is_array($child->names)) {
+                    $names = $child->names;
+                    foreach ($names as $nKey => $name) {
+                        if (is_string($name)) {
+                            $names[$nKey] = $prefix . '_' . $name;
+                        }
+                    }
+                    $child->names = $names;
+                }
+                //修正动态数据
+                if (!empty($child->dynamic)) {
+                    $child->createDynamic();
+                    $dataDynamic = $child->getAttr('data-dynamic');
+                    if (!empty($dataDynamic)) {
+                        foreach ($dataDynamic as &$item) {
+                            foreach (['show', 'hide', 'off', 'on'] as $key) {
+                                if (isset($item[$key])) {
+                                    if (is_string($item[$key])) {
+                                        $item[$key] = explode(',', $item[$key]);
+                                    }
+                                    if (is_array($item[$key])) {
+                                        foreach ($item[$key] as $idx => $xit) {
+                                            $item[$key][$idx] = $prefix . '_' . $xit;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $child->setAttr('data-dynamic', $dataDynamic);
+                }
+            }
+        }else{
+            $prefix='m'.$num;
+            $num++;
+        }
+        $this->mergeForms[$prefix] = $form;
     }
 
 }

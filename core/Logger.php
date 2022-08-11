@@ -63,7 +63,7 @@ class Logger
             foreach ($args as $arg) {
                 $arg = self::convert($arg);
                 $temp = json_encode($arg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                if ($temp[0] != '{' && $temp[0] != '[') {
+                if ($temp===false || ($temp[0] != '{' && $temp[0] != '[')) {
                     $temp = strval($arg);
                 }
                 $temps[] = $temp;
@@ -75,11 +75,13 @@ class Logger
             if ($time !== null) {
                 $data['time'] = $time;
             }
+
             if (self::$sock === null) {
                 self::$sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
             }
             $sock = self::$sock;
             $msg = json_encode($data);
+
             $send = [];
             $msgId = md5(uniqid(microtime() . mt_rand()));
             $msgId = '--data--' . substr($msgId, 0, 24);
@@ -128,18 +130,23 @@ class Logger
     /**
      * 对象解析出来以便可以json输出
      * @param $object
-     * @return array|string|object|null
+     * @return mixed
      * @throws \Exception
      */
-    private static function convert($object): array|string|object|null
+    private static function convert($object): mixed
     {
-        if (!is_object($object)) {
+        if (!is_object($object)&&!is_resource($object)) {
             return $object;
         }
         static $_processed = [];
         $_processed[] = $object;
         $object_as_array = [];
-        $object_as_array['___class_name'] = get_class($object);
+        if(is_object($object)){
+            $object_as_array['___class_name'] = get_class($object);
+        }else{
+            $object_as_array['___resource_name'] = get_resource_type($object);
+            return $object_as_array;
+        }
         $object_vars = get_object_vars($object);
         //解析属性值
         foreach ($object_vars as $key => $value) {
@@ -179,6 +186,10 @@ class Logger
      */
     public static function error(...$args)
     {
+        if (count($args) == 1 && $args[0] instanceof \Exception) {
+            self::send('error', [$args[0]->getMessage(), $args[0]->getTraceAsString()]);
+            return;
+        }
         self::send('error', $args);
     }
 

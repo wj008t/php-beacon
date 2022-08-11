@@ -75,8 +75,6 @@ class Container extends Field
     public int $maxSize = 1000;
     public int $initSize = 0;
 
-    public string $mode = 'div';
-
     /**
      * Container constructor.
      * @param array $args
@@ -116,9 +114,6 @@ class Container extends Field
         }
         if (isset($args['initSize']) && is_int($args['initSize'])) {
             $this->initSize = $args['initSize'];
-        }
-        if (isset($args['mode']) && is_string($args['mode'])) {
-            $this->mode = $args['mode'];
         }
     }
 
@@ -251,6 +246,11 @@ class Container extends Field
         $viewer->fetch($template);
         $wrapFunc = $viewer->getHook('wrap');
         $itemFunc = $viewer->getHook('item');
+        $mode = 'div';
+        if ($wrapFunc == null) {
+            $wrapFunc = $viewer->getHook('table_wrap');
+            $mode = 'table';
+        }
         if ($wrapFunc == null) {
             throw new \Exception('模板中没有找到 {hook fn="wrap"} 的钩子函数');
         }
@@ -262,10 +262,11 @@ class Container extends Field
         $values = $this->cacheData;
         if (!empty($values) && is_array($values)) {
             foreach ($values as $item) {
-                $editForm = $this->getSubForm($className, 'add');
+                //todo 如果是add 可能会造成 不能设置 offEdit
+                $editForm = $this->getSubForm($className);
                 $editForm->setData($item);
                 $this->perfectForm($editForm, $index);
-                if ($this->mode == 'table') {
+                if ($mode == 'table') {
                     $subCode = '<tr class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</tr>';
                 } else {
                     $subCode = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</div>';
@@ -275,7 +276,7 @@ class Container extends Field
             }
         }
         $this->perfectForm($subForm);
-        if ($this->mode == 'table') {
+        if ($mode == 'table') {
             $source = '<tr class="container-item">' . $itemFunc(['field' => $this, 'form' => $subForm, 'index' => '@@index@@']) . '</tr>';
         } else {
             $source = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $subForm, 'index' => '@@index@@']) . '</div>';
@@ -293,7 +294,7 @@ class Container extends Field
         }
         $data = [];
         $data['field'] = $this;
-        if ($this->mode == 'table') {
+        if ($mode == 'table') {
             $data['body'] = new Raw('<tbody class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</tbody>');
         } else {
             $data['body'] = new Raw('<div class="container-wrap"' . $wrapStyle . '>' . join('', $code) . '</div>');
@@ -403,6 +404,9 @@ class Container extends Field
      */
     public function validate(array &$errors): bool
     {
+        if(isset($this->valid['disabled']) && $this->valid['disabled']){
+            return parent::validate($errors);
+        }
         foreach ($this->childError as $childName => $error) {
             if (!empty($error)) {
                 $errors[$childName] = $error;

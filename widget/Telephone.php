@@ -2,6 +2,13 @@
 
 
 namespace beacon\widget;
+// array_is_list
+if (!function_exists('array_is_list')) {
+    function array_is_list(array $a)
+    {
+        return $a === [] || (array_keys($a) === range(0, count($a) - 1));
+    }
+}
 
 use beacon\core\Field;
 use beacon\core\Form;
@@ -11,7 +18,7 @@ use beacon\core\Request;
 class Telephone extends Field
 {
 
-    protected array $_attrs=[
+    protected array $_attrs = [
         'class'=>'form-inp telephone',
     ];
 
@@ -48,24 +55,25 @@ class Telephone extends Field
         if (empty($this->names)) {
             $this->names = [];
         }
-        if ($this->mode == 1 && !isset($this->names[0])) {
-            $this->names[0] = $this->boxName;
-        } else if ($this->mode == 2 && !isset($this->names[1])) {
-            $this->names[0] = $this->boxName . '_qh';
-            $this->names[1] = $this->boxName;
-        } else if ($this->mode == 3 && !isset($this->names[2])) {
-            $this->names[0] = $this->boxName . '_qh';
-            $this->names[1] = $this->boxName;
-            $this->names[2] = $this->boxName . '_fj';
-        } else if ($this->mode == 4 && !isset($this->names[2])) {
-            $this->names[0] = $this->boxName . '_gh';
-            $this->names[1] = $this->boxName . '_qh';
-            $this->names[2] = $this->boxName;
-        } else if ($this->mode == 5 && !isset($this->names[3])) {
-            $this->names[0] = $this->boxName . '_gh';
-            $this->names[1] = $this->boxName . '_qh';
-            $this->names[2] = $this->boxName;
-            $this->names[3] = $this->boxName . '_fj';
+        $names=array_is_list($this->names)?$this->names:array_keys($this->names);
+        if ($this->mode == 1 && !isset($names[0])) {
+            $names[0] = $this->boxName;
+        } else if ($this->mode == 2 && !isset($names[1])) {
+            $names[0] = $this->boxName . '_qh';
+            $names[1] = $this->boxName;
+        } else if ($this->mode == 3 && !isset($names[2])) {
+            $names[0] = $this->boxName . '_qh';
+            $names[1] = $this->boxName;
+            $names[2] = $this->boxName . '_fj';
+        } else if ($this->mode == 4 && !isset($names[2])) {
+            $names[0] = $this->boxName . '_gh';
+            $names[1] = $this->boxName . '_qh';
+            $names[2] = $this->boxName;
+        } else if ($this->mode == 5 && !isset($names[3])) {
+            $names[0] = $this->boxName . '_gh';
+            $names[1] = $this->boxName . '_qh';
+            $names[2] = $this->boxName;
+            $names[3] = $this->boxName . '_fj';
         }
     }
 
@@ -152,7 +160,8 @@ class Telephone extends Field
         $widths['qh'] = empty($this->qWidth) ? 35 : $this->qWidth;
         $widths['fj'] = empty($this->fWidth) ? 35 : $this->fWidth;
 
-        $names = $this->getGroup($this->names, '');
+        $tNames=array_is_list($this->names)?$this->names:array_keys($this->names);
+        $names = $this->getGroup($tNames, '');
 //        Logger::log($phone, $validGroup, $placeholder, $names);
 
         unset($attrs['placeholder']);
@@ -214,7 +223,8 @@ class Telephone extends Field
      */
     public function fromParam(array $param = []): mixed
     {
-        $names = $this->getGroup($this->names, '');
+        $tNames=array_is_list($this->names)?$this->names:array_keys($this->names);
+        $names = $this->getGroup($tNames, '');
         $values = [];
         foreach ($names as $key => $name) {
             $values[$key] = Request::lookType($param, $name, 'string');

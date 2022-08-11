@@ -434,12 +434,8 @@ class Mysql
                 $params [] = 'NULL';
             } else if ($item instanceof SqlFrame) {
                 $params [] = $item->sql;
-                if (is_array($item->args)) {
-                    foreach ($item->args as $it) {
-                        $temp[] = $it;
-                    }
-                } elseif ($item->args !== null) {
-                    $temp[] = $item->args;
+                foreach ($item->args as $it) {
+                    $temp[] = $it;
                 }
             } else {
                 $params [] = '?';
@@ -491,12 +487,8 @@ class Mysql
                 $params [] = 'NULL';
             } else if ($item instanceof SqlFrame) {
                 $params [] = $item->sql;
-                if (is_array($item->args)) {
-                    foreach ($item->args as $it) {
-                        $temp[] = $it;
-                    }
-                } elseif ($item->args !== null) {
-                    $temp[] = $item->args;
+                foreach ($item->args as $it) {
+                    $temp[] = $it;
                 }
             } else {
                 $params [] = '?';
@@ -553,12 +545,8 @@ class Mysql
                 $maps [] = '`' . $key . '`=NULL';
             } else if ($item instanceof SqlFrame) {
                 $maps [] = '`' . $key . '`=' . $item->sql;
-                if (is_array($item->args)) {
-                    foreach ($item->args as $it) {
-                        $temp[] = $it;
-                    }
-                } elseif ($item->args !== null) {
-                    $temp[] = $item->args;
+                foreach ($item->args as $it) {
+                    $temp[] = $it;
                 }
             } else {
                 $maps [] = '`' . $key . '`=?';

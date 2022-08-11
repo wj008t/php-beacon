@@ -565,14 +565,19 @@ class DBSelector extends SqlCondition
 
     /**
      * 获取分页数据
+     * @param int $page
      * @return array
      * @throws DBException
      */
-    public function pageList(): array
+    public function pageList(int $page = 0): array
     {
-        $this->_page = Request::param($this->_pageKey . ':i', 1);
-        if ($this->_page < 1) {
-            $this->_page = 1;
+        if ($page <= 0) {
+            $this->_page = Request::param($this->_pageKey . ':i', 1);
+            if ($this->_page < 1) {
+                $this->_page = 1;
+            }
+        } else {
+            $this->_page = $page;
         }
         if ($this->_pageSize < 1) {
             $this->_pageSize = 20;
@@ -592,14 +597,17 @@ class DBSelector extends SqlCondition
      */
     public function sort(string $sort, array $limits = [])
     {
-        if (empty($sort)) {
+        if (empty($sort) || count($limits) == 0) {
             return;
         }
-        if (preg_match('@^((?:\w+\.)?\w+)-(asc|desc)$@', $sort, $match)) {
-            if (count($limits) > 0 && !in_array($match[1], $limits)) {
+        if (preg_match('@^(\w+\.)?(\w+)-(asc|desc)$@', $sort, $match)) {
+            $field = $match[1] . $match[2];
+            $order = $match[3];
+            if (!in_array($field, $limits)) {
                 return;
             }
-            $this->order($match[1] . ' ' . $match[2]);
+            $field = $match[1] . '`' . $match[2] . '`';
+            $this->order($field . ' ' . $order);
         }
     }
 

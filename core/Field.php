@@ -49,6 +49,10 @@ abstract class Field
     public bool $star = false;             //是否标星
     public string $tabIndex = '';          //所在标签
 
+    //只有在全动态模式下有效
+    public string $warpStyle = '';          //容器宽
+    public string $labelStyle = '';        //标题宽
+    public string $cellStyle = '';          //单元格样式
 
     //用于验证的数据
     public array $valid = [];       //验证内容
@@ -87,6 +91,17 @@ abstract class Field
         if (isset($args['label']) && is_string($args['label'])) {
             $this->label = $args['label'];
         }
+
+        if (isset($args['warpStyle']) && is_string($args['warpStyle'])) {
+            $this->warpStyle = $args['warpStyle'];
+        }
+        if (isset($args['labelStyle']) && is_string($args['labelStyle'])) {
+            $this->labelStyle = $args['labelStyle'];
+        }
+        if (isset($args['cellStyle']) && is_string($args['cellStyle'])) {
+            $this->cellStyle = $args['cellStyle'];
+        }
+
         if (isset($args['close']) && is_bool($args['close'])) {
             $this->close = $args['close'];
         }
@@ -697,7 +712,7 @@ abstract class Field
             $base = [join(' ', $base)];
         }
         $base[] = $end1;
-        if (!empty($data['text'])) {
+        if (isset($data['text']) && $data['text'] !== '') {
             $text = $data['text'];
             if (is_array($text) || is_object($text)) {
                 $base[] = htmlspecialchars(json_encode($text, JSON_UNESCAPED_UNICODE));
@@ -709,7 +724,7 @@ abstract class Field
                 $base[] = $text;
             }
         }
-        if (!empty($data['code'])) {
+        if (isset($data['code']) && $data['code'] !== '') {
             $base[] = $data['code'];
         }
         $base[] = $end2;
