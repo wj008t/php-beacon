@@ -652,12 +652,12 @@ class Mysql
             'charset' => Config::get('db.db_charset', 'utf8'),
             'comment' => '',
         ], $options);
-
         if ($this->existsTable($tbname)) {
             throw new DBException("数据库表已经存在,{$tbname}");
         }
-        $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=".Mysql::escape($options['comment']).';';
-        $stm = $this->execute($sql, [$options['comment']]);
+        $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=".Mysql::escape($options['comment']);
+        $sql .= ';';
+        $stm = $this->execute($sql);
         if (!$stm) {
             throw new DBException("创建数据库表失败,{$tbname}");
         }
