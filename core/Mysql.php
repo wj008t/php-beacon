@@ -358,7 +358,7 @@ class Mysql
      */
     public function getMax(string $tbname, string $field, string|int|null $where = null, mixed $args = null): mixed
     {
-        $sql = "select max(`{$field}`) from {$tbname}";
+        $sql = "select max(`{$field}`) from `{$tbname}`";
         if ($where !== null) {
             $where = trim($where);
             if ($args !== null) {
@@ -388,7 +388,7 @@ class Mysql
      */
     public function getMin(string $tbname, string $field, string|int|null $where = null, mixed $args = null): mixed
     {
-        $sql = "select min(`{$field}`) from {$tbname}";
+        $sql = "select min(`{$field}`) from `{$tbname}`";
         if ($where !== null) {
             $where = trim($where);
             if ($args != null) {
@@ -466,7 +466,7 @@ class Mysql
                 }
             }
         }
-        $sql = 'insert into ' . $tbname . '(' . join(',', $names) . ') values (' . join(',', $params) . ')';
+        $sql = 'insert into `' . $tbname . '`(' . join(',', $names) . ') values (' . join(',', $params) . ')';
         $Stm = $this->execute($sql, $temp);
         $Stm->closeCursor();
     }
@@ -519,7 +519,7 @@ class Mysql
                 }
             }
         }
-        $sql = 'replace into ' . $tbname . '(' . join(',', $names) . ') values (' . join(',', $params) . ')';
+        $sql = 'replace into `' . $tbname . '`(' . join(',', $names) . ') values (' . join(',', $params) . ')';
         $Stm = $this->execute($sql, $temp);
         $Stm->closeCursor();
     }
@@ -577,7 +577,7 @@ class Mysql
                 }
             }
         }
-        $sql = 'update ' . $tbname . ' set ' . join(',', $maps);
+        $sql = 'update `' . $tbname . '` set ' . join(',', $maps);
         if (empty($where)) {
             throw new DBException('编辑数据必须带有条件');
         }
@@ -607,7 +607,7 @@ class Mysql
             $args = [intval($where)];
             $where = 'id=?';
         }
-        $sql = 'delete from ' . $tbname;
+        $sql = 'delete from `' . $tbname.'`';
         if (empty($where)) {
             throw new DBException('删除数据必须带有条件');
         }
