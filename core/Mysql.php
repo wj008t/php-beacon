@@ -648,10 +648,11 @@ class Mysql
             'charset' => Config::get('db.db_charset', 'utf8'),
             'comment' => '',
         ], $options);
+
         if ($this->existsTable($tbname)) {
             throw new DBException("数据库表已经存在,{$tbname}");
         }
-        $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=?";
+        $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=".Mysql::escape($options['comment']).';';
         $stm = $this->execute($sql, [$options['comment']]);
         if (!$stm) {
             throw new DBException("创建数据库表失败,{$tbname}");
@@ -678,7 +679,7 @@ class Mysql
 
         [$type, $len, $scale, $def, $comment] = array_values($options);
         $type = strtoupper($type);
-        $sql = "ALTER TABLE {$tbname} ADD `{$field}`";
+        $sql = "ALTER TABLE `{$tbname}` ADD `{$field}`";
         $sql .= match ($type) {
             'VARCHAR', 'INT', 'BIGINT', 'SMALLINT', 'INTEGER', 'TINYINT' => $type . '(' . $len . ')',
             'DECIMAL', 'DOUBLE', 'FLOAT' => $type . '(' . $len . ',' . $scale . ')',
@@ -717,7 +718,7 @@ class Mysql
         ], $options);
         [$type, $len, $scale, $def, $comment] = array_values($options);
         $type = strtoupper($type);
-        $sql = "ALTER TABLE {$tbname} MODIFY `{$field}`";
+        $sql = "ALTER TABLE `{$tbname}` MODIFY `{$field}`";
         $sql .= match ($type) {
             'VARCHAR', 'INT', 'BIGINT', 'SMALLINT', 'INTEGER', 'TINYINT' => $type . '(' . $len . ')',
             'DECIMAL', 'DOUBLE', 'FLOAT' => $type . '(' . $len . ',' . $scale . ')',
@@ -764,7 +765,7 @@ class Mysql
         ], $options);
         [$type, $len, $scale, $def, $comment] = array_values($options);
         $type = strtoupper($type);
-        $sql = "ALTER TABLE {$tbname} CHANGE `{$oldField}` `{$newField}`";
+        $sql = "ALTER TABLE `{$tbname}` CHANGE `{$oldField}` `{$newField}`";
         $sql .= match ($type) {
             'VARCHAR', 'INT', 'BIGINT', 'SMALLINT', 'INTEGER', 'TINYINT' => $type . '(' . $len . ')',
             'DECIMAL', 'DOUBLE', 'FLOAT' => $type . '(' . $len . ',' . $scale . ')',
@@ -790,7 +791,7 @@ class Mysql
     public function dropField(string $tbname, string $field): false|int
     {
         if ($this->existsField($tbname, $field)) {
-            $sql = "ALTER TABLE {$tbname} DROP `{$field}`;";
+            $sql = "ALTER TABLE `{$tbname}` DROP `{$field}`;";
             return $this->exec($sql);
         }
         return 0;
@@ -805,9 +806,10 @@ class Mysql
     public function existsTable(string $tbname): bool
     {
         $tbname = str_replace('@pf_', $this->prefix, $tbname);
-        $row = $this->getRow('SHOW TABLES LIKE ?;', $tbname);
+        $row = $this->getRow('SHOW TABLES LIKE ' . Mysql::escape($tbname) . ';');
         return $row != null;
     }
+
 
     /**
      * 删除表
