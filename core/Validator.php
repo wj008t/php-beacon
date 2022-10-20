@@ -40,7 +40,7 @@ class Validator
     /**
      * 静态调用初始化
      */
-    public static function init()
+    public static function init(): void
     {
         if (Validator::$default_errors == null) {
             Validator::$default_errors = Config::get('form.validate_default_errors', []);

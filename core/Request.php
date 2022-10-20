@@ -569,6 +569,7 @@ class Request
     /**
      * 获取session值
      * @return string
+     * @throws \RedisException
      */
     public static function getSessionId(): string
     {
@@ -606,7 +607,7 @@ class Request
      * 设置sessionId
      * @param string $ssid
      */
-    public static function setSessionId(string $ssid)
+    public static function setSessionId(string $ssid): void
     {
         if (USE_REDIS_SESSION) {
             $useType = Config::get('session.use_type', 'cookie');
@@ -631,6 +632,7 @@ class Request
      * @param string $name
      * @param null $default
      * @return array|bool|float|int|string|null
+     * @throws \RedisException
      */
     public static function getSession(string $name = '', $default = null): mixed
     {
@@ -662,8 +664,9 @@ class Request
      * 设置 session
      * @param string|array $name
      * @param mixed $value
+     * @throws \RedisException
      */
-    public static function setSession(string|array $name, mixed $value = null)
+    public static function setSession(string|array $name, mixed $value = null): void
     {
         if (USE_REDIS_SESSION) {
             $token = static::getSessionId();
@@ -700,8 +703,9 @@ class Request
 
     /**
      * 清空session
+     * @throws \RedisException
      */
-    public static function clearSession()
+    public static function clearSession(): void
     {
         if (USE_REDIS_SESSION) {
             $token = static::getSessionId();
@@ -731,23 +735,23 @@ class Request
     /**
      * 设置cookie
      * @param string $name
-     * @param $value
-     * @param $options
+     * @param string $value
+     * @param array|int|null $options
      * @return bool
      */
-    public static function setCookie(string $name, string $value, ?array $options = null): bool
+    public static function setCookie(string $name, string $value, array|int|null $options = null): bool
     {
         if ($options == null) {
             return setcookie($name, $value);
         }
-        if (is_integer($options)) {
+        if (is_int($options)) {
             return setcookie($name, $value, $options);
         }
         $expire = isset($options['expire']) ? intval($options['expire']) : 0;
         $path = $options['path'] ?? '';
         $domain = $options['domain'] ?? '';
-        $secure = isset($options['secure']) && boolval($options['secure']);
-        $httponly = isset($options['httponly']) && boolval($options['httponly']);
+        $secure = isset($options['secure']) && $options['secure'];
+        $httponly = isset($options['httponly']) && $options['httponly'];
         return setcookie($name, $value, $expire, $path, $domain, $secure, $httponly);
     }
 
@@ -793,7 +797,7 @@ class Request
      * @param bool $replace
      * @param int $http_response_code
      */
-    public static function setHeader(string $name, string $value, bool $replace = true, int $http_response_code = 0)
+    public static function setHeader(string $name, string $value, bool $replace = true, int $http_response_code = 0): void
     {
         $nameTemps = explode('-', $name);
         foreach ($nameTemps as &$n) {
@@ -806,10 +810,10 @@ class Request
 
     /**
      * 设置输出类型
-     * @param $type
+     * @param string $type
      * @param string $encoding
      */
-    public static function setContentType($type, string $encoding = 'utf-8')
+    public static function setContentType(string $type, string $encoding = 'utf-8'): void
     {
         if (!str_contains($type, '/')) {
             $type = static::$formats[$type] ?? 'application/octet-stream';

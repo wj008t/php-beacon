@@ -21,7 +21,7 @@ class Config
      * @param bool $overwrite
      * @return array
      */
-    public static function load(string $name, bool $overwrite = false): array
+    public static function load(string|array $name, bool $overwrite = false): array
     {
         if (is_array($name)) {
             $data = [];
@@ -54,7 +54,7 @@ class Config
 
     /**
      * 指定绝对路径加载
-     * @param $file
+     * @param string $file
      * @return array
      */
     public static function loadFile(string $file): array
@@ -71,7 +71,7 @@ class Config
      * @param string $key
      * @param $value
      */
-    public static function set(string $key, $value)
+    public static function set(string $key, $value): void
     {
         self::$global[$key] = $value;
     }
@@ -80,7 +80,7 @@ class Config
      * 追加配置
      * @param array $value
      */
-    public static function append(array $value)
+    public static function append(array $value): void
     {
         foreach ($value as $key => $val) {
             self::$global[$key] = $val;
@@ -137,7 +137,7 @@ class Config
      * @param string $name
      * @param array $data
      */
-    public static function setSection(string $name, array $data)
+    public static function setSection(string $name, array $data): void
     {
         foreach ($data as $key => $val) {
             self::$global[$name . '.' . $key] = $val;

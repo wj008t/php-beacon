@@ -93,7 +93,7 @@ class Route
      * 设置反解析URL函数
      * @param \Closure $func
      */
-    public function setResolve(\Closure $func)
+    public function setResolve(\Closure $func): void
     {
         $this->resolveFunc = $func;
     }

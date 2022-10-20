@@ -28,7 +28,7 @@ class DB
         $timeout = Config::get('db.timeout', 120);
         try {
             static::$engine = new Mysql($host, $port, $name, $user, $pass, $prefix, $charset, $timeout);
-        } catch (\PDOException | \Exception $e) {
+        } catch (\PDOException|\Exception $e) {
             static::$engine = null;
             $code = $e->getCode();
             if (!is_int($code)) {
@@ -65,7 +65,7 @@ class DB
      * @param callable $func
      * @throws \Exception
      */
-    public static function transaction(callable $func)
+    public static function transaction(callable $func): void
     {
         try {
             static::beginTransaction();
@@ -147,26 +147,26 @@ class DB
      * 获取多行记录
      * @param string $sql
      * @param mixed $args
-     * @param int $fetch_style
+     * @param int $fetch
      * @return array
      * @throws DBException
      */
-    public static function getList(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): array
+    public static function getList(string $sql, mixed $args = null, int $fetch = \PDO::FETCH_ASSOC): array
     {
-        return static::engine()->getList($sql, $args, $fetch_style);
+        return static::engine()->getList($sql, $args, $fetch);
     }
 
     /**
      * 获取单条数据
      * @param string $sql
      * @param null $args
-     * @param int $fetch_style
+     * @param int $fetch
      * @return mixed
      * @throws DBException
      */
-    public static function getRow(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): mixed
+    public static function getRow(string $sql, mixed $args = null, int $fetch = \PDO::FETCH_ASSOC): mixed
     {
-        return static::engine()->getRow($sql, $args, $fetch_style);
+        return static::engine()->getRow($sql, $args, $fetch);
     }
 
     /**
@@ -185,63 +185,68 @@ class DB
      * 获取多条记录，并缓存
      * @param string $sql
      * @param mixed|null $args
-     * @param int $fetch_style
+     * @param int $fetch
+     * @param string $key
+     * @param int $expire
      * @return array
      * @throws DBException
      */
-    public static function getListCache(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): array
+    public static function getListCache(string $sql, mixed $args = null, int $fetch = \PDO::FETCH_ASSOC, string $key = '', int $expire = 0): array
     {
         static $cache = [];
-        if (is_array($args)) {
-            $param = $args == null ? '' : join(',', $args);
-        } else {
-            $param = strval($args);
+        if ($key == '') {
+            $key = md5($sql . '|' . $args == null ? '' : (is_array($args) ? join(',', $args) : strval($args)) . '|' . $fetch);
         }
-        $key = md5($sql . '|' . $param . '|' . $fetch_style);
         if (isset($cache[$key])) {
             return $cache[$key];
         }
-        return $cache[$key] = static::getList($sql, $args, $fetch_style);
+        $cache[$key] = Redis::callCache('cache.' . $key, $expire, fn() => static::getList($sql, $args, $fetch));
+        return $cache[$key];
     }
 
     /**
      * 获取一条记录并缓存
      * @param string $sql
      * @param mixed|null $args
-     * @param int $fetch_style
+     * @param int $fetch
+     * @param string $key
+     * @param int $expire
      * @return mixed
      * @throws DBException
      */
-    public static function getRowCache(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): mixed
+    public static function getRowCache(string $sql, mixed $args = null, int $fetch = \PDO::FETCH_ASSOC, string $key = '', int $expire = 0): mixed
     {
         static $cache = [];
-        if (is_array($args)) {
-            $param = $args == null ? '' : join(',', $args);
-        } else {
-            $param = strval($args);
+        if ($key == '') {
+            $key = md5($sql . '|' . $args == null ? '' : (is_array($args) ? join(',', $args) : strval($args)) . '|' . $fetch);
         }
-        $key = md5($sql . '|' . $param . '|' . $fetch_style);
         if (isset($cache[$key])) {
             return $cache[$key];
         }
-        return $cache[$key] = static::getRow($sql, $args, $fetch_style);
+        $cache[$key] = Redis::callCache('cache.' . $key, $expire, fn() => static::getRow($sql, $args, $fetch));
+        return $cache[$key];
     }
 
     /**
      * 获取1条记录并缓存
      * @param string $table
      * @param int $id
+     * @param string $key
+     * @param int $expire
      * @return array|null
      * @throws DBException
      */
-    public static function getItemCache(string $table, int $id): ?array
+    public static function getItemCache(string $table, int $id, string $key = '', int $expire = 0): ?array
     {
         static $cache = [];
-        $key = md5($table . '|' . $id);
+        if ($key == '') {
+            $key = md5($table . '|' . $id);
+        }
         if (isset($cache[$key])) {
             return $cache[$key];
         }
-        return $cache[$key] = static::getItem($table, $id);
+        $cache[$key] = Redis::callCache('cache.' . $key, $expire, fn() => static::getItem($table, $id));
+        return $cache[$key];
     }
 
     /**
@@ -323,7 +328,7 @@ class DB
      * @param array $values
      * @throws DBException
      */
-    public static function insert(string $tbname, array $values = [])
+    public static function insert(string $tbname, array $values = []): void
     {
         static::engine()->insert($tbname, $values);
     }
@@ -334,7 +339,7 @@ class DB
      * @param array $values
      * @throws DBException
      */
-    public static function replace(string $tbname, array $values = [])
+    public static function replace(string $tbname, array $values = []): void
     {
         static::engine()->replace($tbname, $values);
     }
@@ -347,7 +352,7 @@ class DB
      * @param mixed $args
      * @throws DBException
      */
-    public static function update(string $tbname, array $values, string|int|null $where = null, mixed $args = null)
+    public static function update(string $tbname, array $values, string|int|null $where = null, mixed $args = null): void
     {
         static::engine()->update($tbname, $values, $where, $args);
     }
@@ -359,7 +364,7 @@ class DB
      * @param mixed $args
      * @throws DBException
      */
-    public static function delete(string $tbname, string|int|null $where = null, mixed $args = null)
+    public static function delete(string $tbname, string|int|null $where = null, mixed $args = null): void
     {
         static::engine()->delete($tbname, $where, $args);
     }
@@ -414,7 +419,7 @@ class DB
      * @param array $options
      * @throws DBException
      */
-    public static function createTable(string $tbname, array $options = [])
+    public static function createTable(string $tbname, array $options = []): void
     {
         static::engine()->createTable($tbname, $options);
     }

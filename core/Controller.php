@@ -21,7 +21,7 @@ abstract class Controller
      * @param $key
      * @param null $val
      */
-    protected function assign($key, $val = null)
+    protected function assign($key, $val = null): void
     {
         $this->view()->assign($key, $val);
     }
@@ -42,7 +42,7 @@ abstract class Controller
      * @param string $tplName
      * @param string|null $parent
      */
-    protected function display(string $tplName, ?string $parent = null)
+    protected function display(string $tplName, ?string $parent = null): void
     {
         $this->view()->context($this);
         Request::setContentType('html');
@@ -74,7 +74,7 @@ abstract class Controller
      * @param array $query
      */
     #[\NoReturn]
-    protected function redirect(string $url, array $query = [])
+    protected function redirect(string $url, array $query = []): void
     {
         $url = empty($url) ? '/' : $url;
         $url = App::url($url, $query);
@@ -89,7 +89,7 @@ abstract class Controller
      * 如 ['data'=>$myData,'back'=>'/index','code'=>33,'template'=>'myError.tpl']
      */
     #[\NoReturn]
-    protected function error(string|array $error, ?array $option = [])
+    protected function error(string|array $error, ?array $option = []): void
     {
         $option['status'] = false;
         if (is_array($error)) {
@@ -125,7 +125,7 @@ abstract class Controller
      * 如 ['data'=>$myData,'back'=>'/index','code'=>33,'template'=>'myError.tpl']
      */
     #[\NoReturn]
-    protected function success($message = null, array $option = [])
+    protected function success($message = null, array $option = []): void
     {
         $option['status'] = true;
         if (!empty($message)) {

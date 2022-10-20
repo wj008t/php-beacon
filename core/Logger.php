@@ -63,7 +63,7 @@ class Logger
             foreach ($args as $arg) {
                 $arg = self::convert($arg);
                 $temp = json_encode($arg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                if ($temp===false || ($temp[0] != '{' && $temp[0] != '[')) {
+                if ($temp === false || ($temp[0] != '{' && $temp[0] != '[')) {
                     $temp = strval($arg);
                 }
                 $temps[] = $temp;
@@ -135,15 +135,15 @@ class Logger
      */
     private static function convert($object): mixed
     {
-        if (!is_object($object)&&!is_resource($object)) {
+        if (!is_object($object) && !is_resource($object)) {
             return $object;
         }
         static $_processed = [];
         $_processed[] = $object;
         $object_as_array = [];
-        if(is_object($object)){
+        if (is_object($object)) {
             $object_as_array['___class_name'] = get_class($object);
-        }else{
+        } else {
             $object_as_array['___resource_name'] = get_resource_type($object);
             return $object_as_array;
         }
@@ -175,7 +175,7 @@ class Logger
      * 输出信息
      * @param mixed ...$args
      */
-    public static function log(...$args)
+    public static function log(...$args): void
     {
         self::send('log', $args);
     }
@@ -184,7 +184,7 @@ class Logger
      * 输出错误信息
      * @param mixed ...$args
      */
-    public static function error(...$args)
+    public static function error(...$args): void
     {
         if (count($args) == 1 && $args[0] instanceof \Exception) {
             self::send('error', [$args[0]->getMessage(), $args[0]->getTraceAsString()]);
@@ -197,7 +197,7 @@ class Logger
      * 警告信息
      * @param mixed ...$args
      */
-    public static function warn(...$args)
+    public static function warn(...$args): void
     {
         self::send('warn', $args);
     }
@@ -206,7 +206,7 @@ class Logger
      * 信息
      * @param mixed ...$args
      */
-    public static function info(...$args)
+    public static function info(...$args): void
     {
         self::send('info', $args);
     }
@@ -215,7 +215,7 @@ class Logger
      * @param string $sql
      * @param float $time 执行时间
      */
-    public static function sql(string $sql, float $time)
+    public static function sql(string $sql, float $time): void
     {
         self::send('sql', [$sql], round($time, 6));
     }
@@ -226,7 +226,7 @@ class Logger
      * @param string $color
      * @param bool $newLine
      */
-    private static function out(string $text, string $color = 'info', bool $newLine = true)
+    private static function out(string $text, string $color = 'info', bool $newLine = true): void
     {
         $styles = array(
             'file' => "\033[0;33m%s\033[0m",
@@ -246,7 +246,7 @@ class Logger
         printf($format, $text);
     }
 
-    private static function save(string $text, string $act = 'info', bool $file = false)
+    private static function save(string $text, string $act = 'info', bool $file = false): void
     {
         if (self::$logSave == null) {
             return;
@@ -278,9 +278,9 @@ class Logger
 
     /**
      * 输出调试数据
-     * @param array $item
+     * @param array|null $item
      */
-    private static function debug(array $item)
+    private static function debug(?array $item): void
     {
         static $tempFile = null;
         if (!is_array($item) || count($item) == 0) {
@@ -295,7 +295,7 @@ class Logger
             self::out('> ' . $file, 'file', true);
             self::save('> ' . $file, $act, true);
         }
-        if ($data !== null && is_array($data) && count($data) > 0) {
+        if (is_array($data) && count($data) > 0) {
             if ($act == 'sql') {
                 if ($time !== null) {
                     $time = number_format($time, 4, '.', '');
@@ -322,7 +322,7 @@ class Logger
      * 解包数据
      * @param string $msg
      */
-    private static function unpack(string $msg)
+    private static function unpack(string $msg): void
     {
 
         static $msgMap = [];
@@ -365,7 +365,7 @@ class Logger
      * @param string $kind
      * @param bool $single 是否单一文件
      */
-    public static function saveLog(string $path = '', string $kind = 'all', bool $single = false)
+    public static function saveLog(string $path = '', string $kind = 'all', bool $single = false): void
     {
         if (empty($path)) {
             return;
@@ -381,7 +381,7 @@ class Logger
      * 监听调试
      * @param bool $remove 是否开启远程调试
      */
-    public static function listen(bool $remove = false, string $password = '')
+    public static function listen(bool $remove = false, string $password = ''): void
     {
         if (PHP_SAPI != 'cli') {
             exit;
@@ -408,7 +408,7 @@ EOF;
                 continue;
             }
             //转发到客户端
-            if ($remove && substr($msg, 0, 10) == '--client--') {
+            if ($remove && str_starts_with($msg, '--client--')) {
                 $pwd = substr($msg, 10, 32);
                 if ($pwd == md5($password)) {
                     if ($client === null || $client[0] != $peer) {
@@ -421,7 +421,7 @@ EOF;
                 continue;
             }
             //转发数据
-            if ($remove && $client !== null && is_array($client) && isset($client[1]) && $client[1] > time()) {
+            if ($remove && is_array($client) && isset($client[1]) && $client[1] > time()) {
                 @stream_socket_sendto($socket, $msg, 0, $client[0]);
                 continue;
             } else {
@@ -437,7 +437,7 @@ EOF;
      * @param int $port
      * @param string $password
      */
-    public static function client(string $addr = '127.0.0.1', int $port = 1024, string $password = '')
+    public static function client(string $addr = '127.0.0.1', int $port = 1024, string $password = ''): void
     {
         if (PHP_SAPI != 'cli') {
             exit;

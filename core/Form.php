@@ -82,7 +82,7 @@ class Form
      * @param string $tabIndex
      * @throws \ReflectionException
      */
-    public function init(object|string $object, string $type = '', string $tabIndex = '')
+    public function init(object|string $object, string $type = '', string $tabIndex = ''): void
     {
         $this->type = $type;
         $this->object = $object;
@@ -219,7 +219,7 @@ class Form
     /**
      *清除所有错误
      */
-    public function clearErrors()
+    public function clearErrors(): void
     {
         $fields = $this->getFields();
         foreach ($fields as $name => $field) {
@@ -236,7 +236,7 @@ class Form
      * @param string $name
      * @param mixed $value
      */
-    public function setHideBox(string $name, mixed $value)
+    public function setHideBox(string $name, mixed $value): void
     {
         $this->hideBox[$name] = $value;
     }
@@ -250,7 +250,7 @@ class Form
     {
         $fields = $this->getFields($tabIndex);
         foreach ($fields as $field) {
-            if (isset($field->hidden) && $field->hidden == true) {
+            if (isset($field->hidden) && $field->hidden) {
                 $this->setHideBox($field->boxName, $field->getValue());
             }
         }
@@ -287,7 +287,7 @@ class Form
      * 设置值
      * @param array|int|null $data
      */
-    public function setData(array|int|null $data = null)
+    public function setData(array|int|null $data = null): void
     {
         if (is_int($data)) {
             try {
@@ -312,7 +312,7 @@ class Form
     /**
      * 清除数据
      */
-    public function clearData()
+    public function clearData(): void
     {
         $this->values = null;
         $fields = $this->fields;
@@ -343,7 +343,7 @@ class Form
     /**
      * @param array $data
      */
-    public function fillComplete(array $data)
+    public function fillComplete(array $data): void
     {
         $fields = $this->getFields();
         $valFnField = [];
@@ -452,7 +452,7 @@ class Form
      * @param Form $form
      * @param string $prefix
      */
-    public function mergeView(Form $form, string $prefix = '')
+    public function mergeView(Form $form, string $prefix = ''): void
     {
         static $num=0;
         if (!empty($prefix)) {

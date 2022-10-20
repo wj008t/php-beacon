@@ -7,10 +7,9 @@ use sdopx\SdopxException;
 if (!defined('ROOT_DIR')) {
     die('未定义ROOT_DIR目录');
 }
-
 defined('DEV_DEBUG') or define('DEV_DEBUG', false);
 defined('DEBUG_LOG') or define('DEBUG_LOG', false);
-defined('IS_CGI') or define('IS_CGI', substr(PHP_SAPI, 0, 3) == 'cgi');
+defined('IS_CGI') or define('IS_CGI', str_starts_with(PHP_SAPI, 'cgi'));
 defined('IS_CLI') or define('IS_CLI', PHP_SAPI == 'cli');
 defined('IS_WIN') or define('IS_WIN', strstr(PHP_OS, 'WIN'));
 
@@ -64,7 +63,7 @@ class App
      * @param string $type
      * @param callable $func
      */
-    public static function adapter(string $type, callable $func)
+    public static function adapter(string $type, callable $func): void
     {
         switch ($type) {
             case 'error':
@@ -82,7 +81,7 @@ class App
      * 注册路由
      * @param Route $route
      */
-    public static function reg(Route $route)
+    public static function reg(Route $route): void
     {
         $name = $route->getName();
         static::$routeMap[$name] = $route;
@@ -132,7 +131,7 @@ class App
     }
 
 
-    public static function setUrlExtension(string $ext = '')
+    public static function setUrlExtension(string $ext = ''): void
     {
         static::$urlExt = $ext;
     }
@@ -262,7 +261,7 @@ class App
     /**
      * 记录运行时间
      */
-    protected static function runTime()
+    protected static function runTime(): void
     {
         if (defined('DEV_DEBUG') && DEV_DEBUG && defined('DEBUG_LOG') && DEBUG_LOG) {
             error_reporting(E_ALL);
@@ -281,7 +280,7 @@ class App
      * 运行
      * @param string|null $url
      */
-    public static function run(string $url = null)
+    public static function run(string $url = null): void
     {
         static::runTime();
         try {
@@ -319,7 +318,7 @@ class App
      * @throws RouteError
      * @throws \ReflectionException
      */
-    public static function executeMethod(string $class, string $action)
+    public static function executeMethod(string $class, string $action): void
     {
         $refClass = new \ReflectionClass($class);
         $methods = $refClass->getMethods(\ReflectionMethod::IS_PUBLIC);
@@ -388,7 +387,7 @@ class App
     /**
      * @param \Throwable $exception
      */
-    public static function rethrow(\Throwable $exception)
+    public static function rethrow(\Throwable $exception): void
     {
         $out = [];
         $out['status'] = false;
@@ -561,7 +560,7 @@ class App
      * @param string $app
      * @param string $filepath
      */
-    protected static function saveCache(string $app, string $filepath)
+    protected static function saveCache(string $app, string $filepath): void
     {
         file_put_contents($filepath, '<?php return ' . var_export(static::$cacheUris[$app], true) . ';');
     }
@@ -629,7 +628,7 @@ class App
         }
         $queryStr = [];
         foreach ($args as $key => $val) {
-            array_push($queryStr, $key . '={' . $key . '}');
+            $queryStr[] = $key . '={' . $key . '}';
         }
         $temp_url = $base . $outUrl;
         if (isset($queryStr[0])) {

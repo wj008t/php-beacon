@@ -13,6 +13,7 @@ class Redis
     /**
      * 获取redis 实例
      * @return Client|\Redis|null
+     * @throws \RedisException
      */
     public static function instance(): Client|\Redis|null
     {
@@ -25,7 +26,7 @@ class Redis
             if (!empty($config['sock'])) {
                 self::$redis->pconnect($config['sock']);
             } else {
-                self::$redis->pconnect($config['host'], $config['port'], isset($config['timeout']) ? $config['timeout'] : 20);
+                self::$redis->pconnect($config['host'], $config['port'], $config['timeout'] ?? 20);
             }
             if (!empty($config['password'])) {
                 self::$redis->auth($config['password']);
@@ -48,6 +49,7 @@ class Redis
      * @param string $name
      * @param array $arguments
      * @return mixed
+     * @throws \RedisException
      */
     public static function __callStatic(string $name, array $arguments): mixed
     {
@@ -60,23 +62,25 @@ class Redis
      * @param string $key
      * @param mixed $value
      * @param int $time
+     * @throws \RedisException
      */
-    public static function setCache(string $key, mixed $value, int $time = 60)
+    public static function setCache(string $key, mixed $value, int $time = 60): void
     {
-        static::instance()->setex($key, $time, json_encode($value));
+        static::instance()->setex($key, $time, serialize($value));
     }
 
     /**
      * 获取缓存
      * @param string $key
      * @return mixed
+     * @throws \RedisException
      */
     public static function getCache(string $key): mixed
     {
         if (static::instance()->exists($key)) {
             $ret = static::instance()->get($key);
             if ($ret !== null) {
-                return json_decode($ret, true);
+                return unserialize($ret, true);
             }
         }
         return null;
@@ -86,6 +90,7 @@ class Redis
      * 检查缓存是否存在
      * @param string $key
      * @return bool
+     * @throws \RedisException
      */
     public static function existCache(string $key): bool
     {
@@ -101,6 +106,7 @@ class Redis
      * @param int $time
      * @param callable $func
      * @return mixed
+     * @throws \RedisException
      */
     public static function callCache(string $key, int $time, callable $func): mixed
     {

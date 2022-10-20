@@ -24,6 +24,9 @@ class DBSelector extends SqlCondition
      */
     protected array $_unions = [];
 
+    /**
+     * @throws DBException
+     */
     public function __construct(string $table)
     {
         parent::__construct();
@@ -261,7 +264,7 @@ class DBSelector extends SqlCondition
 
     /**
      * 联合
-     * @param string $sql
+     * @param string|DBSelector $sql
      * @param array|string|int|float|bool|null $args
      * @return $this
      */

@@ -86,7 +86,7 @@ abstract class Field
     /**
      * @param $args
      */
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         if (isset($args['label']) && is_string($args['label'])) {
             $this->label = $args['label'];

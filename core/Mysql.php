@@ -2,6 +2,12 @@
 
 namespace beacon\core;
 
+if (!defined('DEBUG_MYSQL_LOG')) {
+    define("DEBUG_MYSQL_LOG", false);
+}
+if (!defined('DEBUG_MYSQL_SLOW_LIMIT')) {
+    define("DEBUG_MYSQL_SLOW_LIMIT", 0);
+}
 
 /**
  * mysql 数据操作类
@@ -135,7 +141,7 @@ class Mysql
     /**
      *重连数据库
      */
-    public function reConnection()
+    public function reConnection(): void
     {
         if ($this->timeout == 0) {
             $this->pdo = new \PDO($this->link, $this->user, $this->pass, [\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
@@ -249,7 +255,7 @@ class Mysql
             $args = [$args];
         }
         $time = 0;
-        if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
+        if (DEBUG_MYSQL_LOG) {
             $time = microtime(true);
         }
         try {
@@ -261,9 +267,9 @@ class Mysql
                 $exception->setDetail($this->_lastSql);
                 throw $exception;
             }
-            if (defined('DEBUG_MYSQL_LOG') && DEBUG_MYSQL_LOG) {
+            if (DEBUG_MYSQL_LOG) {
                 $time = microtime(true) - $time;
-                if (!defined('DEBUG_MYSQL_SLOW_LIMIT') || $time * 1000 > DEBUG_MYSQL_SLOW_LIMIT) {
+                if (DEBUG_MYSQL_SLOW_LIMIT > 0 && $time * 1000 > DEBUG_MYSQL_SLOW_LIMIT) {
                     $this->_lastSql = Mysql::format($sql, $args);
                     Logger::sql($this->_lastSql, $time);
                 }
@@ -285,14 +291,14 @@ class Mysql
      * 获取多行记录
      * @param string $sql
      * @param ?array $args
-     * @param int $fetch_style
+     * @param int $fetch
      * @return array
      * @throws DBException
      */
-    public function getList(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): array
+    public function getList(string $sql, mixed $args = null, int $fetch = \PDO::FETCH_ASSOC): array
     {
         $stm = $this->execute($sql, $args);
-        $rows = $stm->fetchAll($fetch_style);
+        $rows = $stm->fetchAll($fetch);
         $stm->closeCursor();
         return $rows;
     }
@@ -301,14 +307,14 @@ class Mysql
      * 获取单行记录
      * @param string $sql
      * @param array|null $args
-     * @param int $fetch_style
+     * @param int $fetch
      * @return mixed
      * @throws DBException
      */
-    public function getRow(string $sql, mixed $args = null, int $fetch_style = \PDO::FETCH_ASSOC): mixed
+    public function getRow(string $sql, mixed $args = null, int $fetch = \PDO::FETCH_ASSOC): mixed
     {
         $stm = $this->execute($sql, $args);
-        $row = $stm->fetch($fetch_style);
+        $row = $stm->fetch($fetch);
         $stm->closeCursor();
         return $row === false ? null : $row;
     }
@@ -360,9 +366,11 @@ class Mysql
     {
         $sql = "select max(`{$field}`) from `{$tbname}`";
         if ($where !== null) {
-            $where = trim($where);
             if ($args !== null) {
                 $args = is_array($args) ? $args : [$args];
+            }
+            if (is_string($where)) {
+                $where = trim($where);
             }
             if (is_int($where) || is_numeric($where)) {
                 $args = [intval($where)];
@@ -390,9 +398,11 @@ class Mysql
     {
         $sql = "select min(`{$field}`) from `{$tbname}`";
         if ($where !== null) {
-            $where = trim($where);
             if ($args != null) {
                 $args = is_array($args) ? $args : [$args];
+            }
+            if (is_string($where)) {
+                $where = trim($where);
             }
             if (is_int($where) || is_numeric($where)) {
                 $args = [intval($where)];
@@ -424,7 +434,7 @@ class Mysql
      * @param array $values
      * @throws DBException
      */
-    public function insert(string $tbname, array $values = [])
+    public function insert(string $tbname, array $values = []): void
     {
         if (count($values) == 0) {
             return;
@@ -444,26 +454,12 @@ class Mysql
             } else {
                 $params [] = '?';
                 $type = gettype($item);
-                switch ($type) {
-                    case 'bool':
-                    case 'boolean':
-                        $temp[] = $item ? 1 : 0;
-                        break;
-                    case 'int':
-                    case 'integer':
-                    case 'double':
-                    case 'float':
-                    case 'string':
-                        $temp[] = $item;
-                        break;
-                    case 'array':
-                    case 'object':
-                        $temp[] = json_encode($item, JSON_UNESCAPED_UNICODE);
-                        break;
-                    default :
-                        $temp[] = strval($item);
-                        break;
-                }
+                $temp[] = match ($type) {
+                    'bool', 'boolean' => $item ? 1 : 0,
+                    'int', 'integer', 'double', 'float', 'string' => $item,
+                    'array', 'object' => json_encode($item, JSON_UNESCAPED_UNICODE),
+                    default => strval($item),
+                };
             }
         }
         $sql = 'insert into `' . $tbname . '`(' . join(',', $names) . ') values (' . join(',', $params) . ')';
@@ -477,7 +473,7 @@ class Mysql
      * @param array $values
      * @throws DBException
      */
-    public function replace(string $tbname, array $values = [])
+    public function replace(string $tbname, array $values = []): void
     {
         if (count($values) == 0) {
             return;
@@ -497,26 +493,12 @@ class Mysql
             } else {
                 $params [] = '?';
                 $type = gettype($item);
-                switch ($type) {
-                    case 'bool':
-                    case 'boolean':
-                        $temp[] = $item ? 1 : 0;
-                        break;
-                    case 'int':
-                    case 'integer':
-                    case 'double':
-                    case 'float':
-                    case 'string':
-                        $temp[] = $item;
-                        break;
-                    case 'array':
-                    case 'object':
-                        $temp[] = json_encode($item, JSON_UNESCAPED_UNICODE);
-                        break;
-                    default :
-                        $temp[] = strval($item);
-                        break;
-                }
+                $temp[] = match ($type) {
+                    'bool', 'boolean' => $item ? 1 : 0,
+                    'int', 'integer', 'double', 'float', 'string' => $item,
+                    'array', 'object' => json_encode($item, JSON_UNESCAPED_UNICODE),
+                    default => strval($item),
+                };
             }
         }
         $sql = 'replace into `' . $tbname . '`(' . join(',', $names) . ') values (' . join(',', $params) . ')';
@@ -532,12 +514,14 @@ class Mysql
      * @param mixed $args
      * @throws DBException
      */
-    public function update(string $tbname, array $values, string|int|null $where = null, mixed $args = null)
+    public function update(string $tbname, array $values, string|int|null $where = null, mixed $args = null): void
     {
         if (count($values) == 0) {
             return;
         }
-        $where = trim($where);
+        if (is_string($where)) {
+            $where = trim($where);
+        }
         if (is_int($where) || is_numeric($where)) {
             $args = [intval($where)];
             $where = 'id=?';
@@ -555,26 +539,12 @@ class Mysql
             } else {
                 $maps [] = '`' . $key . '`=?';
                 $type = gettype($item);
-                switch ($type) {
-                    case 'bool':
-                    case 'boolean':
-                        $temp[] = $item ? 1 : 0;
-                        break;
-                    case 'int':
-                    case 'integer':
-                    case 'double':
-                    case 'float':
-                    case 'string':
-                        $temp[] = $item;
-                        break;
-                    case 'array':
-                    case 'object':
-                        $temp[] = json_encode($item, JSON_UNESCAPED_UNICODE);
-                        break;
-                    default :
-                        $temp[] = strval($item);
-                        break;
-                }
+                $temp[] = match ($type) {
+                    'bool', 'boolean' => $item ? 1 : 0,
+                    'int', 'integer', 'double', 'float', 'string' => $item,
+                    'array', 'object' => json_encode($item, JSON_UNESCAPED_UNICODE),
+                    default => strval($item),
+                };
             }
         }
         $sql = 'update `' . $tbname . '` set ' . join(',', $maps);
@@ -600,14 +570,16 @@ class Mysql
      * @param mixed $args
      * @throws DBException
      */
-    public function delete(string $tbname, string|int|null $where = null, mixed $args = null)
+    public function delete(string $tbname, string|int|null $where = null, mixed $args = null): void
     {
-        $where = trim($where);
+        if (is_string($where)) {
+            $where = trim($where);
+        }
         if (is_int($where) || is_numeric($where)) {
             $args = [intval($where)];
             $where = 'id=?';
         }
-        $sql = 'delete from `' . $tbname.'`';
+        $sql = 'delete from `' . $tbname . '`';
         if (empty($where)) {
             throw new DBException('删除数据必须带有条件');
         }
@@ -645,7 +617,7 @@ class Mysql
      * @param array $options
      * @throws DBException
      */
-    public function createTable(string $tbname, array $options = [])
+    public function createTable(string $tbname, array $options = []): void
     {
         $options = array_merge([
             'engine' => 'InnoDB',
@@ -655,7 +627,7 @@ class Mysql
         if ($this->existsTable($tbname)) {
             throw new DBException("数据库表已经存在,{$tbname}");
         }
-        $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=".Mysql::escape($options['comment']);
+        $sql = "create table `{$tbname}` (`id` int(11) not null auto_increment,primary key (`id`)) engine={$options['engine']} default charset={$options['charset']} comment=" . Mysql::escape($options['comment']);
         $sql .= ';';
         $stm = $this->execute($sql);
         if (!$stm) {
