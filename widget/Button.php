@@ -9,13 +9,17 @@ use beacon\core\Field;
 #[\Attribute]
 class Button extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-btn'
+    protected array $_attrs = [
+        'class' => 'form-btn'
     ];
 
     public bool $offJoin = true;
 
-    public function setting(array $args)
+    /**
+     * @param array $args
+     * @return void
+     */
+    public function setting(array $args): void
     {
         parent::setting($args);
         $this->offJoin = true;
@@ -40,7 +44,7 @@ class Button extends Field
         return $this->getValue();
     }
 
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
 
     }

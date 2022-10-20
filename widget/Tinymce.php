@@ -17,7 +17,7 @@ class Tinymce extends Field
     public bool $statusbar = false;
     public bool $elementPath = false;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['imagesUploadUrl']) && is_string($args['imagesUploadUrl'])) {

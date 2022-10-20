@@ -19,8 +19,8 @@ use beacon\core\Util;
 #[\Attribute]
 class MultiDialog extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-inp multi-dialog',
+    protected array $_attrs = [
+        'class' => 'form-inp multi-dialog',
     ];
     /**
      * 用于兑换文本的方法
@@ -38,7 +38,7 @@ class MultiDialog extends Field
 
     /**
      * 填值模式
-     * @var string
+     * @var int
      */
     public int $mode = 1;
 
@@ -59,7 +59,7 @@ class MultiDialog extends Field
     public bool $clearBtn = false;
 
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['textFunc']) && is_callable($args['textFunc'])) {

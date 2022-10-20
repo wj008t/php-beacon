@@ -9,15 +9,15 @@ use beacon\core\Field;
 #[\Attribute]
 class Password extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-inp password',
+    protected array $_attrs = [
+        'class' => 'form-inp password',
     ];
 
     public string|array|null $encodeFunc = 'md5';
 
     protected mixed $encodeValue = null;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['encodeFunc']) && is_callable($args['encodeFunc'])) {
@@ -36,7 +36,7 @@ class Password extends Field
      * 加入数据库时
      * @param array $data
      */
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
         $encodeFunc = $this->encodeFunc;
         $value = $this->getValue();

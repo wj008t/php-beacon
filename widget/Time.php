@@ -85,7 +85,7 @@ class Time extends Field
      * 加入数据
      * @param array $data
      */
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
         $value = $this->getValue();
         if ($value === '') {

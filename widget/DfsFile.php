@@ -18,7 +18,7 @@ class DfsFile extends Field
     public string $conf = 'dfs';
     public string $fieldName = 'file';
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['module']) && is_string($args['module'])) {

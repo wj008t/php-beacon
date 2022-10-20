@@ -23,7 +23,7 @@ class Label extends Field
         return $this->getValue();
     }
 
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
 
     }

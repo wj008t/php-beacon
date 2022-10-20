@@ -17,7 +17,7 @@ class Remote extends Field
     public string $method = 'get';
     public string $carry = '';
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['url']) && is_string($args['url'])) {

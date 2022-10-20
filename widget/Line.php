@@ -15,7 +15,7 @@ class Line extends Field
 
     public bool $offJoin = true;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         $this->offJoin = true;

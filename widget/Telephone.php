@@ -29,7 +29,7 @@ class Telephone extends Field
 
     public int $mode = 2;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['names']) && is_array($args['names'])) {
@@ -49,7 +49,7 @@ class Telephone extends Field
         }
     }
 
-    public function init(?Form $form, string $name, string $type, mixed $default)
+    public function init(?Form $form, string $name, string $type, mixed $default): void
     {
         parent::init($form, $name, $type, $default);
         if (empty($this->names)) {

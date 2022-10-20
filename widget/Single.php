@@ -55,7 +55,7 @@ class Single extends Field
      */
     public string $template = '';
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['itemClass']) && is_string($args['itemClass'])) {
@@ -73,7 +73,7 @@ class Single extends Field
     }
 
 
-    public static function perfect(array $fields, string $boxName, string $boxId = '')
+    public static function perfect(array $fields, string $boxName, string $boxId = ''): void
     {
         if (empty($boxId)) {
             $boxId = $boxName;
@@ -120,7 +120,7 @@ class Single extends Field
      * 完善表单信息
      * @param Form $subForm
      */
-    public function perfectForm(Form $subForm)
+    public function perfectForm(Form $subForm): void
     {
         $boxId = $this->boxId;
         $boxName = $this->boxName;

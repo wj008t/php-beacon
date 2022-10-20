@@ -29,7 +29,7 @@ class Date extends Field
         $attrs['type'] = 'text';
         $typeMap = Util::typeMap($this->varType);
         if (isset($typeMap['int']) && is_numeric($attrs['value'])) {
-            if (isset($attrs['value']) && $attrs['value'] > 0) {
+            if ($attrs['value'] > 0) {
                 $attrs['value'] = date('Y-m-d', $attrs['value']);
             } else {
                 unset($attrs['value']);
@@ -64,7 +64,7 @@ class Date extends Field
      * 加入数据
      * @param array $data
      */
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
         $value = $this->getValue();
         if ($value === '') {

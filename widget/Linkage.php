@@ -21,7 +21,7 @@ class Linkage extends Field
     public string $itemType = 'string';
     public int $level = 0;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['source']) && is_string($args['source'])) {
@@ -44,7 +44,7 @@ class Linkage extends Field
         }
     }
 
-    public function setValue(mixed $value)
+    public function setValue(mixed $value): void
     {
         if (empty($value)) {
             $this->value = [];
@@ -70,7 +70,7 @@ class Linkage extends Field
         return $values;
     }
 
-    private function isList(array $data)
+    private function isList(array $data): bool
     {
         if (function_exists('array_is_list')) {
             return \array_is_list($data);
@@ -149,7 +149,7 @@ class Linkage extends Field
         return Util::mapItemType($values, $this->itemType);
     }
 
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
         if (!empty($this->names)) {
             $values = $this->getValues();

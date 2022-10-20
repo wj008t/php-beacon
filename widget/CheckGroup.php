@@ -30,7 +30,7 @@ class CheckGroup extends Field
 
     private ?array $cacheOptions = null;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['optionFunc']) && (is_string($args['optionFunc']) || is_array($args['optionFunc']))) {
@@ -73,7 +73,7 @@ class CheckGroup extends Field
         return $values;
     }
 
-    private function isList(array $data)
+    private function isList(array $data): bool
     {
         if (function_exists('array_is_list')) {
             return \array_is_list($data);
@@ -207,7 +207,7 @@ class CheckGroup extends Field
      * @param array $data
      * @throws DBException
      */
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
         if ($this->bitComp) {
             $values = $this->getValues();

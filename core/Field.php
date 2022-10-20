@@ -389,7 +389,7 @@ abstract class Field
      * 实现：加入到数据中
      * @param array $data
      */
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
         $data[$this->name] = $this->getValue();
     }
@@ -407,7 +407,7 @@ abstract class Field
      * 设置值
      * @param mixed $value
      */
-    public function setValue(mixed $value)
+    public function setValue(mixed $value): void
     {
         if ($value !== null) {
             $this->value = Util::convertType($value, $this->varType);
@@ -417,7 +417,7 @@ abstract class Field
     /**
      * 清除值
      */
-    public function clearValue()
+    public function clearValue(): void
     {
         $this->value = null;
     }
@@ -480,7 +480,7 @@ abstract class Field
     /**
      * 设置动态数据
      */
-    public function createDynamic()
+    public function createDynamic(): void
     {
 
         if (!is_array($this->dynamic)) {
@@ -549,7 +549,7 @@ abstract class Field
     /**
      * 验证动态数据
      */
-    public function validDynamic()
+    public function validDynamic(): void
     {
         if ($this->form === null) {
             return;

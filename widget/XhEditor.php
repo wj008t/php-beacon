@@ -8,8 +8,8 @@ use beacon\core\Field;
 #[\Attribute]
 class XhEditor extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-inp xh-editor',
+    protected array $_attrs = [
+        'class' => 'form-inp xh-editor',
     ];
 
     public string $upLinkUrl = '';
@@ -20,7 +20,7 @@ class XhEditor extends Field
     public string $skin = '';
     public string $tools = '';
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['upLinkUrl']) && is_string($args['upLinkUrl'])) {

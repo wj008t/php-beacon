@@ -42,7 +42,7 @@ class SelectDialog extends Field
     /**
      * @param array $args
      */
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['textFunc']) && is_callable($args['textFunc'])) {

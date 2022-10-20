@@ -79,7 +79,7 @@ class Container extends Field
      * Container constructor.
      * @param array $args
      */
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['itemClass']) && is_string($args['itemClass'])) {
@@ -122,7 +122,7 @@ class Container extends Field
      * @param Form $subForm
      * @param string $index
      */
-    private function perfectForm(Form $subForm, string $index = '@@index@@')
+    private function perfectForm(Form $subForm, string $index = '@@index@@'): void
     {
         $fields = $subForm->getFields();
         foreach ($fields as $child) {

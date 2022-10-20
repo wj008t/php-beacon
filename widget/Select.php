@@ -23,7 +23,7 @@ class Select extends Field
     private ?array $cacheOptions = null;
 
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['header']) && (is_string($args['header']) || is_array($args['header']))) {

@@ -22,7 +22,7 @@ class RadioGroup extends Field
 
     private ?array $cacheOptions = null;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['optionFunc']) && (is_string($args['optionFunc']) || is_array($args['optionFunc']))) {

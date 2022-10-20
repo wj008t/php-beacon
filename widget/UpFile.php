@@ -19,7 +19,7 @@ class UpFile extends Field
     public string $nameInput = '';
     public int $size = 0;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['url']) && is_string($args['url'])) {

@@ -33,7 +33,7 @@ class Transfer extends Field
     public int $height = 0;
     public bool $search = false;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['source']) && is_string($args['source'])) {

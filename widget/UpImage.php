@@ -22,7 +22,7 @@ class UpImage extends Field
     public int $imgHeight = 0;
     public int $size = 0;
 
-    public function setting(array $args)
+    public function setting(array $args): void
     {
         parent::setting($args);
         if (isset($args['url']) && is_string($args['url'])) {
