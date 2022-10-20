@@ -80,7 +80,7 @@ class Redis
         if (static::instance()->exists($key)) {
             $ret = static::instance()->get($key);
             if ($ret !== null) {
-                return unserialize($ret, true);
+                return unserialize($ret);
             }
         }
         return null;
