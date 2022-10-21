@@ -9,8 +9,8 @@ use beacon\core\Field;
 #[\Attribute]
 class Line extends Field
 {
-    protected array $_attrs=[
-        'class'=>'form-line',
+    protected array $_attrs = [
+        'class' => 'form-line',
     ];
 
     public bool $offJoin = true;
@@ -31,7 +31,7 @@ class Line extends Field
         return '';
     }
 
-    public function joinData(array &$data = [])
+    public function joinData(array &$data = []): void
     {
 
     }
