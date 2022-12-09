@@ -66,7 +66,7 @@ class Redis
      */
     public static function setCache(string $key, mixed $value, int $time = 60): void
     {
-        static::instance()->setex($key, $time, serialize($value));
+        static::instance()->setex($key, $time, json_encode($value,JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -80,7 +80,7 @@ class Redis
         if (static::instance()->exists($key)) {
             $ret = static::instance()->get($key);
             if ($ret !== null) {
-                return unserialize($ret);
+                return json_decode($ret, true);
             }
         }
         return null;
