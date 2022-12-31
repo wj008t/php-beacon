@@ -130,7 +130,7 @@ class Mysql
         $this->charset = $charset;
         $this->timeout = $timeout;
         if ($timeout == 0) {
-            $this->pdo = new \PDO($link, $user, $pass, [\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            $this->pdo = new \PDO($link, $user, $pass, [\PDO::ATTR_PERSISTENT => true, \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
         } else {
             $this->pdo = new \PDO($link, $user, $pass, [\PDO::ATTR_PERSISTENT => true, \PDO::ATTR_TIMEOUT => $timeout, \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
         }
@@ -144,7 +144,7 @@ class Mysql
     public function reConnection(): void
     {
         if ($this->timeout == 0) {
-            $this->pdo = new \PDO($this->link, $this->user, $this->pass, [\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
+            $this->pdo = new \PDO($this->link, $this->user, $this->pass, [\PDO::ATTR_PERSISTENT => true, \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
         } else {
             $this->pdo = new \PDO($this->link, $this->user, $this->pass, [\PDO::ATTR_PERSISTENT => true, \PDO::ATTR_TIMEOUT => $this->timeout, \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . $this->charset]);
         }
