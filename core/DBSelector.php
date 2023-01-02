@@ -349,8 +349,8 @@ class DBSelector extends SqlCondition
         if ($alias == '') {
             return $sql;
         }
-        $sql = preg_replace_callback('@(?:^|[^a-z0-9_]+)' . $alias . '\.(`?[a-z0-9_]+`?\s*)@i', function ($m) {
-            return ' ' . $m[1];
+        $sql = preg_replace_callback('@(^|[^a-z0-9_]+)' . $alias . '\.(`?[a-z0-9_]+`?\s*)@i', function ($m) {
+            return trim($m[1]) . ' ' . $m[2];
         }, $sql);
         return $sql;
     }
