@@ -14,8 +14,8 @@ use sdopx\lib\Raw;
 #[\Attribute]
 class Container extends Field
 {
-    protected array $_attrs=[
-        'class'=>'container',
+    protected array $_attrs = [
+        'class' => 'container',
     ];
     /**
      * @var string 部件类名称
@@ -265,11 +265,12 @@ class Container extends Field
                 //todo 如果是add 可能会造成 不能设置 offEdit
                 $editForm = $this->getSubForm($className);
                 $editForm->setData($item);
-                $this->perfectForm($editForm, $index);
+                $idxName = 'a' . $index;
+                $this->perfectForm($editForm, $idxName);
                 if ($mode == 'table') {
-                    $subCode = '<tr class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</tr>';
+                    $subCode = '<tr class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => $idxName]) . '</tr>';
                 } else {
-                    $subCode = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => 'a' . $index]) . '</div>';
+                    $subCode = '<div class="container-item">' . $itemFunc(['field' => $this, 'form' => $editForm, 'index' => $idxName]) . '</div>';
                 }
                 $code[] = $subCode;
                 $index++;
@@ -404,7 +405,7 @@ class Container extends Field
      */
     public function validate(array &$errors): bool
     {
-        if(isset($this->valid['disabled']) && $this->valid['disabled']){
+        if (isset($this->valid['disabled']) && $this->valid['disabled']) {
             return parent::validate($errors);
         }
         foreach ($this->childError as $childName => $error) {
