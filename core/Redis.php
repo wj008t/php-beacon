@@ -106,11 +106,82 @@ class Redis
      */
     public static function existCache(string $key): bool
     {
+        return static::exists($key);
+    }
+
+    /**
+     * 检查重复
+     * @param string|array $key
+     * @return bool
+     * @throws CacheException
+     */
+    public static function exists(string|array $key): bool
+    {
         try {
             if (static::instance()->exists($key)) {
                 return true;
             }
             return false;
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
+        }
+    }
+
+    /**
+     * 设置缓存
+     * @param string $key
+     * @param int $expire
+     * @param string $value
+     * @return bool|\Redis
+     * @throws CacheException
+     */
+    public static function setex(string $key, int $expire, string $value): bool|\Redis
+    {
+        try {
+            return static::instance()->setex($key, $expire, $value);
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
+        }
+    }
+
+    /**
+     * 获取数据内容
+     * @param string $key
+     * @return mixed
+     * @throws CacheException
+     */
+    public static function get(string $key): mixed
+    {
+        try {
+            return static::instance()->get($key);
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
+        }
+    }
+
+    /**
+     * 获取数据内容
+     * @param string $key
+     * @return mixed
+     * @throws CacheException
+     */
+    public static function del(string $key): mixed
+    {
+        try {
+            return static::instance()->del($key);
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
+        }
+    }
+
+    /**
+     * 设置过期时间
+     * @throws CacheException
+     */
+    public static function expire(string $key, int $ttl)
+    {
+        try {
+            return static::instance()->expire($key, $ttl);
         } catch (\Exception $e) {
             throw new CacheException($e->getMessage());
         }

@@ -309,7 +309,7 @@ class Request
      * 服务器参数
      * @param string $key
      * @param null $default
-     * @return  string|null
+     * @return string|array|null
      */
     public static function server(string $key = '', $default = null): string|array|null
     {
@@ -329,9 +329,9 @@ class Request
 
     /**
      * 设置受信任ip
-     * @param $proxies
+     * @param array $proxies
      */
-    public static function proxies(array $proxies)
+    public static function proxies(array $proxies): void
     {
         static::$proxies = $proxies;
     }
@@ -569,7 +569,7 @@ class Request
     /**
      * 获取session值
      * @return string
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function getSessionId(): string
     {
@@ -589,10 +589,10 @@ class Request
             if (empty($token)) {
                 do {
                     $token = Util::randWord(30);
-                    $has = Redis::instance()->exists('sid.' . $token);
+                    $has = Redis::exists('sid.' . $token);
                 } while ($has);
                 //先占用2分钟
-                Redis::instance()->setex('sid.' . $token, 300, '[]');
+                Redis::setex('sid.' . $token, 300, '[]');
             }
             static::setSessionId($token);
             return $token;
@@ -632,7 +632,7 @@ class Request
      * @param string $name
      * @param null $default
      * @return array|bool|float|int|string|null
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function getSession(string $name = '', $default = null): mixed
     {
@@ -641,14 +641,14 @@ class Request
                 static::$sessionData = [];
                 $token = static::getSessionId();
                 if (!empty($token)) {
-                    $data = Redis::instance()->get('sid.' . $token);
+                    $data = Redis::get('sid.' . $token);
                     if (!empty($data) && is_string($data) && Util::isJson($data)) {
                         static::$sessionData = json_decode($data, true);
                         if (!is_array(static::$sessionData)) {
                             static::$sessionData = [];
                         }
                         $timeout = Config::get('session.timeout', 3600);
-                        Redis::instance()->expire('sid.' . $token, $timeout);
+                        Redis::expire('sid.' . $token, $timeout);
                     }
                 }
             }
@@ -664,7 +664,7 @@ class Request
      * 设置 session
      * @param string|array $name
      * @param mixed $value
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function setSession(string|array $name, mixed $value = null): void
     {
@@ -682,7 +682,7 @@ class Request
                     }
                     static::$sessionData = $data;
                     $timeout = Config::get('session.timeout', 3600);
-                    Redis::instance()->setex('sid.' . $token, $timeout, json_encode($data));
+                    Redis::setex('sid.' . $token, $timeout, json_encode($data));
                 }
             }
             return;
@@ -703,14 +703,14 @@ class Request
 
     /**
      * 清空session
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function clearSession(): void
     {
         if (USE_REDIS_SESSION) {
             $token = static::getSessionId();
             if (!empty($token)) {
-                Redis::instance()->del('sid.' . $token);
+                Redis::del('sid.' . $token);
             }
             return;
         }
