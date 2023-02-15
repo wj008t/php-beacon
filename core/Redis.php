@@ -13,35 +13,39 @@ class Redis
     /**
      * 获取redis 实例
      * @return Client|\Redis|null
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function instance(): Client|\Redis|null
     {
-        if (self::$redis) {
+        try {
+            if (self::$redis) {
+                return self::$redis;
+            }
+            $config = Config::get('redis.*');
+            if (extension_loaded('redis')) {
+                self::$redis = new \Redis();
+                if (!empty($config['sock'])) {
+                    self::$redis->pconnect($config['sock']);
+                } else {
+                    self::$redis->pconnect($config['host'], $config['port'], $config['timeout'] ?? 20);
+                }
+                if (!empty($config['password'])) {
+                    self::$redis->auth($config['password']);
+                }
+                if (!empty($config['database'])) {
+                    self::$redis->select($config['database']);
+                }
+            } else {
+                if (!empty($config['sock'])) {
+                    self::$redis = new Client($config['sock']);
+                } else {
+                    self::$redis = new Client($config);
+                }
+            }
             return self::$redis;
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
         }
-        $config = Config::get('redis.*');
-        if (extension_loaded('redis')) {
-            self::$redis = new \Redis();
-            if (!empty($config['sock'])) {
-                self::$redis->pconnect($config['sock']);
-            } else {
-                self::$redis->pconnect($config['host'], $config['port'], $config['timeout'] ?? 20);
-            }
-            if (!empty($config['password'])) {
-                self::$redis->auth($config['password']);
-            }
-            if (!empty($config['database'])) {
-                self::$redis->select($config['database']);
-            }
-        } else {
-            if (!empty($config['sock'])) {
-                self::$redis = new Client($config['sock']);
-            } else {
-                self::$redis = new Client($config);
-            }
-        }
-        return self::$redis;
     }
 
     /**
@@ -49,7 +53,7 @@ class Redis
      * @param string $name
      * @param array $arguments
      * @return mixed
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function __callStatic(string $name, array $arguments): mixed
     {
@@ -62,42 +66,54 @@ class Redis
      * @param string $key
      * @param mixed $value
      * @param int $time
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function setCache(string $key, mixed $value, int $time = 60): void
     {
-        static::instance()->setex($key, $time, json_encode($value,JSON_UNESCAPED_UNICODE));
+        try {
+            static::instance()->setex($key, $time, json_encode($value, JSON_UNESCAPED_UNICODE));
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
+        }
     }
 
     /**
      * 获取缓存
      * @param string $key
      * @return mixed
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function getCache(string $key): mixed
     {
-        if (static::instance()->exists($key)) {
-            $ret = static::instance()->get($key);
-            if ($ret !== null) {
-                return json_decode($ret, true);
+        try {
+            if (static::instance()->exists($key)) {
+                $ret = static::instance()->get($key);
+                if ($ret !== null) {
+                    return json_decode($ret, true);
+                }
             }
+            return null;
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
         }
-        return null;
     }
 
     /**
      * 检查缓存是否存在
      * @param string $key
      * @return bool
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function existCache(string $key): bool
     {
-        if (static::instance()->exists($key)) {
-            return true;
+        try {
+            if (static::instance()->exists($key)) {
+                return true;
+            }
+            return false;
+        } catch (\Exception $e) {
+            throw new CacheException($e->getMessage());
         }
-        return false;
     }
 
     /**
@@ -106,7 +122,7 @@ class Redis
      * @param int $time
      * @param callable $func
      * @return mixed
-     * @throws \RedisException
+     * @throws CacheException
      */
     public static function callCache(string $key, int $time, callable $func): mixed
     {
@@ -121,6 +137,4 @@ class Redis
         static::setCache($key, $ret, $time);
         return $ret;
     }
-
-
 }
