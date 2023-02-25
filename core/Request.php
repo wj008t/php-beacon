@@ -854,6 +854,12 @@ class Request
                             }
                         }
                     }
+                    if (empty($ip)) {
+                        $ip2 = $_SERVER['REMOTE_ADDR'] ?? '';
+                        if (!empty($ip2)) {
+                            return $ip2;
+                        }
+                    }
                 } else {
                     $ip = static::server('HTTP_X_REAL_IP');
                 }
