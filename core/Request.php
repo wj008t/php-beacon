@@ -849,7 +849,7 @@ class Request
                         $temps = explode(',', $forwardIP);
                         foreach ($temps as $item) {
                             $item = trim($item);
-                            if (filter_var($item, FILTER_VALIDATE_IP)) {
+                            if (filter_var($item, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
                                 return $item;
                             }
                         }
