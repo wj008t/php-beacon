@@ -104,7 +104,7 @@ class Redis
      * @return bool
      * @throws CacheException
      */
-    public static function existCache(string $key): bool
+    public static function existCache(string $key): mixed
     {
         return static::exists($key);
     }
@@ -115,7 +115,7 @@ class Redis
      * @return bool
      * @throws CacheException
      */
-    public static function exists(string|array $key): bool
+    public static function exists(string|array $key): mixed
     {
         try {
             if (static::instance()->exists($key)) {
@@ -132,10 +132,10 @@ class Redis
      * @param string $key
      * @param int $expire
      * @param string $value
-     * @return bool|\Redis
+     * @return mixed
      * @throws CacheException
      */
-    public static function setex(string $key, int $expire, string $value): bool|\Redis
+    public static function setex(string $key, int $expire, string $value): mixed
     {
         try {
             return static::instance()->setex($key, $expire, $value);
@@ -178,7 +178,7 @@ class Redis
      * 设置过期时间
      * @throws CacheException
      */
-    public static function expire(string $key, int $ttl)
+    public static function expire(string $key, int $ttl): mixed
     {
         try {
             return static::instance()->expire($key, $ttl);
