@@ -169,6 +169,7 @@ class App
                     $arg[$key] = $temp;
                 }
             }
+            break;
         }
         if (empty($arg['ctl'])) {
             return false;
