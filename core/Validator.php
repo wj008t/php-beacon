@@ -289,7 +289,7 @@ class Validator
      * @param bool $nq
      * @return bool
      */
-    public static function testMax(mixed $val, mixed $num, bool $nq = false): bool
+    public static function testMax(mixed $val, mixed $num, bool $eq = false): bool
     {
         if (!is_int($val)) {
             $val = round(floatval($val), 5);
@@ -297,10 +297,10 @@ class Validator
         if (!is_int($num)) {
             $num = round(floatval($num), 5);
         }
-        if ($nq) {
-            return $val < $num;
-        } else {
+        if ($eq) {
             return $val <= $num;
+        } else {
+            return $val < $num;
         }
     }
 
@@ -311,7 +311,7 @@ class Validator
      * @param bool $nq
      * @return bool
      */
-    public static function testMin(mixed $val, mixed $num, bool $nq = false): bool
+    public static function testMin(mixed $val, mixed $num, bool $eq = false): bool
     {
         if (!is_int($val)) {
             $val = round(floatval($val), 5);
@@ -319,10 +319,10 @@ class Validator
         if (!is_int($num)) {
             $num = round(floatval($num), 5);
         }
-        if ($nq) {
-            return $val > $num;
-        } else {
+        if ($eq) {
             return $val >= $num;
+        } else {
+            return $val > $num;
         }
     }
 
@@ -334,9 +334,9 @@ class Validator
      * @param bool $nq
      * @return bool
      */
-    public static function testRange(mixed $val, $min, mixed $max, bool $nq = false): bool
+    public static function testRange(mixed $val, $min, mixed $max, bool $eq = false): bool
     {
-        return self::testMin($val, $min, $nq) && self::testMax($val, $max, $nq);
+        return self::testMin($val, $min, $eq) && self::testMax($val, $max, $eq);
     }
 
     /**
